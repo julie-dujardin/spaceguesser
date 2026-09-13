@@ -1,0 +1,16 @@
+<svg width="256" height="256" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+  
+  <defs>
+    <mask id="gap">
+      <rect width="256" height="256" fill="white"></rect>
+      <circle cx="228" cy="128" r="24" fill="black"></circle>
+    </mask>
+  </defs>
+
+  <circle cx="128" cy="128" r="30" class="fg"></circle>
+
+  <g transform="rotate(-22 128 128)">
+    <ellipse cx="128" cy="128" rx="100" ry="48" class="stroke" stroke-width="8" fill="none" mask="url(#gap)"></ellipse>
+    <circle cx="228" cy="128" r="16" class="fg"></circle>
+  </g>
+</svg>

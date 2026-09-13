@@ -1,0 +1,1 @@
+{"root":["./src/App.tsx","./src/main.tsx","./src/game/rules.ts","./src/game/run.ts","./src/ui/CustomSetup.tsx","./src/ui/FinalScore.tsx","./src/ui/GuessMap.tsx","./src/ui/Home.tsx","./src/ui/Hud.tsx","./src/ui/Panorama.tsx","./src/ui/ResultMap.tsx","./src/ui/RoundResult.tsx","./src/ui/useFlatMap.ts"],"version":"5.9.3"}

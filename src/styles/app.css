@@ -1,0 +1,627 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=Geist+Mono:wght@100..900&display=swap');
+
+/* Space Map's tokens, dark only: the picture is the background, and there is
+   no light version of standing on Mars at night. */
+:root {
+	--font-sans: 'Geist', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'Geist Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+	--fg: oklch(0.985 0 0);
+	--mut: oklch(0.708 0 0);
+	--dim: oklch(0.556 0 0);
+	--on-light: oklch(0.205 0 0);
+	--light: oklch(0.922 0 0);
+	--light-hover: oklch(0.87 0 0);
+	--glass: rgb(10 10 10 / 0.72);
+	--gborder: rgb(255 255 255 / 0.1);
+	--good: #4ade80;
+	--bad: #ef4444;
+	color-scheme: dark;
+}
+
+* {
+	box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+	height: 100%;
+}
+
+body {
+	margin: 0;
+	background: #000;
+	color: var(--fg);
+	font-family: var(--font-sans);
+	font-size: 13px;
+	-webkit-font-smoothing: antialiased;
+	overflow: hidden;
+}
+
+button {
+	font-family: inherit;
+}
+
+.mono {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+.mut {
+	color: var(--mut);
+}
+
+.dim {
+	color: var(--dim);
+}
+
+.col {
+	display: flex;
+	flex-direction: column;
+}
+
+.row {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+}
+
+/* --- surfaces ------------------------------------------------------------ */
+
+.glass {
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	border: 1px solid var(--gborder);
+	border-radius: 12px;
+}
+
+.pill {
+	display: inline-flex;
+	align-items: center;
+	gap: 10px;
+	height: 34px;
+	padding: 0 12px;
+	border-radius: 9999px;
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	border: 1px solid var(--gborder);
+	font-size: 12.5px;
+	white-space: nowrap;
+}
+
+.sep {
+	width: 1px;
+	height: 14px;
+	background: var(--gborder);
+}
+
+.mark {
+	font-family: var(--font-mono);
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+
+/* --- buttons ------------------------------------------------------------- */
+
+.btn {
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	gap: 8px;
+	height: 32px;
+	padding: 0 14px;
+	border-radius: 8px;
+	font-size: 13px;
+	font-weight: 500;
+	cursor: pointer;
+	border: 1px solid transparent;
+	background: var(--light);
+	color: var(--on-light);
+	transition: all 150ms;
+}
+
+.btn:hover {
+	background: var(--light-hover);
+}
+
+.btn:active {
+	transform: translateY(1px);
+}
+
+.btn[disabled] {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.btn.lg {
+	height: 40px;
+	padding: 0 20px;
+	font-size: 14px;
+}
+
+.btn.ghost {
+	background: transparent;
+	color: var(--fg);
+	border-color: var(--gborder);
+}
+
+.btn.ghost:hover {
+	background: rgb(255 255 255 / 0.1);
+}
+
+.btn.glassy {
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	color: var(--fg);
+	border-color: var(--gborder);
+}
+
+.btn.glassy:hover {
+	background: rgb(255 255 255 / 0.14);
+}
+
+.btn.ico {
+	width: 32px;
+	height: 32px;
+	padding: 0;
+	font-size: 16px;
+}
+
+/* --- the panorama underneath everything ---------------------------------- */
+
+.stage {
+	position: absolute;
+	inset: 0;
+	background: #0a0a0a;
+}
+
+.stage-shade {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+	background: radial-gradient(120% 90% at 50% 45%, transparent 40%, rgb(0 0 0 / 0.45) 100%);
+}
+
+.stage-note {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	color: var(--mut);
+}
+
+/* --- hud ----------------------------------------------------------------- */
+
+.hud {
+	position: absolute;
+	inset: 0;
+	pointer-events: none;
+}
+
+.hud > * {
+	pointer-events: auto;
+}
+
+.hud-top {
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+.hud-topr {
+	position: absolute;
+	right: 16px;
+	top: 16px;
+	display: flex;
+	gap: 6px;
+}
+
+.clock {
+	display: flex;
+	flex-direction: column;
+	padding: 6px 12px 8px;
+	min-width: 96px;
+	border-radius: 12px;
+}
+
+.clock .v {
+	font-family: var(--font-mono);
+	font-size: 15px;
+	text-align: center;
+	font-variant-numeric: tabular-nums;
+}
+
+.bar {
+	height: 2px;
+	background: rgb(255 255 255 / 0.18);
+	border-radius: 2px;
+	margin-top: 5px;
+	overflow: hidden;
+}
+
+.bar i {
+	display: block;
+	height: 100%;
+	background: var(--fg);
+	transition: width 200ms linear;
+}
+
+.bar i.warn {
+	background: var(--bad);
+}
+
+/* --- the guess map ------------------------------------------------------- */
+
+.mapw {
+	position: absolute;
+	right: 16px;
+	bottom: 16px;
+	width: 380px;
+	transition: width 200ms;
+}
+
+.mapw:hover,
+.mapw.wide {
+	width: 520px;
+}
+
+.mapw .surface {
+	height: 210px;
+	border-radius: 12px 12px 0 0;
+	border: 1px solid var(--gborder);
+	border-bottom: 0;
+	overflow: hidden;
+	background: oklch(0.185 0 0);
+	transition: height 200ms;
+}
+
+.mapw:hover .surface,
+.mapw.wide .surface {
+	height: 300px;
+}
+
+.mapw .foot {
+	padding: 10px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	border: 1px solid var(--gborder);
+	border-top: 0;
+	border-radius: 0 0 12px 12px;
+}
+
+.pin {
+	width: 11px;
+	height: 11px;
+	border-radius: 50%;
+	background: var(--fg);
+	box-shadow:
+		0 0 0 2px rgb(0 0 0 / 0.6),
+		0 0 0 4px rgb(255 255 255 / 0.25);
+}
+
+.pin.truth {
+	background: var(--good);
+}
+
+/* --- overlays ------------------------------------------------------------ */
+
+.scrim {
+	position: absolute;
+	inset: 0;
+	background: rgb(0 0 0 / 0.55);
+	display: grid;
+	place-items: center;
+	padding: 16px;
+	overflow: auto;
+}
+
+.card {
+	overflow: hidden;
+	max-width: 100%;
+}
+
+.card h1 {
+	font-family: var(--font-mono);
+	font-size: 30px;
+	font-weight: 500;
+	letter-spacing: -0.03em;
+	margin: 0;
+}
+
+.card h2 {
+	font-size: 15px;
+	font-weight: 600;
+	margin: 0;
+}
+
+.lede {
+	font-size: 13.5px;
+	color: var(--mut);
+	margin: 0;
+	max-width: 340px;
+	line-height: 1.5;
+}
+
+.hd {
+	font-size: 11px;
+	font-family: var(--font-mono);
+	color: var(--dim);
+}
+
+.note {
+	font-size: 11.5px;
+	color: var(--dim);
+	font-family: var(--font-mono);
+	line-height: 1.5;
+}
+
+.panel {
+	padding: 22px;
+	display: flex;
+	flex-direction: column;
+	gap: 18px;
+}
+
+.hdr {
+	display: flex;
+	align-items: center;
+	gap: 12px;
+}
+
+.hdr .back {
+	margin-left: auto;
+}
+
+.field {
+	display: flex;
+	flex-direction: column;
+	gap: 7px;
+}
+
+.seg {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.seg button {
+	height: 32px;
+	padding: 0 12px;
+	border-radius: 8px;
+	border: 1px solid var(--gborder);
+	background: transparent;
+	color: var(--mut);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 150ms;
+}
+
+.seg button:hover {
+	background: rgb(255 255 255 / 0.07);
+	color: var(--fg);
+}
+
+.seg button[aria-pressed='true'] {
+	background: var(--light);
+	border-color: transparent;
+	color: var(--on-light);
+}
+
+.acts {
+	display: flex;
+	gap: 8px;
+	padding-top: 2px;
+}
+
+/* --- home ---------------------------------------------------------------- */
+
+.home {
+	width: 790px;
+	display: grid;
+	grid-template-columns: 290px 1fr;
+}
+
+.aside {
+	padding: 18px 12px 18px 18px;
+	border-right: 1px solid var(--gborder);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	background: rgb(255 255 255 / 0.03);
+}
+
+.aside .hd {
+	padding: 0 0 10px 10px;
+}
+
+.mode {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 10px;
+	border-radius: 8px;
+	border: 0;
+	background: transparent;
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+	transition: background 150ms;
+}
+
+.mode:hover {
+	background: rgb(255 255 255 / 0.09);
+}
+
+.mode[disabled] {
+	cursor: default;
+	opacity: 0.45;
+}
+
+.mode[disabled]:hover {
+	background: transparent;
+}
+
+.mode .t {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.mode .d {
+	font-size: 11.5px;
+	color: var(--mut);
+	font-family: var(--font-mono);
+}
+
+.main {
+	padding: 32px 28px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	justify-content: center;
+	gap: 16px;
+	text-align: center;
+}
+
+.start {
+	display: inline-flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 2px;
+	padding: 13px 30px;
+	border-radius: 12px;
+	border: 0;
+	cursor: pointer;
+	background: var(--light);
+	color: var(--on-light);
+	transition: all 150ms;
+}
+
+.start:hover {
+	background: var(--light-hover);
+}
+
+.start:active {
+	transform: translateY(1px);
+}
+
+.start[disabled] {
+	opacity: 0.5;
+	pointer-events: none;
+}
+
+.start .t {
+	font-size: 16px;
+	font-weight: 500;
+}
+
+.start .d {
+	font-size: 11.5px;
+	font-family: var(--font-mono);
+	color: oklch(0.45 0 0);
+}
+
+/* --- results ------------------------------------------------------------- */
+
+.result {
+	width: 860px;
+	display: grid;
+	grid-template-columns: 1fr 290px;
+}
+
+.result .surface {
+	height: 360px;
+	background: oklch(0.185 0 0);
+	overflow: hidden;
+}
+
+.rpanel {
+	padding: 18px;
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+	border-left: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.03);
+}
+
+.score {
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
+}
+
+.score b {
+	font-family: var(--font-mono);
+	font-size: 28px;
+	font-weight: 500;
+	letter-spacing: -0.02em;
+}
+
+.rounds {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+}
+
+.rk {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 6px 8px;
+	border-radius: 8px;
+	font-size: 12.5px;
+}
+
+.rk .n {
+	width: 14px;
+	color: var(--dim);
+	font-size: 11px;
+	font-family: var(--font-mono);
+}
+
+.rk .gain {
+	margin-left: auto;
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+.final {
+	width: 420px;
+}
+
+/* --- small screens ------------------------------------------------------- */
+
+@media (max-width: 860px) {
+	.home,
+	.result {
+		width: 100%;
+		grid-template-columns: 1fr;
+	}
+
+	.aside {
+		border-right: 0;
+		border-bottom: 1px solid var(--gborder);
+	}
+
+	.rpanel {
+		border-left: 0;
+		border-top: 1px solid var(--gborder);
+	}
+
+	.mapw {
+		width: calc(100% - 32px);
+	}
+
+	.mapw:hover,
+	.mapw.wide {
+		width: calc(100% - 32px);
+	}
+}
