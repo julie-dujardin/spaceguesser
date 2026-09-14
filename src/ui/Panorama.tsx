@@ -15,9 +15,11 @@ interface Props {
 	onHeading: (deg: number) => void;
 	/** The reader has turned back to the panorama. */
 	onEngage: () => void;
+	/** Held back behind a card, rather than being played on. */
+	dimmed?: boolean;
 }
 
-export function Panorama({ body, at, movement, onPlace, onHeading, onEngage }: Props) {
+export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dimmed }: Props) {
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -68,6 +70,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage }: P
 	return (
 		<div className="stage" onPointerDown={onEngage}>
 			<div ref={container} style={{ position: 'absolute', inset: 0 }} />
+			{dimmed && <div className="stage-dim" />}
 			<div className="stage-shade" />
 			{!view && !error && <div className="stage-note">dropping in…</div>}
 			{error && <div className="stage-note">{error}</div>}

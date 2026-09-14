@@ -141,6 +141,7 @@ export default function App() {
 					onPlace={(placed) => dispatch({ kind: 'stand', entry: placed })}
 					onHeading={setHeading}
 					onEngage={() => setMapOpen(false)}
+					dimmed={run.phase === 'home' || run.phase === 'setup'}
 				/>
 			)}
 
