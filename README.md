@@ -49,15 +49,29 @@ removable. The guess map sits clear of the panorama's rather than over it.
 
 ## The SDK build
 
-`spacemap` is not published, so it is vendored as a tarball in `vendor/` and
-installed from there — the app builds with no registry and no checkout of the
-map beside it. To rebuild it from a checkout:
+`spacemap` is not published, so the built package is vendored in
+`vendor/spacemap` and installed from there — the app builds with no registry and
+no checkout of the map beside it. It is vendored unpacked rather than as a
+tarball: pnpm locks a local tarball by hash alone, and any install with a cold
+`node_modules` then goes looking for the package in the registry. To rebuild it
+from a checkout:
 
 ```sh
 SDK_SRC=../space-map/frontend pnpm sync-sdk
 ```
 
-The tarball in `vendor/` is currently built from the `sdk-panorama-list` branch,
+What is in `vendor/` is currently built from the `sdk-panorama-list` branch,
 which adds what this app needed: `fetchPanoramas` and a `groundDistanceM` that
 takes any two places rather than two panoramas. It also adds
 `attributionPosition`, which this app no longer uses.
+
+## Deploying
+
+Pushes to `main` run the checks on GitHub, and a green run deploys to Cloudflare
+Workers as static assets — no Worker code, just `dist` behind an SPA fallback.
+The credentials live in the `cf-pages-deploy` environment; the token needs
+account-level Workers Scripts: Edit.
+
+```sh
+pnpm run deploy   # build and deploy by hand; `pnpm deploy` is pnpm's own command
+```
