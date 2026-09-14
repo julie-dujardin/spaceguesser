@@ -32,8 +32,10 @@ jobs:
           path: dist
 
   deploy:
+    # `needs` already holds this back until the checks pass; naming the branch
+    # keeps a second push trigger, added later, from shipping by accident.
     needs: check
-    if: github.event_name == 'push'
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     # Holds the Cloudflare credentials.
     environment: cf-pages-deploy
