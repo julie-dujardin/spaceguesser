@@ -7,13 +7,25 @@ import { pin, useFlatMap } from './useFlatMap';
 interface Props {
 	body: string;
 	guess: LonLat | null;
+	/** Taking up the corner, rather than tucked out of the panorama's way. */
+	open: boolean;
 	headingDeg: number;
+	onOpen: () => void;
 	onPick: (at: LonLat) => void;
 	onReady: (radiusKm: number | null) => void;
 	onGuess: () => void;
 }
 
-export function GuessMap({ body, guess, headingDeg, onPick, onReady, onGuess }: Props) {
+export function GuessMap({
+	body,
+	guess,
+	open,
+	headingDeg,
+	onOpen,
+	onPick,
+	onReady,
+	onGuess
+}: Props) {
 	const [container, map] = useFlatMap({
 		body,
 		projection: 'equirectangular',
@@ -43,7 +55,12 @@ export function GuessMap({ body, guess, headingDeg, onPick, onReady, onGuess }: 
 	}, [map, guess]);
 
 	return (
-		<div className={`mapw${guess ? ' wide' : ''}`}>
+		<div
+			className={`mapw${open ? ' wide' : ''}`}
+			onPointerEnter={onOpen}
+			onPointerDown={onOpen}
+			onFocusCapture={onOpen}
+		>
 			<div className="surface" ref={container} />
 			<div className="foot">
 				<span className="mono mut" style={{ fontSize: '11.5px' }}>

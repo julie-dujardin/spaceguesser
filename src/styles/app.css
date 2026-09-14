@@ -260,14 +260,14 @@ button {
 .mapw {
 	position: absolute;
 	right: 16px;
-	bottom: 16px;
+	/* Clear of the panorama's credit line, which keeps the corner it is drawn in. */
+	bottom: 46px;
 	width: 380px;
 	transition: width 200ms;
 }
 
-.mapw:hover,
 .mapw.wide {
-	width: 520px;
+	width: 640px;
 }
 
 .mapw .surface {
@@ -280,9 +280,8 @@ button {
 	transition: height 200ms;
 }
 
-.mapw:hover .surface,
 .mapw.wide .surface {
-	height: 300px;
+	height: 400px;
 }
 
 .mapw .foot {
@@ -316,7 +315,9 @@ button {
 .scrim {
 	position: absolute;
 	inset: 0;
-	background: rgb(0 0 0 / 0.55);
+	/* The panorama behind is the background, so the scrim only has to lift the
+	   card off it. */
+	background: rgb(0 0 0 / 0.45);
 	display: grid;
 	place-items: center;
 	padding: 16px;
@@ -425,70 +426,17 @@ button {
 /* --- home ---------------------------------------------------------------- */
 
 .home {
-	width: 790px;
-	display: grid;
-	grid-template-columns: 290px 1fr;
-}
-
-.aside {
-	padding: 18px 12px 18px 18px;
-	border-right: 1px solid var(--gborder);
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	background: rgb(255 255 255 / 0.03);
-}
-
-.aside .hd {
-	padding: 0 0 10px 10px;
-}
-
-.mode {
-	display: flex;
-	flex-direction: column;
-	gap: 2px;
-	padding: 10px;
-	border-radius: 8px;
-	border: 0;
-	background: transparent;
-	color: var(--fg);
-	text-align: left;
-	cursor: pointer;
-	transition: background 150ms;
-}
-
-.mode:hover {
-	background: rgb(255 255 255 / 0.09);
-}
-
-.mode[disabled] {
-	cursor: default;
-	opacity: 0.45;
-}
-
-.mode[disabled]:hover {
-	background: transparent;
-}
-
-.mode .t {
-	font-size: 13px;
-	font-weight: 500;
-}
-
-.mode .d {
-	font-size: 11.5px;
-	color: var(--mut);
-	font-family: var(--font-mono);
-}
-
-.main {
+	width: 420px;
 	padding: 32px 28px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
-	justify-content: center;
 	gap: 16px;
 	text-align: center;
+}
+
+.home .btn.ghost {
+	min-width: 160px;
 }
 
 .start {
@@ -600,15 +548,9 @@ button {
 /* --- small screens ------------------------------------------------------- */
 
 @media (max-width: 860px) {
-	.home,
 	.result {
 		width: 100%;
 		grid-template-columns: 1fr;
-	}
-
-	.aside {
-		border-right: 0;
-		border-bottom: 1px solid var(--gborder);
 	}
 
 	.rpanel {
@@ -620,7 +562,6 @@ button {
 		width: calc(100% - 32px);
 	}
 
-	.mapw:hover,
 	.mapw.wide {
 		width: calc(100% - 32px);
 	}

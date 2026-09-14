@@ -13,9 +13,11 @@ interface Props {
 	 *  started: the guess is scored against this. */
 	onPlace: (entry: PanoramaEntry) => void;
 	onHeading: (deg: number) => void;
+	/** The reader has turned back to the panorama. */
+	onEngage: () => void;
 }
 
-export function Panorama({ body, at, movement, onPlace, onHeading }: Props) {
+export function Panorama({ body, at, movement, onPlace, onHeading, onEngage }: Props) {
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -36,8 +38,6 @@ export function Panorama({ body, at, movement, onPlace, onHeading }: Props) {
 			container: element,
 			body,
 			at: opening.current,
-			// The credit line would otherwise sit under the guess map.
-			attributionPosition: 'bottom-left',
 			interactive: movement !== 'frozen',
 			arrows: movement === 'free',
 			events: {
@@ -66,7 +66,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading }: Props) {
 	}, [view, at]);
 
 	return (
-		<div className="stage">
+		<div className="stage" onPointerDown={onEngage}>
 			<div ref={container} style={{ position: 'absolute', inset: 0 }} />
 			<div className="stage-shade" />
 			{!view && !error && <div className="stage-note">dropping in…</div>}

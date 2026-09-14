@@ -30,15 +30,16 @@ its own.
 ## What the SDK does
 
 - `fetchPanoramas` reads the body's panoramas, and a round is drawn from them.
-- `createPanorama` stands the player in one. The movement setting is the view's
-  own: free lets the arrows walk the traverse, look only takes the arrows away,
-  no pan or zoom hands back the drag and the wheel too.
+- `createPanorama` stands the player in one — behind the home screen too, on
+  the panorama the run is about to open with. The movement setting is the
+  view's own: free lets the arrows walk the traverse, look only takes the
+  arrows away, no pan or zoom hands back the drag and the wheel too.
 - `createFlatMap` is both maps. The guess map wears the graticule and no names;
   the result map turns the names back on, which is where a round's payoff is.
 - `groundDistanceM` scores it.
 
-The credit lines the maps draw are the SDK's and are not removable; the
-panorama's is moved to the other corner so the guess map can have that one.
+The credit lines are the SDK's, in the corner it draws them, and are not
+removable. The guess map sits clear of the panorama's rather than over it.
 
 ## The SDK build
 
@@ -51,5 +52,6 @@ SDK_SRC=../space-map/frontend pnpm sync-sdk
 ```
 
 The tarball in `vendor/` is currently built from the `sdk-panorama-list` branch,
-which adds what this app needed: `fetchPanoramas`, a `groundDistanceM` that
-takes any two places rather than two panoramas, and `attributionPosition`.
+which adds what this app needed: `fetchPanoramas` and a `groundDistanceM` that
+takes any two places rather than two panoramas. It also adds
+`attributionPosition`, which this app no longer uses.

@@ -25,7 +25,13 @@ export default function App() {
 	const [run, dispatch] = useReducer(reduce, INITIAL);
 	const [pool, setPool] = useState<PanoramaEntry[] | null>(null);
 	const [poolError, setPoolError] = useState<string | null>(null);
+	/** The panorama behind the home screen, which is also the run's first
+	 *  round: what the reader is looking at is what they are about to guess. */
+	const [opener, setOpener] = useState<PanoramaEntry | null>(null);
 	const [guess, setGuess] = useState<LonLat | null>(null);
+	/** The guess map takes the corner while the reader is working on it, and
+	 *  gives it back when they turn to the panorama again. */
+	const [mapOpen, setMapOpen] = useState(false);
 	const [heading, setHeading] = useState(0);
 	const [left, setLeft] = useState<number | null>(null);
 	const radiusKm = useRef<number | null>(null);
@@ -38,13 +44,25 @@ export default function App() {
 			.catch((cause: unknown) => setPoolError(String(cause)));
 	}, []);
 
+	// A fresh opener whenever the home screen comes back, so the next run does
+	// not start where the last one did.
+	useEffect(() => {
+		if (run.phase !== 'home' || !pool?.length) return;
+		setOpener(drawRounds(pool, 1)[0] ?? null);
+	}, [run.phase, pool]);
+
 	const start = useCallback(
 		(settings: RunSettings) => {
-			if (!pool) return;
+			if (!pool || !opener) return;
 			setGuess(null);
-			dispatch({ kind: 'start', settings, drawn: drawRounds(pool, settings.rounds) });
+			setMapOpen(false);
+			const rest = drawRounds(
+				pool.filter((entry) => entry.id !== opener.id),
+				settings.rounds - 1
+			);
+			dispatch({ kind: 'start', settings, drawn: [opener, ...rest] });
 		},
-		[pool]
+		[pool, opener]
 	);
 
 	const entry = run.drawn[run.round];
@@ -92,22 +110,26 @@ export default function App() {
 
 	const next = useCallback(() => {
 		setGuess(null);
+		setMapOpen(false);
 		dispatch({ kind: 'next' });
 	}, []);
 
 	const last = run.played[run.played.length - 1];
-	const showPanorama = run.phase === 'playing' || run.phase === 'result';
-	const at = useMemo(() => entry?.id, [entry]);
+	// The home and setup screens sit over the opener; the final tally does not,
+	// so the run ends on its own card rather than on a place already guessed.
+	const standing = run.phase === 'final' ? null : (entry ?? opener);
+	const at = useMemo(() => standing?.id, [standing]);
 
 	return (
 		<>
-			{showPanorama && at && (
+			{at && (
 				<Panorama
 					body={BODY}
 					at={at}
 					movement={run.settings.movement}
 					onPlace={(placed) => dispatch({ kind: 'stand', entry: placed })}
 					onHeading={setHeading}
+					onEngage={() => setMapOpen(false)}
 				/>
 			)}
 
@@ -122,7 +144,9 @@ export default function App() {
 					<GuessMap
 						body={BODY}
 						guess={guess}
+						open={mapOpen}
 						headingDeg={heading}
+						onOpen={() => setMapOpen(true)}
 						onPick={setGuess}
 						onReady={(km) => (radiusKm.current = km)}
 						onGuess={() => commit(guess, false)}

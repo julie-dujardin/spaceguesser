@@ -63,10 +63,6 @@ export function CustomSetup({ onStart, onBack, ready }: Props) {
 							label: MOVEMENT_LABELS[value]
 						}))}
 					/>
-					<span className="note">
-						free walks the rover's traverse; look only stands still; no pan or zoom locks the view
-						where it opened
-					</span>
 				</div>
 				<div className="field">
 					<span className="hd">timer</span>
@@ -80,7 +76,6 @@ export function CustomSetup({ onStart, onBack, ready }: Props) {
 							{ value: 120, label: '2 min' }
 						]}
 					/>
-					<span className="note">per round</span>
 				</div>
 				<div className="acts">
 					<button
