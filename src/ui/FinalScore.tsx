@@ -35,7 +35,7 @@ export function FinalScore({ body, played, onAgain, onHome }: Props) {
 							href={panoramaUrl(body, round.truth)}
 							target="_blank"
 							rel="noopener noreferrer"
-							title="stand here on spacemap"
+							title="show in spacemap"
 						>
 							<span className="n">{index + 1}</span>
 							<span className="mono mut" style={{ fontSize: '11.5px' }}>

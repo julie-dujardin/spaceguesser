@@ -40,8 +40,8 @@ its own.
   reader's to drag and zoom. The end of a run draws every round on one.
 - `groundDistanceM` scores it.
 
-Both recaps link each place back to spacemap.co, standing in the panorama the
-round was taken from. The SDK hands out entries but not the site's URLs, so
+Both recaps link each place back to spacemap.co, into the panorama the round
+was taken from. The SDK hands out entries but not the site's URLs, so
 `src/game/links.ts` spells the route out — `panoramaAt` gives the key it takes.
 
 The credit lines are the SDK's, in the corner it draws them, and are not

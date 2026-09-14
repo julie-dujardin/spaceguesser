@@ -68,7 +68,7 @@ export function RoundResult({
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						stand here on spacemap
+						show in spacemap
 					</a>
 				</div>
 				<div className="score">
