@@ -35,7 +35,8 @@ its own.
   view's own: free lets the arrows walk the traverse, look only takes the
   arrows away, no pan or zoom hands back the drag and the wheel too.
 - `createFlatMap` is both maps. The guess map wears the graticule and no names;
-  the result map turns the names back on, which is where a round's payoff is.
+  the recap maps take the whole window and turn the names back on, which is
+  where a round's payoff is. The end of a run draws every round on one.
 - `groundDistanceM` scores it.
 
 The credit lines are the SDK's, in the corner it draws them, and are not

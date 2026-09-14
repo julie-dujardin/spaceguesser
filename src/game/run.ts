@@ -9,6 +9,8 @@ export interface Played {
 	guess: LonLat | null;
 	distanceKm: number;
 	points: number;
+	/** Seconds still on the clock when the guess went in; null on an untimed run. */
+	secondsLeft: number | null;
 	timedOut: boolean;
 }
 

@@ -33,9 +33,11 @@ export function useFlatMap(options: Options) {
 	return [container, map] as const;
 }
 
-/** A dot to pin on the map. */
-export function pin(className: string): HTMLElement {
+/** A dot to pin on the map, carrying its round number when there is more than
+ *  one run of them on screen. */
+export function pin(className: string, label?: string): HTMLElement {
 	const element = document.createElement('div');
-	element.className = className;
+	element.className = label ? `${className} numbered` : className;
+	if (label) element.textContent = label;
 	return element;
 }

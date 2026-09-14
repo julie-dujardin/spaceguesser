@@ -197,6 +197,7 @@ button {
 .hud {
 	position: absolute;
 	inset: 0;
+	z-index: 3;
 	pointer-events: none;
 }
 
@@ -310,11 +311,23 @@ button {
 	background: var(--good);
 }
 
+.pin.numbered {
+	width: 18px;
+	height: 18px;
+	display: grid;
+	place-items: center;
+	font-family: var(--font-mono);
+	font-size: 10px;
+	font-weight: 600;
+	color: var(--on-light);
+}
+
 /* --- overlays ------------------------------------------------------------ */
 
 .scrim {
 	position: absolute;
 	inset: 0;
+	z-index: 4;
 	/* The panorama behind is the background, so the scrim only has to lift the
 	   card off it. */
 	background: rgb(0 0 0 / 0.45);
@@ -479,25 +492,34 @@ button {
 
 /* --- results ------------------------------------------------------------- */
 
-.result {
-	width: 860px;
-	display: grid;
-	grid-template-columns: 1fr 290px;
+/* Both recaps are the map: it takes the window, and the numbers float on it. */
+.board {
+	position: absolute;
+	inset: 0;
+	z-index: 4;
+	background: oklch(0.185 0 0);
 }
 
-.result .surface {
-	height: 360px;
-	background: oklch(0.185 0 0);
+.board .surface {
+	position: absolute;
+	inset: 0;
 	overflow: hidden;
 }
 
+/* Docked left, so the credit line the map draws in its bottom-right corner
+   stays in the clear. */
 .rpanel {
+	position: absolute;
+	left: 16px;
+	top: 16px;
+	width: min(320px, calc(100% - 32px));
+	max-height: calc(100% - 32px);
 	padding: 18px;
+	border-radius: 12px;
 	display: flex;
 	flex-direction: column;
 	gap: 14px;
-	border-left: 1px solid var(--gborder);
-	background: rgb(255 255 255 / 0.03);
+	min-height: 0;
 }
 
 .score {
@@ -517,6 +539,8 @@ button {
 	display: flex;
 	flex-direction: column;
 	gap: 2px;
+	overflow: auto;
+	min-height: 0;
 }
 
 .rk {
@@ -541,23 +565,9 @@ button {
 	font-variant-numeric: tabular-nums;
 }
 
-.final {
-	width: 420px;
-}
-
 /* --- small screens ------------------------------------------------------- */
 
 @media (max-width: 860px) {
-	.result {
-		width: 100%;
-		grid-template-columns: 1fr;
-	}
-
-	.rpanel {
-		border-left: 0;
-		border-top: 1px solid var(--gborder);
-	}
-
 	.mapw {
 		width: calc(100% - 32px);
 	}

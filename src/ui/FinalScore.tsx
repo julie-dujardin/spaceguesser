@@ -1,19 +1,22 @@
-import { MAX_POINTS, formatDistance } from '../game/rules';
+import { MAX_POINTS, formatClock, formatDistance } from '../game/rules';
 import type { Played } from '../game/run';
+import { ResultMap } from './ResultMap';
 
 interface Props {
+	body: string;
 	played: Played[];
 	onAgain: () => void;
 	onHome: () => void;
 }
 
-export function FinalScore({ played, onAgain, onHome }: Props) {
+export function FinalScore({ body, played, onAgain, onHome }: Props) {
 	const total = played.reduce((sum, round) => sum + round.points, 0);
 	const best = played.length * MAX_POINTS;
 
 	return (
-		<div className="scrim">
-			<div className="card glass panel final">
+		<div className="board">
+			<ResultMap body={body} rounds={played} />
+			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">run complete</span>
 					<div className="score">
@@ -28,8 +31,13 @@ export function FinalScore({ played, onAgain, onHome }: Props) {
 						<div className="rk" key={round.truth.id}>
 							<span className="n">{index + 1}</span>
 							<span className="mono mut" style={{ fontSize: '11.5px' }}>
-								{formatDistance(round.distanceKm)}
+								{round.guess ? formatDistance(round.distanceKm) : 'no guess'}
 							</span>
+							{round.secondsLeft !== null && !round.timedOut && (
+								<span className="mono dim" style={{ fontSize: '11.5px' }}>
+									{formatClock(round.secondsLeft)} left
+								</span>
+							)}
 							<span className="gain">{round.points.toLocaleString('en')}</span>
 						</div>
 					))}

@@ -1,5 +1,5 @@
 import type { PanoramaEntry, LonLat } from 'spacemap';
-import { BODY_NAMES, formatDistance } from '../game/rules';
+import { BODY_NAMES, formatClock, formatDistance } from '../game/rules';
 import { ResultMap } from './ResultMap';
 
 interface Props {
@@ -9,6 +9,8 @@ interface Props {
 	guess: LonLat | null;
 	distanceKm: number;
 	points: number;
+	/** Seconds still on the clock; null on an untimed run. */
+	secondsLeft: number | null;
 	round: number;
 	rounds: number;
 	timedOut: boolean;
@@ -36,44 +38,44 @@ export function RoundResult({
 	guess,
 	distanceKm,
 	points,
+	secondsLeft,
 	round,
 	rounds,
 	timedOut,
 	onNext
 }: Props) {
 	return (
-		<div className="scrim">
-			<div className="card glass result">
-				<ResultMap body={body} guess={guess} truth={truth} />
-				<div className="rpanel">
-					<div className="col" style={{ gap: 3 }}>
-						<span className="hd">actual location</span>
-						<span style={{ fontSize: '13.5px' }}>{BODY_NAMES[body] ?? body}</span>
-						<span className="mono mut" style={{ fontSize: '11.5px' }}>
-							{describe(truth)}
-						</span>
-						<span className="mono dim" style={{ fontSize: '11.5px' }}>
-							{coordinates(truth)}
-						</span>
-					</div>
-					<div className="score">
-						<b>+{points.toLocaleString('en')}</b>
-						<span className="mono mut" style={{ fontSize: 12 }}>
-							{guess ? `${formatDistance(distanceKm)} off` : 'no guess'}
-						</span>
-					</div>
-					{timedOut && (
-						<span className="note">
-							{guess ? 'time ran out — the last point you picked stood' : 'time ran out'}
-						</span>
-					)}
-					<span className="note">
-						round {round} of {rounds}
+		<div className="board">
+			<ResultMap body={body} rounds={[{ guess, truth }]} />
+			<div className="rpanel glass">
+				<div className="col" style={{ gap: 3 }}>
+					<span className="hd">actual location</span>
+					<span style={{ fontSize: '13.5px' }}>{BODY_NAMES[body] ?? body}</span>
+					<span className="mono mut" style={{ fontSize: '11.5px' }}>
+						{describe(truth)}
 					</span>
-					<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
-						{round < rounds ? 'Next round' : 'See total'}
-					</button>
+					<span className="mono dim" style={{ fontSize: '11.5px' }}>
+						{coordinates(truth)}
+					</span>
 				</div>
+				<div className="score">
+					<b>+{points.toLocaleString('en')}</b>
+					<span className="mono mut" style={{ fontSize: 12 }}>
+						{guess ? `${formatDistance(distanceKm)} off` : 'no guess'}
+						{!timedOut && secondsLeft !== null && ` · ${formatClock(secondsLeft)} left`}
+					</span>
+				</div>
+				{timedOut && (
+					<span className="note">
+						{guess ? 'time ran out — the last point you picked stood' : 'time ran out'}
+					</span>
+				)}
+				<span className="note">
+					round {round} of {rounds}
+				</span>
+				<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
+					{round < rounds ? 'Next round' : 'See total'}
+				</button>
 			</div>
 		</div>
 	);

@@ -1,32 +1,48 @@
-/** Where the guess landed against where the panorama was taken. */
+/** Where the guesses landed against where the panoramas were taken. */
 
 import { useEffect } from 'react';
 import type { LonLat } from 'spacemap';
 import { pin, useFlatMap } from './useFlatMap';
 
-interface Props {
-	body: string;
+export interface Placement {
 	/** Null when the round ran out with nothing picked. */
 	guess: LonLat | null;
 	truth: LonLat;
 }
 
-/** Zoom that fits both points with room around them; 1 is the whole body. */
-function framing(guess: LonLat | null, truth: LonLat): { lon: number; lat: number; zoom: number } {
-	if (!guess) return { lon: truth.lon, lat: truth.lat, zoom: 8 };
-	const span = (a: number, b: number, floor: number) => Math.max(Math.abs(a - b) * 2.5, floor);
-	const zoom = Math.min(360 / span(guess.lon, truth.lon, 4), 180 / span(guess.lat, truth.lat, 2));
-	// Mars's global mosaic runs out of detail well before the map's own zoom
-	// ceiling, so a near-perfect guess is framed at a readable scale instead of
-	// on top of itself.
-	return {
-		lon: (guess.lon + truth.lon) / 2,
-		lat: (guess.lat + truth.lat) / 2,
-		zoom: Math.max(1, Math.min(zoom, 12))
-	};
+interface Props {
+	body: string;
+	rounds: Placement[];
 }
 
-export function ResultMap({ body, guess, truth }: Props) {
+const PADDING = 2.5;
+/** Mars's global mosaic runs out of detail well before the map's own zoom
+ *  ceiling, so a near-perfect guess is framed at a readable scale rather than
+ *  on mush. Across a full window this still sets a thirty-kilometre miss
+ *  visibly apart. */
+const MAX_ZOOM = 8;
+/** A round with nothing to compare the place against: near enough to read the
+ *  ground, far enough to say where on the body it is. */
+const LONE_ZOOM = 4;
+
+/** A view holding every point, with room around them; zoom 1 is the whole body. */
+function framing(rounds: Placement[]): { lon: number; lat: number; zoom: number } {
+	const points = rounds.flatMap(({ guess, truth }) => (guess ? [guess, truth] : [truth]));
+	if (!points.length) return { lon: 0, lat: 0, zoom: 1 };
+	const lons = points.map((at) => at.lon);
+	const lats = points.map((at) => at.lat);
+	const [west, east] = [Math.min(...lons), Math.max(...lons)];
+	const [south, north] = [Math.min(...lats), Math.max(...lats)];
+	const middle = { lon: (west + east) / 2, lat: (south + north) / 2 };
+	// One place, with nothing to hold it against.
+	if (east - west < 0.01 && north - south < 0.01) return { ...middle, zoom: LONE_ZOOM };
+	const span = (low: number, high: number, floor: number) =>
+		Math.max((high - low) * PADDING, floor);
+	const zoom = Math.min(360 / span(west, east, 4), 180 / span(south, north, 2));
+	return { ...middle, zoom: Math.max(1, Math.min(zoom, MAX_ZOOM)) };
+}
+
+export function ResultMap({ body, rounds }: Props) {
 	const [container, map] = useFlatMap({
 		body,
 		projection: 'equirectangular',
@@ -37,25 +53,33 @@ export function ResultMap({ body, guess, truth }: Props) {
 
 	useEffect(() => {
 		if (!map) return;
-		const { lon, lat, zoom } = framing(guess, truth);
+		const { lon, lat, zoom } = framing(rounds);
 		map.setView({ centerLon: lon, centerLat: lat, zoom });
-		const actual = map.addMarker({ at: truth, element: pin('pin truth'), align: [0.5, 0.5] });
-		if (!guess) return () => actual.remove();
-		const line = map.addPolyline({
-			points: [guess, truth],
-			interpolate: 'geodesic',
-			color: '#ffffff',
-			opacity: 0.45,
-			widthPx: 1,
-			dash: '4 4'
+		// A run's worth of dots needs to say which round each one was.
+		const numbered = rounds.length > 1;
+		const drawn = rounds.flatMap(({ guess, truth }, index) => {
+			const label = numbered ? String(index + 1) : undefined;
+			const actual = map.addMarker({
+				at: truth,
+				element: pin('pin truth', label),
+				align: [0.5, 0.5]
+			});
+			if (!guess) return [actual];
+			return [
+				map.addPolyline({
+					points: [guess, truth],
+					interpolate: 'geodesic',
+					color: '#ffffff',
+					opacity: 0.45,
+					widthPx: 1,
+					dash: '4 4'
+				}),
+				map.addMarker({ at: guess, element: pin('pin', label), align: [0.5, 0.5] }),
+				actual
+			];
 		});
-		const mine = map.addMarker({ at: guess, element: pin('pin'), align: [0.5, 0.5] });
-		return () => {
-			line.remove();
-			mine.remove();
-			actual.remove();
-		};
-	}, [map, guess, truth]);
+		return () => drawn.forEach((item) => item.remove());
+	}, [map, rounds]);
 
 	return <div className="surface" ref={container} />;
 }

@@ -35,6 +35,9 @@ export default function App() {
 	const [heading, setHeading] = useState(0);
 	const [left, setLeft] = useState<number | null>(null);
 	const radiusKm = useRef<number | null>(null);
+	// Read when a guess lands, so committing does not depend on the tick.
+	const remaining = useRef<number | null>(null);
+	remaining.current = left;
 
 	// The body's panoramas, once: a round is drawn from them rather than from
 	// whichever one a view happens to open on.
@@ -88,11 +91,12 @@ export default function App() {
 					guess: at,
 					distanceKm: km,
 					points: at ? scoreFor(km, scale) : 0,
+					secondsLeft: run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null,
 					timedOut
 				}
 			});
 		},
-		[truth, pool]
+		[truth, pool, run.settings.timer]
 	);
 
 	// The round's clock. It reads the guess through a ref so that picking a
@@ -184,6 +188,7 @@ export default function App() {
 					guess={last.guess}
 					distanceKm={last.distanceKm}
 					points={last.points}
+					secondsLeft={last.secondsLeft}
 					round={run.round + 1}
 					rounds={run.settings.rounds}
 					timedOut={last.timedOut}
@@ -193,6 +198,7 @@ export default function App() {
 
 			{run.phase === 'final' && (
 				<FinalScore
+					body={BODY}
 					played={run.played}
 					onAgain={() => start(run.settings)}
 					onHome={() => dispatch({ kind: 'home' })}
