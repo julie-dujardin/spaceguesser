@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import type { PanoramaEntry, LonLat } from 'spacemap';
+import { panoramaUrl } from '../game/links';
 import { BODY_NAMES, formatClock, formatDistance } from '../game/rules';
 import { ResultMap } from './ResultMap';
 
@@ -61,6 +62,14 @@ export function RoundResult({
 					<span className="mono dim" style={{ fontSize: '11.5px' }}>
 						{coordinates(truth)}
 					</span>
+					<a
+						className="out mono"
+						href={panoramaUrl(body, truth)}
+						target="_blank"
+						rel="noopener noreferrer"
+					>
+						stand here on spacemap
+					</a>
 				</div>
 				<div className="score">
 					<b>+{points.toLocaleString('en')}</b>

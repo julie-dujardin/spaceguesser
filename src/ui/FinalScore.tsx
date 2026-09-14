@@ -1,3 +1,4 @@
+import { panoramaUrl } from '../game/links';
 import { MAX_POINTS, formatClock, formatDistance } from '../game/rules';
 import type { Played } from '../game/run';
 import { ResultMap } from './ResultMap';
@@ -28,7 +29,14 @@ export function FinalScore({ body, played, onAgain, onHome }: Props) {
 				</div>
 				<div className="rounds">
 					{played.map((round, index) => (
-						<div className="rk" key={round.truth.id}>
+						<a
+							className="rk"
+							key={round.truth.id}
+							href={panoramaUrl(body, round.truth)}
+							target="_blank"
+							rel="noopener noreferrer"
+							title="stand here on spacemap"
+						>
 							<span className="n">{index + 1}</span>
 							<span className="mono mut" style={{ fontSize: '11.5px' }}>
 								{round.guess ? formatDistance(round.distanceKm) : 'no guess'}
@@ -39,7 +47,10 @@ export function FinalScore({ body, played, onAgain, onHome }: Props) {
 								</span>
 							)}
 							<span className="gain">{round.points.toLocaleString('en')}</span>
-						</div>
+							<span className="go" aria-hidden="true">
+								↗
+							</span>
+						</a>
 					))}
 				</div>
 				<div className="acts">
