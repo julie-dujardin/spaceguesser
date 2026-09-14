@@ -36,7 +36,8 @@ its own.
   arrows away, no pan or zoom hands back the drag and the wheel too.
 - `createFlatMap` is both maps. The guess map wears the graticule and no names;
   the recap maps take the whole window and turn the names back on, which is
-  where a round's payoff is. The end of a run draws every round on one.
+  where a round's payoff is. They open framed on the round and are then the
+  reader's to drag and zoom. The end of a run draws every round on one.
 - `groundDistanceM` scores it.
 
 The credit lines are the SDK's, in the corner it draws them, and are not

@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import type { PanoramaEntry, LonLat } from 'spacemap';
 import { BODY_NAMES, formatClock, formatDistance } from '../game/rules';
 import { ResultMap } from './ResultMap';
@@ -44,9 +45,12 @@ export function RoundResult({
 	timedOut,
 	onNext
 }: Props) {
+	// Stable, so the map is framed once rather than on every render.
+	const placements = useMemo(() => [{ guess, truth }], [guess, truth]);
+
 	return (
 		<div className="board">
-			<ResultMap body={body} rounds={[{ guess, truth }]} />
+			<ResultMap body={body} rounds={placements} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">actual location</span>

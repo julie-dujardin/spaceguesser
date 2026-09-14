@@ -1,6 +1,6 @@
 /** Where the guesses landed against where the panoramas were taken. */
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import type { LonLat } from 'spacemap';
 import { pin, useFlatMap } from './useFlatMap';
 
@@ -46,15 +46,21 @@ export function ResultMap({ body, rounds }: Props) {
 	const [container, map] = useFlatMap({
 		body,
 		projection: 'equirectangular',
-		interactive: false,
 		// The round is over: the names are the point of showing the map at all.
 		layers: { nomenclature: true }
 	});
+	const opening = useRef(rounds);
+
+	// Framing is where the reader is put, not where they are held: it happens
+	// once, and the map is theirs to drag and zoom from there.
+	useEffect(() => {
+		if (!map) return;
+		const { lon, lat, zoom } = framing(opening.current);
+		map.setView({ centerLon: lon, centerLat: lat, zoom });
+	}, [map]);
 
 	useEffect(() => {
 		if (!map) return;
-		const { lon, lat, zoom } = framing(rounds);
-		map.setView({ centerLon: lon, centerLat: lat, zoom });
 		// A run's worth of dots needs to say which round each one was.
 		const numbered = rounds.length > 1;
 		const drawn = rounds.flatMap(({ guess, truth }, index) => {
