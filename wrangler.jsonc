@@ -1,0 +1,11 @@
+{
+	"$schema": "node_modules/wrangler/config-schema.json",
+	"name": "spaceguesser",
+	"compatibility_date": "2026-09-14",
+	// No Worker code: the build is static, and the SPA fallback lets a deep
+	// link land on the app rather than on a 404.
+	"assets": {
+		"directory": "./dist",
+		"not_found_handling": "single-page-application"
+	}
+}
