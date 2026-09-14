@@ -62,7 +62,11 @@ export function RoundResult({
 							{guess ? `${formatDistance(distanceKm)} off` : 'no guess'}
 						</span>
 					</div>
-					{timedOut && <span className="note">time ran out — the last point you picked stood</span>}
+					{timedOut && (
+						<span className="note">
+							{guess ? 'time ran out — the last point you picked stood' : 'time ran out'}
+						</span>
+					)}
 					<span className="note">
 						round {round} of {rounds}
 					</span>

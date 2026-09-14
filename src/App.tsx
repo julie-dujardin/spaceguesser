@@ -40,16 +40,13 @@ export default function App() {
 	// whichever one a view happens to open on.
 	useEffect(() => {
 		fetchPanoramas(BODY)
-			.then((entries) => setPool(playable(entries)))
+			.then((entries) => {
+				const usable = playable(entries);
+				setPool(usable);
+				setOpener(drawRounds(usable, 1)[0] ?? null);
+			})
 			.catch((cause: unknown) => setPoolError(String(cause)));
 	}, []);
-
-	// A fresh opener whenever the home screen comes back, so the next run does
-	// not start where the last one did.
-	useEffect(() => {
-		if (run.phase !== 'home' || !pool?.length) return;
-		setOpener(drawRounds(pool, 1)[0] ?? null);
-	}, [run.phase, pool]);
 
 	const start = useCallback(
 		(settings: RunSettings) => {
@@ -60,7 +57,17 @@ export default function App() {
 				pool.filter((entry) => entry.id !== opener.id),
 				settings.rounds - 1
 			);
-			dispatch({ kind: 'start', settings, drawn: [opener, ...rest] });
+			const drawn = [opener, ...rest];
+			dispatch({ kind: 'start', settings, drawn });
+			// The opener is spent: draw the next one now, so leaving the run finds a
+			// place it has not already used. Moving between menus leaves it alone.
+			const ids = new Set(drawn.map((round) => round.id));
+			setOpener(
+				drawRounds(
+					pool.filter((entry) => !ids.has(entry.id)),
+					1
+				)[0] ?? opener
+			);
 		},
 		[pool, opener]
 	);

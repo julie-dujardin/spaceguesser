@@ -50,7 +50,7 @@ export function CustomSetup({ onStart, onBack, ready }: Props) {
 					<Seg
 						value={settings.rounds}
 						onChange={(rounds) => set({ rounds })}
-						options={[3, 5, 10].map((n) => ({ value: n, label: String(n) }))}
+						options={[3, 5, 10, 20].map((n) => ({ value: n, label: String(n) }))}
 					/>
 				</div>
 				<div className="field">
@@ -71,6 +71,7 @@ export function CustomSetup({ onStart, onBack, ready }: Props) {
 						onChange={(timer) => set({ timer })}
 						options={[
 							{ value: 0, label: 'off' },
+							{ value: 10, label: '10 s' },
 							{ value: 30, label: '30 s' },
 							{ value: 60, label: '60 s' },
 							{ value: 120, label: '2 min' }
