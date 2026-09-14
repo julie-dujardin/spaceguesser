@@ -36,13 +36,15 @@ export function GuessMap({
 	const marker = useRef<FlatMarker | null>(null);
 	const pick = useRef(onPick);
 	const ready = useRef(onReady);
+	/** Whether the map was already open when the gesture began. */
+	const taking = useRef(open);
 	pick.current = onPick;
 	ready.current = onReady;
 
 	useEffect(() => {
 		if (!map) return;
 		ready.current(map.bodyRadiusKm);
-		return map.on('click', (at) => at && pick.current(at));
+		return map.on('click', (at) => at && taking.current && pick.current(at));
 	}, [map]);
 
 	useEffect(() => {
@@ -58,7 +60,12 @@ export function GuessMap({
 		<div
 			className={`mapw${open ? ' wide' : ''}`}
 			onPointerEnter={onOpen}
-			onPointerDown={onOpen}
+			onPointerDown={() => {
+				// The tap that opens the map also lands as a click, on a box that has
+				// grown since: a pin from it would sit nowhere the reader aimed.
+				taking.current = open;
+				onOpen();
+			}}
 			onFocusCapture={onOpen}
 		>
 			<div className="surface" ref={container} />

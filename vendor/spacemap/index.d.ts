@@ -462,7 +462,7 @@ export declare class FlatMap {
     /* Excluded from this release type: attribution */
     /** Dragging the map about — a globe turns, a rectangle slides. */
     readonly dragPan: GestureHandler;
-    /** The wheel. */
+    /** The wheel and the pinch. */
     readonly scrollZoom: GestureHandler;
     /** The wheel and one finger belong to the page, not the map. */
     readonly cooperativeGestures: GestureHandler;

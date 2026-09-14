@@ -28788,14 +28788,29 @@ var FlatMap = class {
 		let lastY = 0;
 		let moved = false;
 		let blocked = false;
-		const touches = /* @__PURE__ */ new Set();
+		const touches = /* @__PURE__ */ new Map();
 		let pointer = -1;
+		let span = 0;
+		const pinch = () => {
+			const [a, b] = [...touches.values()];
+			if (!b) return null;
+			const box = this.root.getBoundingClientRect();
+			return {
+				gap: Math.hypot(a.x - b.x, a.y - b.y),
+				x: (a.x + b.x) / 2 - box.left,
+				y: (a.y + b.y) / 2 - box.top
+			};
+		};
 		const localPoint = (event) => {
 			const box = this.root.getBoundingClientRect();
 			return [event.clientX - box.left, event.clientY - box.top];
 		};
 		this.root.addEventListener("pointerdown", (event) => {
-			if (event.pointerType === "touch") touches.add(event.pointerId);
+			if (event.pointerType === "touch") touches.set(event.pointerId, {
+				x: event.clientX,
+				y: event.clientY
+			});
+			span = pinch()?.gap ?? 0;
 			if (event.button !== 0) return;
 			pointer = event.pointerId;
 			dragging = true;
@@ -28808,6 +28823,17 @@ var FlatMap = class {
 		});
 		this.root.addEventListener("pointermove", (event) => {
 			const [px, py] = localPoint(event);
+			if (touches.has(event.pointerId)) touches.set(event.pointerId, {
+				x: event.clientX,
+				y: event.clientY
+			});
+			const spread = pinch();
+			if (spread) {
+				moved = true;
+				if (span > 0 && this.scrollZoom.isEnabled()) this.zoomBy(spread.gap / span, spread.x, spread.y);
+				span = spread.gap;
+				return;
+			}
 			if (!dragging) {
 				this.emit("pointermove", this.unproject(px, py), event);
 				return;
@@ -28826,6 +28852,14 @@ var FlatMap = class {
 		});
 		const end = (event) => {
 			touches.delete(event.pointerId);
+			span = 0;
+			const [rest] = [...touches.entries()];
+			if (rest && dragging) {
+				pointer = rest[0];
+				lastX = rest[1].x;
+				lastY = rest[1].y;
+				return;
+			}
 			if (!dragging || event.pointerId !== pointer) return;
 			dragging = false;
 			this.root.releasePointerCapture?.(event.pointerId);

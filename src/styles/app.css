@@ -340,6 +340,9 @@ button {
 	inset: 0;
 	z-index: 4;
 	display: grid;
+	/* An auto track would grow to the card's own width, leaving its max-width
+	   measured against itself and a wide card hanging off a narrow screen. */
+	grid-template-columns: minmax(0, 1fr);
 	place-items: center;
 	padding: 16px;
 	overflow: auto;
@@ -620,5 +623,45 @@ button {
 
 	.mapw.wide {
 		width: calc(100% - 32px);
+	}
+}
+
+/* On a phone the closed map is a peek at where you are, not a workspace: it
+   gives the panorama its screen back until it is tapped. */
+@media (max-width: 620px) {
+	.mapw {
+		width: 212px;
+	}
+
+	/* Room for the credit line the map draws over its own corner, which stays
+	   whatever size the map is. */
+	.mapw .surface {
+		height: 116px;
+	}
+
+	.mapw .foot {
+		padding: 7px 9px;
+	}
+
+	.mapw .foot .btn {
+		display: none;
+	}
+
+	.mapw.wide {
+		width: calc(100% - 32px);
+	}
+
+	/* The world is half as tall as it is wide: much more than that is letterbox
+	   rather than map. */
+	.mapw.wide .surface {
+		height: min(230px, 34vh);
+	}
+
+	.mapw.wide .foot {
+		padding: 10px;
+	}
+
+	.mapw.wide .foot .btn {
+		display: inline-flex;
 	}
 }
