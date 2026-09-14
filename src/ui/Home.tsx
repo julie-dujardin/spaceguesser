@@ -1,3 +1,4 @@
+import { REPO } from '../game/links';
 import { QUICK_PLAY } from '../game/rules';
 
 interface Props {
@@ -23,6 +24,9 @@ export function Home({ onQuickPlay, onCustom, ready }: Props) {
 					Custom run
 				</button>
 				{!ready && <span className="note">finding somewhere to stand…</span>}
+				<a className="out mono" href={REPO} target="_blank" rel="noopener noreferrer">
+					source on github
+				</a>
 			</div>
 		</div>
 	);
