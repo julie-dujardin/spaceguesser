@@ -99,10 +99,13 @@ export default function App() {
 		[truth, pool, run.settings.timer]
 	);
 
-	// The round's clock. It reads the guess through a ref so that picking a
-	// point does not restart it.
+	// The round's clock. It reads the guess and the round's ending through refs,
+	// so that neither picking a point nor walking to another panorama — both of
+	// which are ordinary moves mid-round — hands it a fresh minute.
 	const pending = useRef<LonLat | null>(null);
 	pending.current = guess;
+	const close = useRef(commit);
+	close.current = commit;
 	const timed = run.phase === 'playing' && run.settings.timer > 0;
 	useEffect(() => {
 		if (!timed) return setLeft(null);
@@ -113,11 +116,11 @@ export default function App() {
 			setLeft(Math.max(0, remaining));
 			if (remaining <= 0) {
 				clearInterval(tick);
-				commit(pending.current, true);
+				close.current(pending.current, true);
 			}
 		}, 200);
 		return () => clearInterval(tick);
-	}, [timed, run.settings.timer, run.round, commit]);
+	}, [timed, run.settings.timer, run.round]);
 
 	const next = useCallback(() => {
 		setGuess(null);
