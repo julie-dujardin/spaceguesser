@@ -16,7 +16,7 @@ export function Hud({ settings, round, rounds, left, onQuit }: Props) {
 	return (
 		<>
 			<div className="hud-top">
-				<span className="pill">
+				<span className="pill status">
 					<span className="mark">spaceguesser</span>
 					<span className="sep" />
 					<span className="mono mut">
