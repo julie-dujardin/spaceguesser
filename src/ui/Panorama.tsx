@@ -23,10 +23,14 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
-	// Read at mount time only: a new panorama is opened on the view, not a new view.
+	// Where a view built now would open. Within one view a new panorama is
+	// opened on it instead, but the movement mode does rebuild the view, and it
+	// should come up in the place the reader is playing rather than the one they
+	// mounted on.
 	const opening = useRef(at);
 	const place = useRef(onPlace);
 	const heading = useRef(onHeading);
+	opening.current = at;
 	place.current = onPlace;
 	heading.current = onHeading;
 
