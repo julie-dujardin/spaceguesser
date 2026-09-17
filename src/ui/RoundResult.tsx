@@ -30,7 +30,10 @@ export function describe(entry: PanoramaEntry): string {
 	const parts: string[] = [];
 	if (entry.mission) parts.push(entry.mission[0].toUpperCase() + entry.mission.slice(1));
 	if (entry.sol !== undefined) parts.push(`sol ${entry.sol}`);
-	parts.push(new Date(entry.time).toISOString().slice(0, 10));
+	// The export's own field, so unreadable only if the export is wrong; a
+	// missing date is worth less than the card it would otherwise throw away.
+	const day = new Date(entry.time);
+	if (!Number.isNaN(day.getTime())) parts.push(day.toISOString().slice(0, 10));
 	return parts.join(' · ');
 }
 
