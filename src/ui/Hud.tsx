@@ -3,12 +3,15 @@ import { MOVEMENT_LABELS, formatClock, type RunSettings } from '../game/rules';
 interface Props {
 	settings: RunSettings;
 	round: number;
+	/** How many rounds were drawn, which thin coverage can cut short of what
+	 *  the settings asked for. */
+	rounds: number;
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
 }
 
-export function Hud({ settings, round, left, onQuit }: Props) {
+export function Hud({ settings, round, rounds, left, onQuit }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
 	return (
 		<>
@@ -17,7 +20,7 @@ export function Hud({ settings, round, left, onQuit }: Props) {
 					<span className="mark">spaceguesser</span>
 					<span className="sep" />
 					<span className="mono mut">
-						round {round + 1} / {settings.rounds}
+						round {round + 1} / {rounds}
 					</span>
 					<span className="sep" />
 					<span className="mono mut">{MOVEMENT_LABELS[settings.movement]}</span>

@@ -145,6 +145,7 @@ export default function App() {
 					<Hud
 						settings={run.settings}
 						round={run.round}
+						rounds={run.drawn.length}
 						left={left}
 						onQuit={() => dispatch({ kind: 'home' })}
 					/>
@@ -186,7 +187,7 @@ export default function App() {
 					points={last.points}
 					secondsLeft={last.secondsLeft}
 					round={run.round + 1}
-					rounds={run.settings.rounds}
+					rounds={run.drawn.length}
 					timedOut={last.timedOut}
 					onNext={next}
 				/>
