@@ -26,7 +26,7 @@ export function GuessMap({
 	onReady,
 	onGuess
 }: Props) {
-	const [container, map] = useFlatMap({
+	const [container, map, error] = useFlatMap({
 		body,
 		projection: 'equirectangular',
 		// The grid is what makes a bare surface readable; named features stay off
@@ -70,8 +70,10 @@ export function GuessMap({
 		>
 			<div className="surface" ref={container} />
 			<div className="foot">
-				<span className="mono mut" style={{ fontSize: '11.5px' }}>
-					heading {String(Math.round(headingDeg) % 360).padStart(3, '0')}°
+				<span className="mono mut" style={{ fontSize: '11.5px' }} title={error ?? undefined}>
+					{error
+						? 'no map — guess unavailable'
+						: `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`}
 				</span>
 				<button
 					type="button"

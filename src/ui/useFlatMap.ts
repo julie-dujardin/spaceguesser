@@ -8,6 +8,7 @@ type Options = Omit<FlatMapCreateOptions, 'container'>;
 export function useFlatMap(options: Options) {
 	const container = useRef<HTMLDivElement>(null);
 	const [map, setMap] = useState<FlatMap | null>(null);
+	const [error, setError] = useState<string | null>(null);
 	// The map is built once; its options are read at that moment only.
 	const initial = useRef(options);
 
@@ -16,13 +17,16 @@ export function useFlatMap(options: Options) {
 		if (!element) return;
 		let made: FlatMap | null = null;
 		let dropped = false;
+		setError(null);
 		createFlatMap({ container: element, ...initial.current })
 			.then((created) => {
 				if (dropped) return created.remove();
 				made = created;
 				setMap(created);
 			})
-			.catch(() => undefined);
+			.catch((cause: unknown) => {
+				if (!dropped) setError(String(cause));
+			});
 		return () => {
 			dropped = true;
 			made?.remove();
@@ -30,7 +34,7 @@ export function useFlatMap(options: Options) {
 		};
 	}, []);
 
-	return [container, map] as const;
+	return [container, map, error] as const;
 }
 
 /** A dot to pin on the map, carrying its round number when there is more than

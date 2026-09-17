@@ -80,17 +80,19 @@ export default function App() {
 
 	const commit = useCallback(
 		(at: LonLat | null, timedOut: boolean) => {
+			if (!truth || !pool) return;
 			const radius = radiusKm.current;
-			if (!truth || !radius || !pool) return;
-			const km = at ? distanceKm(at, truth, radius) : 0;
-			const scale = extentKm(pool, radius);
+			// A point can only be scored against a body whose size the map has
+			// reported. It always has by the time one can be clicked, but a round
+			// can run out before that, and it has to close anyway.
+			const km = at && radius ? distanceKm(at, truth, radius) : 0;
 			dispatch({
 				kind: 'commit',
 				played: {
 					truth,
-					guess: at,
+					guess: radius ? at : null,
 					distanceKm: km,
-					points: at ? scoreFor(km, scale) : 0,
+					points: at && radius ? scoreFor(km, extentKm(pool, radius)) : 0,
 					secondsLeft: run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null,
 					timedOut
 				}
