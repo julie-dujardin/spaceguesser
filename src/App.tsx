@@ -56,21 +56,11 @@ export default function App() {
 			if (!pool || !opener) return;
 			setGuess(null);
 			setMapOpen(false);
-			const rest = drawRounds(
-				pool.filter((entry) => entry.id !== opener.id),
-				settings.rounds - 1
-			);
-			const drawn = [opener, ...rest];
+			const drawn = [opener, ...drawRounds(pool, settings.rounds - 1, [opener])];
 			dispatch({ kind: 'start', settings, drawn });
 			// The opener is spent: draw the next one now, so leaving the run finds a
 			// place it has not already used. Moving between menus leaves it alone.
-			const ids = new Set(drawn.map((round) => round.id));
-			setOpener(
-				drawRounds(
-					pool.filter((entry) => !ids.has(entry.id)),
-					1
-				)[0] ?? opener
-			);
+			setOpener(drawRounds(pool, 1, drawn)[0] ?? opener);
 		},
 		[pool, opener]
 	);

@@ -40,17 +40,24 @@ export function playable(entries: readonly PanoramaEntry[]): PanoramaEntry[] {
 	return entries.filter((e) => (e.sphere_percent ?? 0) >= MIN_SPHERE_PERCENT);
 }
 
-/** `count` panoramas, none of them from a stop already drawn. */
-export function drawRounds(pool: readonly PanoramaEntry[], count: number): PanoramaEntry[] {
+/** `count` panoramas, none of them from a stop already drawn or in `taken`. */
+export function drawRounds(
+	pool: readonly PanoramaEntry[],
+	count: number,
+	taken: readonly PanoramaEntry[] = []
+): PanoramaEntry[] {
 	const rest = [...pool];
 	const picked: PanoramaEntry[] = [];
+	const spent = [...taken];
 	while (picked.length < count && rest.length) {
 		const [entry] = rest.splice(Math.floor(Math.random() * rest.length), 1);
-		const near = picked.some(
+		const near = spent.some(
 			(p) =>
 				Math.abs(p.lat - entry.lat) < SAME_PLACE_DEG && Math.abs(p.lon - entry.lon) < SAME_PLACE_DEG
 		);
-		if (!near) picked.push(entry);
+		if (near) continue;
+		picked.push(entry);
+		spent.push(entry);
 	}
 	return picked;
 }
