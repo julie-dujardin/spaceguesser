@@ -1,0 +1,15 @@
+{
+	"version": "0.2.0",
+	"configurations": [
+		{
+			"name": "Dev server (Chrome)",
+			"type": "chrome",
+			"request": "launch",
+			"runtimeExecutable": "/var/lib/flatpak/exports/bin/org.chromium.Chromium",
+			// Vite binds 127.0.0.1 only, and `localhost` may resolve to ::1 first.
+			"url": "http://127.0.0.1:5170",
+			"webRoot": "${workspaceFolder}/src",
+			"preLaunchTask": "dev"
+		}
+	]
+}
