@@ -35,12 +35,37 @@ const MIN_SPHERE_PERCENT = 25;
 /** Two panoramas from the same stop are the same round twice over. */
 const SAME_PLACE_DEG = 0.002;
 
+/** Rounds this close together come from different probes where the pool
+ *  allows it: one traverse several rounds running is one puzzle asked twice.
+ *  Where it cannot, the gap shrinks rather than the run. */
+const PROBE_GAP = 3;
+
 /** Playable panoramas, in no particular order. */
 export function playable(entries: readonly PanoramaEntry[]): PanoramaEntry[] {
 	return entries.filter((e) => (e.sphere_percent ?? 0) >= MIN_SPHERE_PERCENT);
 }
 
-/** `count` panoramas, none of them from a stop already drawn or in `taken`. */
+/** An entry with no mission stands alone rather than joining a pool of
+ *  unknowns that would then block each other. */
+function probeOf(entry: PanoramaEntry): string {
+	return entry.mission ?? entry.id;
+}
+
+/** One of `rest`, preferring the probes missing from the last `PROBE_GAP - 1`
+ *  rounds. A pool of too few probes relaxes the gap a round at a time. */
+function pick(rest: readonly PanoramaEntry[], spent: readonly PanoramaEntry[]): PanoramaEntry {
+	for (let gap = PROBE_GAP - 1; gap > 0; gap--) {
+		const recent = new Set(spent.slice(-gap).map(probeOf));
+		const fresh = rest.filter((e) => !recent.has(probeOf(e)));
+		if (fresh.length) return fresh[Math.floor(Math.random() * fresh.length)];
+	}
+	return rest[Math.floor(Math.random() * rest.length)];
+}
+
+/** `count` panoramas, none of them from a stop already drawn or in `taken`,
+ *  and spread across probes as far as the pool allows. `taken` is read as the
+ *  rounds just before these, so an opener counts against the ones that follow
+ *  it. */
 export function drawRounds(
 	pool: readonly PanoramaEntry[],
 	count: number,
@@ -50,7 +75,8 @@ export function drawRounds(
 	const picked: PanoramaEntry[] = [];
 	const spent = [...taken];
 	while (picked.length < count && rest.length) {
-		const [entry] = rest.splice(Math.floor(Math.random() * rest.length), 1);
+		const entry = pick(rest, spent);
+		rest.splice(rest.indexOf(entry), 1);
 		const near = spent.some(
 			(p) =>
 				Math.abs(p.lat - entry.lat) < SAME_PLACE_DEG && Math.abs(p.lon - entry.lon) < SAME_PLACE_DEG
