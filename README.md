@@ -14,18 +14,25 @@ pnpm dev
 
 ## Where the panoramas come from
 
-The published export has ground panoramas on one body: Mars, from Curiosity in
-Gale crater and Perseverance in Jezero, 502 of them. Panoramas covering less
-than a quarter of the sphere are dropped — a narrow strip of ground has no
-horizon to read — which leaves 393 to draw rounds from, and two stops in the
-same place never both appear in one run.
+The published export has ground panoramas on four Mars probes: Curiosity in
+Gale, Spirit in Gusev, Perseverance in Jezero and InSight on Elysium Planitia,
+4,006 of them. Panoramas covering less than a quarter of the sphere are
+dropped — a narrow strip of ground has no horizon to read — which leaves 2,086
+to draw rounds from. Elsewhere the export is a handful of single views, Venera
+13, the Apollo landings, Huygens, and none of them clear that bar, so Mars is
+the game.
 
-Two sites means the round turns on one question, which rover, worth about 3,770
-km of error, and then on where along its traverse. Scoring follows the genre:
-points fall off exponentially with the miss, against the diagonal of what the
-panoramas actually cover rather than against Mars. That number is read from the
-pool at run time, so a third landing site or a second body rescales the game on
-its own.
+A run never draws two stops from the same place, and never comes back to a
+probe within three rounds while the pool has one to spare. That evens the three
+rovers out instead of following the length of their traverses, Curiosity's
+being three times Spirit's; InSight, a lander with two panoramas over the bar
+and both from the one spot, stays the rare round it should be. So a round turns
+on which probe, worth up to 6,033 km of error between Perseverance and Spirit,
+and then on where along the traverse.
+Scoring follows the genre: points fall off exponentially with the miss, against
+the diagonal of what the panoramas actually cover, 6,050 km, rather than
+against Mars. That number is read from the pool at run time, so a fifth landing
+site or a second body rescales the game on its own.
 
 ## What the SDK does
 
@@ -47,23 +54,11 @@ was taken from. The SDK hands out entries but not the site's URLs, so
 The credit lines are the SDK's, in the corner it draws them, and are not
 removable. The guess map sits clear of the panorama's rather than over it.
 
-## The SDK build
+## The SDK
 
-`spacemap` is not published, so the built package is vendored in
-`vendor/spacemap` and installed from there — the app builds with no registry and
-no checkout of the map beside it. It is vendored unpacked rather than as a
-tarball: pnpm locks a local tarball by hash alone, and any install with a cold
-`node_modules` then goes looking for the package in the registry. To rebuild it
-from a checkout:
-
-```sh
-SDK_SRC=../space-map/frontend pnpm sync-sdk
-```
-
-What is in `vendor/` is currently built from the `sdk-panorama-list` branch,
-which adds what this app needed: `fetchPanoramas` and a `groundDistanceM` that
-takes any two places rather than two panoramas. It also adds
-`attributionPosition`, which this app no longer uses.
+`spacemap` comes from npm, with `three` as a peer dependency the app pins
+itself. The calls this app leans on — `fetchPanoramas`, and a `groundDistanceM`
+that takes any two places rather than two panoramas — are in 0.1.1 onwards.
 
 ## Deploying
 
