@@ -7,8 +7,8 @@
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
 import { bodyOf, membersOf, systemOf, viewDistance } from './bodies';
-import { anywhere, spot, type OrbitRound, type Place } from './rounds';
-import type { Sky } from './scoring';
+import { anywhere, spot, type OrbitRound, type Place, type Round } from './rounds';
+import { NO_SKY, type Sky } from './scoring';
 
 const RAD = Math.PI / 180;
 
@@ -70,6 +70,9 @@ export class Space {
 	private hold: CameraHold | null = null;
 	/** Counts the times the camera changed hands. */
 	private turn = 0;
+	/** Where the reader hangs and which way they look, to put them back there
+	 *  after the map has been elsewhere to measure. */
+	private stood: { place: Place; gaze: Gaze } | null = null;
 
 	private constructor(
 		readonly map: SpaceMap,
@@ -169,6 +172,7 @@ export class Space {
 
 	/** The place an orbit round is over, which only the sky at its time says. */
 	async place(round: OrbitRound): Promise<Place> {
+		this.stood = null;
 		await this.travel(round.time, round.body);
 		const turn = this.turn;
 		// The map answers once it knows how the body spins, which it fetches on
@@ -191,6 +195,7 @@ export class Space {
 	look(place: Place, gaze: Gaze): void {
 		const radius = this.radiusKm(place.body);
 		if (!radius) return;
+		this.stood = { place, gaze };
 		const altitude = this.standoffKm(place.body) - radius;
 		const pitch = Math.min(MAX_PITCH, Math.max(-90, gaze.pitch)) * RAD;
 		const heading = gaze.heading * RAD;
@@ -238,10 +243,30 @@ export class Space {
 	}
 
 	/**
-	 * What a guess on `guessed` is measured against when the round was on
-	 * `truth`. The map must already be at the round's time, around `truth`.
+	 * The sky a guess on `guessed` is scored against. The right body needs
+	 * none; any other sends the map to the round's time to say how far off it
+	 * was that day. A sky the map cannot give is no sky: the guess is still
+	 * scored, for what it got right.
 	 */
-	sky(truth: string, guessed: string): Sky {
+	async measure(round: Round, truth: Place, guessed: string | null): Promise<Sky> {
+		if (!guessed || guessed === truth.body) return NO_SKY;
+		const back = round.mode === 'orbit' ? this.stood : null;
+		try {
+			// A dot in the belt has no position to measure from until it has been
+			// flown to; it keeps one afterwards.
+			if (!this.map.getBody(guessed)?.placed) await this.travel(round.time, guessed);
+			await this.travel(round.time, truth.body);
+			return this.sky(truth.body, guessed);
+		} catch {
+			return NO_SKY;
+		} finally {
+			if (back) this.look(back.place, back.gaze);
+			else if (round.mode === 'ground') this.cover(true);
+		}
+	}
+
+	/** The map must already be at the round's time, around `truth`. */
+	private sky(truth: string, guessed: string): Sky {
 		const between = (a: string, b: string) => this.map.distanceKm({ body: a }, { body: b });
 		const system = systemOf(truth);
 		const sameSystem = systemOf(guessed) === system;

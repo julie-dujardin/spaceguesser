@@ -286,12 +286,12 @@ button {
 	background: var(--bad);
 }
 
-/* --- the guess map ------------------------------------------------------- */
+/* --- the guess panel ----------------------------------------------------- */
 
 .mapw {
 	position: absolute;
 	right: 16px;
-	/* Clear of the panorama's credit line, which keeps the corner it is drawn in. */
+	/* Clear of the view's credit line, which keeps the corner it is drawn in. */
 	bottom: 46px;
 	width: 380px;
 	transition: width 200ms;
@@ -301,14 +301,192 @@ button {
 	width: 640px;
 }
 
-.mapw .surface {
-	height: 210px;
-	border-radius: 12px 12px 0 0;
+/* Where the reader is on the way down, the way back up, and the way straight
+   to a body by name. */
+.mapw .head {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	height: 40px;
+	padding: 0 8px 0 12px;
+	background: var(--glass);
+	backdrop-filter: blur(12px);
 	border: 1px solid var(--gborder);
+	border-bottom: 0;
+	border-radius: 12px 12px 0 0;
+	/* Over the map below it, which the list of names found drops onto. */
+	position: relative;
+	z-index: 2;
+}
+
+.mapw .head .btn.ico {
+	width: 26px;
+	height: 26px;
+	margin-left: -6px;
+	font-size: 14px;
+}
+
+.mapw .where {
+	flex: 1;
+	min-width: 0;
+	font-weight: 500;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+
+.find {
+	position: relative;
+}
+
+.find input {
+	width: 132px;
+	height: 26px;
+	padding: 0 9px;
+	border-radius: 7px;
+	border: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.06);
+	color: var(--fg);
+	font: inherit;
+	font-size: 12px;
+	outline: none;
+	transition: width 150ms;
+}
+
+.find input::placeholder {
+	color: var(--dim);
+}
+
+.find input:focus {
+	width: 170px;
+	border-color: rgb(255 255 255 / 0.3);
+}
+
+/* Over the map rather than pushing it down: the list is gone again as soon as
+   a name is picked. */
+.hits {
+	position: absolute;
+	right: 0;
+	top: calc(100% + 6px);
+	z-index: 5;
+	width: 250px;
+	padding: 4px;
+	display: flex;
+	flex-direction: column;
+	background: rgb(16 16 16 / 0.96);
+}
+
+.hits button {
+	display: flex;
+	align-items: baseline;
+	justify-content: space-between;
+	gap: 10px;
+	padding: 6px 8px;
+	border: 0;
+	border-radius: 7px;
+	background: none;
+	color: var(--fg);
+	font-size: 13px;
+	text-align: left;
+	cursor: pointer;
+}
+
+.hits button span {
+	font-size: 10.5px;
+	white-space: nowrap;
+}
+
+.hits button:hover,
+.hits button:focus-visible {
+	background: rgb(255 255 255 / 0.1);
+	outline: none;
+}
+
+.hits .note {
+	padding: 6px 8px;
+}
+
+.mapw .surface {
+	position: relative;
+	height: 210px;
+	border: 1px solid var(--gborder);
+	border-top: 0;
 	border-bottom: 0;
 	overflow: hidden;
 	background: oklch(0.185 0 0);
 	transition: height 200ms;
+}
+
+.mapw .flat {
+	position: absolute;
+	inset: 0;
+}
+
+/* A level's map with the same targets under it by name. The diagram is three
+   times as wide as it is tall, so the names get whatever height is left. */
+.chart {
+	height: 100%;
+	display: flex;
+	flex-direction: column;
+	--sm-system-map-background: transparent;
+	--sm-system-map-radius: 0;
+}
+
+.chart .diagram {
+	flex: none;
+	border-bottom: 1px solid var(--gborder);
+}
+
+.chips {
+	flex: 1;
+	min-height: 0;
+	overflow-y: auto;
+	display: flex;
+	flex-wrap: wrap;
+	align-content: flex-start;
+	gap: 5px;
+	padding: 8px;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+}
+
+.chip {
+	height: 24px;
+	padding: 0 9px;
+	border-radius: 999px;
+	border: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.05);
+	color: var(--fg);
+	font-size: 12px;
+	white-space: nowrap;
+	cursor: pointer;
+}
+
+.chip:hover,
+.chip:focus-visible {
+	background: rgb(255 255 255 / 0.14);
+	outline: none;
+}
+
+/* Leads to another map rather than to a body. */
+.chip.deeper::after {
+	content: ' ›';
+	color: var(--mut);
+}
+
+/* A body with no map to pick on: it is the guess as it stands. */
+.mapw .whole {
+	position: absolute;
+	inset: 0;
+	display: grid;
+	place-items: center;
+	color: var(--mut);
+	font-size: 18px;
+}
+
+.mapw .whole b {
+	color: var(--fg);
+	font-weight: 500;
 }
 
 .mapw.wide .surface {
@@ -1058,6 +1236,11 @@ a.rk:hover,
 	}
 
 	.mapw .foot .btn {
+		display: none;
+	}
+
+	/* The peek has no room to type in. */
+	.mapw:not(.wide) .find {
 		display: none;
 	}
 

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { fetchPanoramaIndex, fetchPanoramas, type LonLat } from 'spacemap';
+import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { inviteCode, invitePath, settingsOf } from './game/lobby';
 import { keepProfile } from './game/players';
@@ -7,12 +7,12 @@ import { drawRun, type Modes, type Place, type Round, type Stop } from './game/r
 import { QUICK_PLAY, playable } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
-import { NO_SKY } from './game/scoring';
+import { NO_SKY, type Guess } from './game/scoring';
 import { MULTIPLAYER, useLobby } from './game/useLobby';
 import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
 import { Friends } from './ui/Friends';
-import { GuessMap } from './ui/GuessMap';
+import { GuessPanel } from './ui/GuessPanel';
 import { Home } from './ui/Home';
 import { Hud } from './ui/Hud';
 import { Orbit } from './ui/Orbit';
@@ -61,13 +61,14 @@ export default function App() {
 	/** Where an orbit round turned out to be, which the sky says once the map
 	 *  is there. */
 	const [over, setOver] = useState<Place | null>(null);
-	const [guess, setGuess] = useState<LonLat | null>(null);
-	/** The guess map takes the corner while the reader is working on it, and
+	const [guess, setGuess] = useState<Guess | null>(null);
+	/** A guess is in and the sky is being asked how far off it was. */
+	const [measuring, setMeasuring] = useState(false);
+	/** The guess panel takes the corner while the reader is working on it, and
 	 *  gives it back when they turn to the view again. */
 	const [mapOpen, setMapOpen] = useState(false);
 	const [heading, setHeading] = useState(0);
 	const [left, setLeft] = useState<number | null>(null);
-	const radiusKm = useRef<number | null>(null);
 	// Read when a guess lands, so committing does not depend on the tick.
 	const remaining = useRef<number | null>(null);
 	remaining.current = left;
@@ -146,20 +147,25 @@ export default function App() {
 	// The map draws nothing while a panorama is over it.
 	useEffect(() => space?.cover(shown?.mode !== 'orbit'), [space, shown?.mode]);
 
+	const committing = useRef(false);
 	const commit = useCallback(
-		(at: LonLat | null, timedOut: boolean) => {
-			if (!truth || !round) return;
+		async (guessed: Guess | null, timedOut: boolean) => {
+			if (!truth || !round || committing.current) return;
+			committing.current = true;
 			const secondsLeft = run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null;
-			const info = bodyOf(truth.body);
-			// A body with no map is guessed whole.
-			const guessed = at || (info && !info.surface && !timedOut) ? { body: truth.body, at } : null;
-			const radius = info?.radiusKm ?? radiusKm.current ?? space?.radiusKm(truth.body) ?? null;
+			setMeasuring(true);
+			// Only a guess on another body needs the sky; the map is asked nothing
+			// for one on the right body.
+			const sky = space ? await space.measure(round, truth, guessed?.body ?? null) : NO_SKY;
+			setMeasuring(false);
+			committing.current = false;
+			const radius = bodyOf(truth.body)?.radiusKm ?? null;
 			// The card describes the stop the guess is scored against.
 			const stood =
 				round.mode === 'ground' && run.standing ? { ...round, entry: run.standing } : round;
 			dispatch({
 				kind: 'commit',
-				played: play(stood, truth, guessed, NO_SKY, radius, secondsLeft, timedOut)
+				played: play(stood, truth, guessed, sky, radius, secondsLeft, timedOut)
 			});
 		},
 		[truth, round, run.standing, run.settings.timer, space]
@@ -169,7 +175,7 @@ export default function App() {
 	// so that neither picking a point nor walking to another panorama — both of
 	// which are ordinary moves mid-round — hands it a fresh minute. It waits for
 	// the place: an orbit round has not begun until the camera is over it.
-	const pending = useRef<LonLat | null>(null);
+	const pending = useRef<Guess | null>(null);
 	pending.current = guess;
 	const close = useRef(commit);
 	close.current = commit;
@@ -183,7 +189,7 @@ export default function App() {
 			setLeft(Math.max(0, remaining));
 			if (remaining <= 0) {
 				clearInterval(tick);
-				close.current(pending.current, true);
+				void close.current(pending.current, true);
 			}
 		}, 200);
 		return () => clearInterval(tick);
@@ -334,17 +340,16 @@ export default function App() {
 						left={left}
 						onQuit={() => dispatch({ kind: 'home' })}
 					/>
-					<GuessMap
-						key={`${run.round}:${round.body}`}
-						body={round.body}
+					<GuessPanel
+						key={run.round}
 						guess={guess}
 						open={mapOpen}
 						headingDeg={heading}
 						onOpen={() => setMapOpen(true)}
 						onPick={setGuess}
-						onReady={(km) => (radiusKm.current = km)}
-						onGuess={() => commit(guess, false)}
+						onGuess={() => void commit(guess, false)}
 						placed={!!truth}
+						waiting={measuring ? 'measuring how far off…' : undefined}
 					/>
 				</div>
 			)}

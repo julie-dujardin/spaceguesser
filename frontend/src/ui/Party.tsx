@@ -1,7 +1,6 @@
 /** A multiplayer game: the same screens as a solo run, moved on by the server. */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { LonLat } from 'spacemap';
 import { bodyOf } from '../game/bodies';
 import {
 	playedBy,
@@ -16,13 +15,13 @@ import { profileOf } from '../game/players';
 import { drawRun, type Modes, type Place, type Round as Asked, type Stop } from '../game/rounds';
 import type { RunSettings } from '../game/rules';
 import { play, type Played } from '../game/run';
-import { NO_SKY } from '../game/scoring';
+import { NO_SKY, type Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import type { LobbySession } from '../game/useLobby';
 import { Avatar } from './Avatar';
 import { CustomSetup } from './CustomSetup';
 import { FinalScore } from './FinalScore';
-import { GuessMap } from './GuessMap';
+import { GuessPanel } from './GuessPanel';
 import { Hud } from './Hud';
 import { LobbyCard } from './LobbyCard';
 import { RoundResult } from './RoundResult';
@@ -210,30 +209,31 @@ function Round({
 	onMapOpen,
 	onEnd
 }: RoundProps) {
-	const [guess, setGuess] = useState<LonLat | null>(null);
+	const [guess, setGuess] = useState<Guess | null>(null);
 	const [sent, setSent] = useState<Played | null>(null);
-	const radiusKm = useRef<number | null>(null);
+	/** A guess is in and the sky is being asked how far off it was. */
+	const [measuring, setMeasuring] = useState(false);
 	const left = useCountdown(round.ends_at, session.skew);
 	const { you, connection, send } = session;
 	const answered = sent !== null || round.guessed.includes(you ?? '');
 
 	// Everyone is ranked on the same question, so the guess is scored against
 	// where the round opened rather than wherever this player walked to.
-	const commit = (at: LonLat | null, timedOut: boolean) => {
-		if (!truth) return;
+	const commit = async (guessed: Guess | null, timedOut: boolean) => {
+		if (!truth || measuring) return;
 		const seconds = left === null ? null : timedOut ? 0 : left;
-		const info = bodyOf(truth.body);
-		// A body with no map is guessed whole.
-		const guessed = at || (info && !info.surface && !timedOut) ? { body: truth.body, at } : null;
-		const radius = info?.radiusKm ?? radiusKm.current ?? space?.radiusKm(truth.body) ?? null;
-		setSent(play(slim(round.entry), truth, guessed, NO_SKY, radius, seconds, timedOut));
+		setMeasuring(true);
+		const sky = space ? await space.measure(round.entry, truth, guessed?.body ?? null) : NO_SKY;
+		setMeasuring(false);
+		const radius = bodyOf(truth.body)?.radiusKm ?? null;
+		setSent(play(slim(round.entry), truth, guessed, sky, radius, seconds, timedOut));
 	};
 
 	// The clock closes the round on whatever point is picked, as it does solo.
 	// A place the sky has not given yet is waited for: there is nothing to
 	// score against until it has.
 	const expire = useRef(() => {});
-	expire.current = () => commit(guess, true);
+	expire.current = () => void commit(guess, true);
 	const placed = !!truth;
 	useEffect(() => {
 		if (left === 0 && !answered && placed) expire.current();
@@ -273,22 +273,22 @@ function Round({
 					))}
 				</span>
 			</Hud>
-			<GuessMap
-				body={round.entry.body}
+			<GuessPanel
 				placed={placed}
 				guess={guess}
 				open={mapOpen}
 				headingDeg={heading}
 				onOpen={() => onMapOpen(true)}
 				onPick={setGuess}
-				onReady={(km) => (radiusKm.current = km)}
-				onGuess={() => commit(guess, false)}
+				onGuess={() => void commit(guess, false)}
 				waiting={
-					answered
-						? out
-							? `guess in · waiting for ${out} other${out > 1 ? 's' : ''}`
-							: 'guess in'
-						: undefined
+					measuring
+						? 'measuring how far off…'
+						: answered
+							? out
+								? `guess in · waiting for ${out} other${out > 1 ? 's' : ''}`
+								: 'guess in'
+							: undefined
 				}
 				action={
 					onEnd && (
