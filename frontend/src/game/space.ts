@@ -97,17 +97,19 @@ export class Space {
 	/**
 	 * What the map draws besides the bodies. A round shows the whole sky and
 	 * names none of it: names and orbits would answer it. A recap names what it
-	 * shows, and leaves out the swarms of small bodies unless one of `kinds`
-	 * had a part in it — the belt is a brown fog over everything otherwise.
-	 * Null is a round. Layers are hidden rather than left out when the map
-	 * opens: one left out then is never fetched.
+	 * shows, and leaves out the swarms of small bodies: the belt is a brown fog
+	 * over everything from far off. One of `kinds` that had a part in it comes
+	 * back once the camera is `close` enough for the swarm to have thinned to
+	 * nothing, since the round's own rock is drawn with it. Null is a round.
+	 * Layers are hidden rather than left out when the map opens: one left out
+	 * then is never fetched.
 	 */
-	dress(recap: ReadonlySet<BodyKind> | null): void {
+	dress(recap: ReadonlySet<BodyKind> | null, close = false): void {
 		const named = recap !== null;
 		this.map.setLayerVisible('labels', named);
 		this.map.setLayerVisible('orbits', named);
-		this.map.setLayerVisible('asteroids', !recap || recap.has('asteroid'));
-		this.map.setLayerVisible('comets', !recap || recap.has('comet'));
+		this.map.setLayerVisible('asteroids', !recap || (close && recap.has('asteroid')));
+		this.map.setLayerVisible('comets', !recap || (close && recap.has('comet')));
 		this.map.setLayerVisible('dwarfPlanets', !recap || recap.has('dwarf'));
 	}
 

@@ -1,8 +1,10 @@
 # spaceguesser
 
-You are standing somewhere in the solar system. Look around, then say where on
-the map. Built on the [Space Map](https://spacemap.co) SDK — the panorama, the
-map you guess on, and the map that shows how wrong you were are all the SDK's.
+You are somewhere in the solar system: standing on the ground in a rover's
+panorama, or hanging over a body's lit side. Look around, then say where. Built
+on the [Space Map](https://spacemap.co) SDK — the panorama, the Solar System you
+fly in, the diagram you pick a body on, the map you pick a place on and the
+flight that shows how wrong you were are all the SDK's.
 
 Quick play, a custom solo run and multiplayer are in. The daily challenge is
 not.
@@ -26,28 +28,65 @@ docker compose up --build   # the multiplayer server, on :8787
 echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 ```
 
-## Where the panoramas come from
+## What a round is
 
-The published export has some fourteen thousand ground panoramas on Mars,
-from the rovers and landers that have worked there. Only the ones that go all
-the way round the horizon play — a partial sweep leaves the player guessing
-what lies outside it — which leaves 4,313 to draw rounds from: Curiosity in
-Gale, Opportunity on Meridiani Planum, Perseverance in Jezero, Spirit in Gusev
-and InSight on Elysium Planitia. Elsewhere the export is a handful of single
-views, Venera 13, the Apollo landings, Huygens, and none of them is a full
-turn, so Mars is the game.
+A round is one of two kinds, a coin toss each time unless a custom run asks for
+one alone.
 
-A run never draws two stops from the same place, and never comes back to a
-probe within three rounds while the pool has one to spare. That evens the four
-rovers out instead of following the length of their traverses, Curiosity's
-being three times Spirit's; InSight, a lander with ten panoramas over the bar
-and all from the one spot, stays the rare round it should be. So a round turns
-on which probe, worth up to 9,670 km of error between Opportunity and Spirit,
-and then on where along the traverse.
-Scoring follows the genre: points fall off exponentially with the miss, against
-the diagonal of what the panoramas actually cover, 5,190 km, rather than
-against Mars. That number is read from the pool at run time, so another landing
-site or a second body rescales the game on its own.
+**On the ground**, in a panorama. The published export has ground panoramas on
+five Mars probes — Curiosity, Perseverance, Spirit, Opportunity and InSight.
+Panoramas covering less than a quarter of the sphere are dropped: a narrow
+strip of ground has no horizon to read. Elsewhere the export is a handful of
+single views, Venera 13, the Apollo landings, Huygens, and none of them clear
+that bar yet; the pool is read from every body the export lists, so they play
+the day they do. A run never draws two stops from the same place, and never
+comes back to a probe within three rounds while the pool has one to spare.
+
+**From orbit**, in the Solar System map, over one of the 81 bodies in
+`frontend/src/game/bodies.json`: every body the export has an openly licensed
+map or a measured shape of, less Earth. The round happens at a date within
+thirty days of today, shown in the HUD, and the place is somewhere the Sun
+stands at least 40° high at that date — the sky decides, so the round is drawn
+as two numbers and comes out the same for everyone playing it. The camera hangs
+as close as the body's map stays sharp: 1,000 km over Mars, the whole disc for
+Ganymede. Whatever else is in that sky at that date is there to be seen:
+Saturn and its rings from Enceladus. Names and orbits are not.
+
+Movement is the same setting for both kinds. Free walks a panorama's traverse;
+from orbit it turns the view, as look only does, and no pan or zoom is the view
+straight down.
+
+`node frontend/scripts/build-bodies.mjs` rewrites the catalogue from the
+export. It also holds what the export does not say and only standing over each
+body showed: the ones left out (no position at present dates, too small to
+draw, lit this decade on the side never imaged), and the six under cloud, where
+a map of the ground is no help.
+
+## What a guess is
+
+The panel in the corner walks down to it: the Solar System, then a planet's
+system or one of the two zones of small bodies either side of Jupiter's orbit,
+then a body, then a place on the body's own map. Only the level being looked at
+shows, with a back arrow, and a search field goes straight to a body by name. A
+body with no map to pick on — a gas giant, Venus and Titan under their cloud, a
+rock with a shape and no picture — is the whole guess.
+
+## Scoring
+
+A round is worth 5,000 points, split three ways because one curve cannot tell
+Titan from Enceladus and Saturn from Jupiter at once. Each part falls off as the
+genre has it, `max · e^(−10 · miss / size)`:
+
+| for        | points | miss                                  | size                                 |
+| ---------- | ------ | ------------------------------------- | ------------------------------------ |
+| the system | 1,000  | between the two systems' primaries    | 80 AU                                |
+| the body   | 1,500  | between the two bodies, in one system | twice the system's farthest body out |
+| the place  | 2,500  | along the ground                      | half the body's circumference        |
+
+A small body is a system of one. A body guessed whole takes the place's points
+with it. The misses between bodies are measured in the Solar System map at the
+round's date, so the same wrong guess is worth more the month the two planets
+are on the same side of the Sun.
 
 ## Multiplayer
 
@@ -59,7 +98,7 @@ and each browser scores its own guess, with the code solo play uses.
 One thing differs from solo. With free movement a solo guess is scored against
 wherever the player walked to; a multiplayer guess is scored against where the
 round opened, so that everyone is ranked on one question and the recap has one
-place to show.
+place to show. A round from orbit is the same question for everyone already.
 
 The seat is kept in the browser, so a reload, a dropped connection or a
 redeploy of the server lands back in the game. Opening the same seat in a
@@ -71,29 +110,46 @@ colour travel in front of the name (`frontend/src/game/players.ts`).
 
 ## What the SDK does
 
-- `fetchPanoramas` reads the body's panoramas, and a round is drawn from them.
-- `createPanorama` stands the player in one — behind the home screen too, on
-  the panorama the run is about to open with. The movement setting is the
-  view's own: free lets the arrows walk the traverse, look only takes the
-  arrows away, no pan or zoom hands back the drag and the wheel too.
-- `createFlatMap` is both maps. The guess map wears the graticule and no names;
-  the recap maps take the whole window and turn the names back on, which is
-  where a round's payoff is. They open framed on the round and are then the
-  reader's to drag and zoom. The end of a run draws every round on one.
-- `groundDistanceM` scores it.
+- `fetchPanoramaIndex` and `fetchPanoramas` read the panoramas a ground round is
+  drawn from, and `createPanorama` stands the player in one — behind the home
+  screen too. The movement setting is the view's own.
+- `createMap` is the game's one Solar System map, kept for the life of the
+  page (`frontend/src/game/space.ts`). It is the view of a round from orbit,
+  with the camera held where the game puts it; it is what knows the sky at a
+  round's date — `getSubsolarPoint` for where the lit side is, `distanceKm` for
+  how far off a guess on another body was; and it is the recap, with every
+  guess pinned by `addMarker` on the body it named.
+- `createSystemMap` is the diagram a body is picked on, told which bodies are
+  in play.
+- `createFlatMap` is the map a place is picked on, with the graticule and no
+  names, and the map a recap ends on, with the names back.
+- `groundDistanceM` scores a miss along the ground.
 
-Both recaps link each place back to spacemap.co, into the panorama the round
-was taken from. The SDK hands out entries but not the site's URLs, so
-`frontend/src/game/links.ts` spells the route out — `panoramaAt` gives the key it takes.
+A recap opens far enough back to hold every guess, flies in to the place, and
+ends on the body's own map; a slider is the same flight by hand. The end of a
+run shows every round on one map of the whole system, and a row of the tally
+looks at that round alone.
+
+Both recaps link back to spacemap.co: into the panorama a ground round was
+taken from, onto the body a round from orbit was over. The SDK hands out
+entries but not the site's URLs, so `frontend/src/game/links.ts` spells the
+routes out.
 
 The credit lines are the SDK's, in the corner it draws them, and are not
-removable. The guess map sits clear of the panorama's rather than over it.
+removable. The guess panel sits clear of the view's rather than over it.
 
 ## The SDK
 
 `spacemap` comes from npm, with `three` as a peer dependency the app pins
-itself. The calls this app leans on — `fetchPanoramas`, and a `groundDistanceM`
-that takes any two places rather than two panoramas — are in 0.1.1 onwards.
+itself. The game is ahead of the published package: `createSystemMap`,
+`distanceKm`, `offsetKm`, `getSubsolarPoint` and a flat map that opens Ceres
+and Vesta are on the `sdk-system-map` branch of the map's repository. Until
+that is published and the version here bumped, build it there with
+`pnpm build:sdk:npm` and put it in place of the installed one:
+
+```sh
+frontend/scripts/use-local-sdk.sh ../space-map
+```
 
 ## Deploying
 

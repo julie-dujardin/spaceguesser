@@ -49,6 +49,13 @@ const HOLD = 2.4;
 /** How far back a round starts when every guess is on the right body. */
 const BACK_OFF = 2.6;
 
+/** Nearer than this the belt has thinned to nothing, and a rock of it can be
+ *  drawn without the rest. */
+const SWARM_CLEAR_KM = 3_000_000;
+/** Past this much of the way in, the lines out to other bodies run past the
+ *  camera's shoulder as wedges rather than lines. */
+const LINES_UNTIL = 0.6;
+
 /** The last of the slider is the body's own map coming up over the globe. */
 const FLAT_FROM = 0.88;
 
@@ -88,6 +95,10 @@ export function Recap({ space, rounds, focus }: Props) {
 	const [flight, setFlight] = useState<Flight | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const flying = useRef<number | null>(null);
+	/** The lines out to guesses on other bodies, and the kinds of body the
+	 *  rounds on screen involve. */
+	const lines = useRef<{ setVisible(visible: boolean): void }[]>([]);
+	const kinds = useRef<Set<BodyKind>>(new Set());
 	// A lobby hands the same rounds over as new objects on every snapshot.
 	const key = JSON.stringify(rounds);
 	const shown = useRef(rounds);
@@ -132,7 +143,9 @@ export function Recap({ space, rounds, focus }: Props) {
 			const time = (one ?? all[all.length - 1]).round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;
-			space.dress(kindsIn(one ? [one] : all));
+			kinds.current = kindsIn(one ? [one] : all);
+			lines.current = [];
+			space.dress(kinds.current);
 
 			let next: Flight;
 			if (one) {
@@ -149,15 +162,15 @@ export function Recap({ space, rounds, focus }: Props) {
 					if (!offset) continue;
 					if (guess.body !== truth.body) {
 						widest = Math.max(widest, space.apart(truth.body, guess.body) ?? 0);
-						drawn.push(
-							map.addPolyline({
-								anchor: place,
-								points: [[0, 0, 0], offset],
-								color: '#ffffff',
-								opacity: mine ? 0.5 : 0.28,
-								widthPx: 1
-							})
-						);
+						const line = map.addPolyline({
+							anchor: place,
+							points: [[0, 0, 0], offset],
+							color: '#ffffff',
+							opacity: mine ? 0.5 : 0.28,
+							widthPx: 1
+						});
+						drawn.push(line);
+						lines.current.push(line);
 					} else if (guess.at && mapped) {
 						drawn.push(
 							map.addSurfacePolyline({
@@ -170,7 +183,9 @@ export function Recap({ space, rounds, focus }: Props) {
 							})
 						);
 					}
-					mark(guess.body, guess.at, avatar ? face(avatar, mine) : pin('pin'));
+					// From as far as another body is seen, a place on it is the body.
+					const at = guess.body === truth.body ? guess.at : null;
+					mark(guess.body, at, avatar ? face(avatar, mine) : pin('pin'));
 				}
 				mark(truth.body, mapped ? truth : null, pin('pin truth'));
 				const nearKm = space.standoffKm(truth.body);
@@ -237,7 +252,10 @@ export function Recap({ space, rounds, focus }: Props) {
 
 	useEffect(() => {
 		if (!space || !flight) return;
-		space.frame(flight.body, flight.farKm * (flight.nearKm / flight.farKm) ** approach);
+		const distanceKm = flight.farKm * (flight.nearKm / flight.farKm) ** approach;
+		space.frame(flight.body, distanceKm);
+		space.dress(kinds.current, distanceKm < SWARM_CLEAR_KM);
+		for (const line of lines.current) line.setVisible(approach < LINES_UNTIL);
 	}, [space, flight, approach]);
 
 	// The view is the reader's to turn and to zoom with the wheel as well, and
