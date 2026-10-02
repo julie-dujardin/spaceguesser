@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { EMOJI, NAME_MAX, SWATCHES, recallProfile, type Profile } from '../game/players';
 import type { Trouble } from '../game/useLobby';
-import { Avatar } from './Avatar';
+import { Avatar, Glyph } from './Avatar';
 
 interface Props {
 	/** The run being joined; absent when this player is opening one. */
@@ -67,7 +67,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 								aria-pressed={emoji === profile.emoji}
 								onClick={() => set({ emoji })}
 							>
-								{emoji}
+								<Glyph emoji={emoji} />
 							</button>
 						))}
 					</div>

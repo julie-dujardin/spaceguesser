@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createFlatMap, type FlatMap, type FlatMapCreateOptions } from 'spacemap';
-import type { Profile } from '../game/players';
+import { MARS, MARS_ICON, glyph, type Profile } from '../game/players';
 
 type Options = Omit<FlatMapCreateOptions, 'container'>;
 
@@ -52,6 +52,7 @@ export function face(profile: Profile, mine = false): HTMLElement {
 	const element = document.createElement('div');
 	element.className = mine ? 'emo mine' : 'emo';
 	element.style.background = profile.color;
-	element.textContent = profile.emoji;
+	if (profile.emoji === MARS) element.appendChild(new Image()).src = MARS_ICON;
+	else element.textContent = glyph(profile.emoji);
 	return element;
 }

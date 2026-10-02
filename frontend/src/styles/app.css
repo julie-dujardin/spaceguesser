@@ -778,6 +778,20 @@ input.code {
 	white-space: nowrap;
 }
 
+/* The one face that is a picture, sized as the emoji beside it are. */
+.av img,
+.emo img,
+.emoji img {
+	display: block;
+	width: 1.15em;
+	height: 1.15em;
+}
+
+.emoji button {
+	display: grid;
+	place-items: center;
+}
+
 /* Who is in the round, lit once their guess is. */
 .party {
 	gap: 4px;

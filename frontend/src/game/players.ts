@@ -6,6 +6,13 @@ export interface Profile {
 	color: string;
 }
 
+/** The site's own Mars. No font has it, so it travels as the planet's symbol
+ *  and is drawn from the icon. */
+export const MARS = '♂';
+
+/** The Moon as it is tonight: one face, worn as whichever phase is up. */
+export const MOON = '🌕';
+
 export const EMOJI = [
 	'☀️',
 	'🌞',
@@ -15,11 +22,9 @@ export const EMOJI = [
 	'☄️',
 	'🌌',
 	'🌏',
+	MARS,
 	'🪐',
-	'🌕',
-	'🌗',
-	'🌒',
-	'🌑',
+	MOON,
 	'🌙',
 	'🪨',
 	'🚀',
@@ -28,10 +33,29 @@ export const EMOJI = [
 	'📡',
 	'🔭',
 	'🧑‍🚀',
+	'🤖',
+	'📎',
 	'👽',
 	'👾',
 	'🦠'
 ];
+
+const PHASES = ['🌑', '🌒', '🌓', '🌔', '🌕', '🌖', '🌗', '🌘'];
+const SYNODIC_DAYS = 29.530588853;
+/** A new moon: 2000-01-06 18:14 UTC. */
+const NEW_MOON_MS = Date.UTC(2000, 0, 6, 18, 14);
+
+export function moonPhase(now = Date.now()): string {
+	const age = ((now - NEW_MOON_MS) / 86_400_000 / SYNODIC_DAYS) % 1;
+	return PHASES[Math.round(((age + 1) % 1) * 8) % 8];
+}
+
+/** What an emoji is written as. Mars is the exception: it is a picture. */
+export function glyph(emoji: string): string {
+	return emoji === MOON ? moonPhase() : emoji;
+}
+
+export const MARS_ICON = '/favicon.svg';
 
 export const SWATCHES = ['#e5e5e5', '#f59e0b', '#ef4444', '#22d3ee', '#a78bfa', '#4ade80'];
 
