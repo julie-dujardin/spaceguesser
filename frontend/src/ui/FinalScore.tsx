@@ -1,14 +1,21 @@
-import { useMemo, type ReactNode } from 'react';
-import { bodyName, bodyOf } from '../game/bodies';
+import { useMemo, useState, type ReactNode } from 'react';
+import { bodyName } from '../game/bodies';
 import { roundUrl } from '../game/links';
 import { formatClock } from '../game/rules';
 import type { Played } from '../game/run';
 import { MAX_POINTS } from '../game/scoring';
-import { ResultMap } from './ResultMap';
+import type { Space } from '../game/space';
+import { Recap, type RecapGuess } from './Recap';
 import { miss } from './RoundResult';
 
 interface Props {
+	space: Space | null;
 	played: Played[];
+	/** Multiplayer: everyone else's guesses in a round, shown when it is the
+	 *  one looked at. */
+	others?: (round: number) => RecapGuess[];
+	/** The face on the reader's own guesses. */
+	avatar?: RecapGuess['avatar'];
 	/** Absent for a player who is not the one starting the next game. */
 	onAgain?: () => void;
 	onHome: () => void;
@@ -16,29 +23,29 @@ interface Props {
 	children?: ReactNode;
 }
 
-export function FinalScore({ played, onAgain, onHome, children }: Props) {
+export function FinalScore({ space, played, others, avatar, onAgain, onHome, children }: Props) {
 	const total = played.reduce((sum, round) => sum + round.score.points, 0);
 	const best = played.length * MAX_POINTS;
-	// One flat map holds one body: the one most of the run was on.
-	const body = useMemo(() => {
-		const counts = new Map<string, number>();
-		for (const { truth } of played)
-			if (bodyOf(truth.body)?.surface) counts.set(truth.body, (counts.get(truth.body) ?? 0) + 1);
-		return [...counts].sort((a, b) => b[1] - a[1])[0]?.[0];
-	}, [played]);
-	const placements = useMemo(
+	/** The round looked at by itself; null for the whole run on one map. */
+	const [focus, setFocus] = useState<number | null>(null);
+	const recap = useMemo(
 		() =>
-			played.map(({ truth, guess }) => ({
+			played.map(({ round, truth, guess }, index) => ({
+				round,
 				truth,
-				guess: guess?.body === truth.body ? guess.at : null,
-				hidden: truth.body !== body
+				guesses: [
+					// Everyone's guesses are a crowd on the whole run's map, and the
+					// point of looking at one round.
+					...(focus === index ? (others?.(index) ?? []) : []),
+					...(guess ? [{ guess, avatar: focus === index ? avatar : undefined, mine: true }] : [])
+				]
 			})),
-		[played, body]
+		[played, others, avatar, focus]
 	);
 
 	return (
 		<div className="board">
-			{body && <ResultMap body={body} rounds={placements} />}
+			<Recap space={space} rounds={recap} focus={focus} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">run complete</span>
@@ -52,29 +59,41 @@ export function FinalScore({ played, onAgain, onHome, children }: Props) {
 				{children}
 				<div className="rounds">
 					{played.map((round, index) => (
-						<a
-							className="rk"
+						<div
+							className={`rk pick${focus === index ? ' on' : ''}`}
 							key={index}
-							href={roundUrl(round.round)}
-							target="_blank"
-							rel="noopener noreferrer"
-							title="show in spacemap"
+							role="button"
+							tabIndex={0}
+							aria-pressed={focus === index}
+							title={focus === index ? 'back to the whole run' : 'look at this round'}
+							onClick={() => setFocus(focus === index ? null : index)}
+							onKeyDown={(event) => {
+								if (event.key !== 'Enter' && event.key !== ' ') return;
+								event.preventDefault();
+								setFocus(focus === index ? null : index);
+							}}
 						>
 							<span className="n">{index + 1}</span>
 							<span className="nm">{bodyName(round.truth.body)}</span>
-							<span className="mono mut" style={{ fontSize: '11.5px' }}>
-								{miss(round)}
-							</span>
+							<span className="mono mut miss">{miss(round)}</span>
 							{round.secondsLeft !== null && !round.timedOut && (
 								<span className="mono dim" style={{ fontSize: '11.5px' }}>
 									{formatClock(round.secondsLeft)} left
 								</span>
 							)}
 							<span className="gain">{round.score.points.toLocaleString('en')}</span>
-							<span className="go" aria-hidden="true">
+							<a
+								className="go"
+								href={roundUrl(round.round)}
+								target="_blank"
+								rel="noopener noreferrer"
+								title="show in spacemap"
+								aria-label="show in spacemap"
+								onClick={(event) => event.stopPropagation()}
+							>
 								↗
-							</span>
-						</a>
+							</a>
+						</div>
 					))}
 				</div>
 				<div className="acts">

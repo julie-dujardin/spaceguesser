@@ -1,15 +1,17 @@
 import { useMemo, type ReactNode } from 'react';
 import type { LonLat } from 'spacemap';
 import { bodyName, bodyOf } from '../game/bodies';
+import type { Space } from '../game/space';
 import { roundUrl } from '../game/links';
 import type { Round } from '../game/rounds';
 import { formatClock, formatDistance, formatWhen } from '../game/rules';
 import type { Played } from '../game/run';
 import type { Guess } from '../game/scoring';
 import type { Profile } from '../game/players';
-import { ResultMap } from './ResultMap';
+import { Recap, type RecapGuess } from './Recap';
 
 interface Props {
+	space: Space | null;
 	played: Played;
 	round: number;
 	rounds: number;
@@ -51,28 +53,29 @@ export function miss({ guess, score }: Played): string {
 	return bodyName(guess.body);
 }
 
-export function RoundResult({ played, round, rounds, onNext, avatar, others, children }: Props) {
+export function RoundResult({
+	space,
+	played,
+	round,
+	rounds,
+	onNext,
+	avatar,
+	others,
+	children
+}: Props) {
 	const { truth, guess, score, secondsLeft, timedOut } = played;
-	// Stable, so the map is framed once rather than on every render.
-	const placements = useMemo(
-		() => [
-			{
-				truth,
-				guess: guess?.body === truth.body ? guess.at : null,
-				avatar,
-				others: (others ?? []).flatMap((other) =>
-					other.guess.body === truth.body && other.guess.at
-						? [{ at: other.guess.at, avatar: other.avatar }]
-						: []
-				)
-			}
-		],
-		[truth, guess, avatar, others]
-	);
+	// Stable, so the recap is set up once rather than on every render.
+	const recap = useMemo(() => {
+		const guesses: RecapGuess[] = [
+			...(others ?? []),
+			...(guess ? [{ guess, avatar, mine: true }] : [])
+		];
+		return [{ round: played.round, truth, guesses }];
+	}, [played.round, truth, guess, avatar, others]);
 
 	return (
 		<div className="board">
-			{bodyOf(truth.body)?.surface && <ResultMap body={truth.body} rounds={placements} />}
+			<Recap space={space} rounds={recap} focus={0} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">actual location</span>

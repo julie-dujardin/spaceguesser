@@ -127,10 +127,14 @@ export default function App() {
 	// The home and setup screens sit over the opener, and so does a lobby; the
 	// final tally does not, so a run ends on its own card rather than on a place
 	// already guessed.
-	const shown: Round | null = lobby
-		? (lobby.round?.entry ?? (lobby.phase === 'final' ? null : opener))
-		: run.phase === 'final'
-			? null
+	// A recap takes the stage for itself: the map under it is what it shows.
+	const recap = lobby
+		? lobby.phase === 'result' || lobby.phase === 'final'
+		: run.phase === 'result' || run.phase === 'final';
+	const shown: Round | null = recap
+		? null
+		: lobby
+			? (lobby.round?.entry ?? opener)
 			: (round ?? opener);
 	const shownKey = shown && `${shown.mode}:${shown.body}:${shown.time}`;
 	useEffect(() => setOver(null), [shownKey]);
@@ -145,7 +149,8 @@ export default function App() {
 	}, [shown, over, lobby, run.standing]);
 
 	// The map draws nothing while a panorama is over it.
-	useEffect(() => space?.cover(shown?.mode !== 'orbit'), [space, shown?.mode]);
+	const flown = recap || shown?.mode === 'orbit';
+	useEffect(() => space?.cover(!flown), [space, flown]);
 
 	const committing = useRef(false);
 	const current = useRef(round);
@@ -389,11 +394,18 @@ export default function App() {
 			)}
 
 			{solo && run.phase === 'result' && last && (
-				<RoundResult played={last} round={run.round + 1} rounds={run.drawn.length} onNext={next} />
+				<RoundResult
+					space={space}
+					played={last}
+					round={run.round + 1}
+					rounds={run.drawn.length}
+					onNext={next}
+				/>
 			)}
 
 			{solo && run.phase === 'final' && (
 				<FinalScore
+					space={space}
 					played={run.played}
 					onAgain={() => start(run.settings)}
 					onHome={() => dispatch({ kind: 'home' })}

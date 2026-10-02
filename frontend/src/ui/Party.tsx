@@ -69,6 +69,19 @@ export function Party({
 		const rounds = drawRun(stops, settings.rounds, modesFor(settings.modes), taken);
 		session.send({ type: 'start', settings, rounds });
 	};
+	// Held steady across snapshots, which are new objects each time: the recap
+	// sets itself up again for whatever changes identity.
+	const told = JSON.stringify([lobby.history, lobby.players.map((seat) => seat.name)]);
+	const everyoneElse = useMemo(
+		() => (index: number) =>
+			lobby.players.flatMap((seat) => {
+				const guess = seat.id !== you && lobby.history[index]?.[seat.id]?.guess;
+				return guess ? [{ guess, avatar: profileOf(seat.name) }] : [];
+			}),
+		[told, you]
+	);
+	const me = lobby.players.find((seat) => seat.id === you);
+	const mine = useMemo(() => (me ? profileOf(me.name) : undefined), [me?.name]);
 	const { round } = lobby;
 	const act = (type: 'close_round' | 'next') =>
 		hosting && round ? () => session.send({ type, round: round.index }) : undefined;
@@ -119,14 +132,17 @@ export function Party({
 			)}
 
 			{lobby.phase === 'result' && round && (
-				<Result lobby={lobby} round={round} you={you} onNext={act('next')}>
+				<Result space={space} lobby={lobby} round={round} you={you} onNext={act('next')}>
 					<Standings standings={table} you={you} gains />
 				</Result>
 			)}
 
 			{lobby.phase === 'final' && (
 				<FinalScore
+					space={space}
 					played={played}
+					others={everyoneElse}
+					avatar={mine}
 					onAgain={hosting && stops ? start : undefined}
 					onHome={session.leave}
 				>
@@ -308,6 +324,7 @@ function Round({
 }
 
 interface ResultProps {
+	space: Space | null;
 	lobby: Lobby;
 	round: LobbyRound;
 	you: string | null;
@@ -315,7 +332,7 @@ interface ResultProps {
 	children: ReactNode;
 }
 
-function Result({ lobby, round, you, onNext, children }: ResultProps) {
+function Result({ space, lobby, round, you, onNext, children }: ResultProps) {
 	const guesses = lobby.history[round.index];
 	const mine = guesses?.[you ?? ''];
 	const me = lobby.players.find((seat) => seat.id === you);
@@ -354,6 +371,7 @@ function Result({ lobby, round, you, onNext, children }: ResultProps) {
 
 	return (
 		<RoundResult
+			space={space}
 			played={drawn.played}
 			avatar={drawn.avatar}
 			others={drawn.others}

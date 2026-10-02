@@ -107,9 +107,13 @@ export function describeRun(settings: RunSettings): string[] {
 	];
 }
 
+const AU_KM = 149_597_870.7;
+
 export function formatDistance(km: number): string {
 	if (km < 1) return `${Math.round(km * 1000)} m`;
 	if (km < 100) return `${km.toFixed(1)} km`;
+	// Between planets a count of kilometres is a row of digits.
+	if (km > 0.05 * AU_KM) return `${(km / AU_KM).toFixed(2)} AU`;
 	return `${Math.round(km).toLocaleString('en')} km`;
 }
 

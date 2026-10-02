@@ -6,7 +6,7 @@
  */
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
-import { bodyOf, membersOf, systemOf, viewDistance } from './bodies';
+import { bodyOf, membersOf, systemOf, viewDistance, type BodyKind } from './bodies';
 import { anywhere, spot, type OrbitRound, type Place, type Round } from './rounds';
 import { NO_SKY, type Sky } from './scoring';
 
@@ -86,18 +86,50 @@ export class Space {
 			live: false,
 			// The game moves the camera; the reader's hands are on the game.
 			interactive: false,
-			layers: {
-				spacecraft: false,
-				satellites: false,
-				debris: false,
-				// Names and orbits would answer the round.
-				orbits: false,
-				labels: false,
-				nomenclature: false
-			}
+			layers: { spacecraft: false, satellites: false, debris: false, nomenclature: false }
 		});
 		map.clock.pause();
-		return new Space(map, container);
+		const space = new Space(map, container);
+		space.dress(null);
+		return space;
+	}
+
+	/**
+	 * What the map draws besides the bodies. A round shows the whole sky and
+	 * names none of it: names and orbits would answer it. A recap names what it
+	 * shows, and leaves out the swarms of small bodies unless one of `kinds`
+	 * had a part in it — the belt is a brown fog over everything otherwise.
+	 * Null is a round. Layers are hidden rather than left out when the map
+	 * opens: one left out then is never fetched.
+	 */
+	dress(recap: ReadonlySet<BodyKind> | null): void {
+		const named = recap !== null;
+		this.map.setLayerVisible('labels', named);
+		this.map.setLayerVisible('orbits', named);
+		this.map.setLayerVisible('asteroids', !recap || recap.has('asteroid'));
+		this.map.setLayerVisible('comets', !recap || recap.has('comet'));
+		this.map.setLayerVisible('dwarfPlanets', !recap || recap.has('dwarf'));
+	}
+
+	/** Let the reader turn the view and zoom it between two distances, or, with
+	 *  null, take their hands off it again. */
+	hands(reach: { nearKm: number; farKm: number } | null): void {
+		for (const gesture of [this.map.dragRotate, this.map.scrollZoom])
+			if (reach) gesture.enable();
+			else gesture.disable();
+		this.map.setLimits(reach ? { minDistanceKm: reach.nearKm, maxDistanceKm: reach.farKm } : {});
+	}
+
+	/** Look at `body` from `distanceKm`, down on `at` when there is one; the
+	 *  side already in view otherwise. */
+	frame(body: string, distanceKm: number, at?: LonLat): void {
+		this.release();
+		this.map.jumpTo({ body, distanceKm, lat: at?.lat, lon: at?.lon });
+	}
+
+	/** Kilometres between two bodies' centres as the map last drew them. */
+	apart(a: string, b: string): number | null {
+		return this.map.distanceKm({ body: a }, { body: b });
 	}
 
 	/** Stop drawing while something opaque is over the map. What the map lays
