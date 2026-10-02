@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: spaceguesser-postgres
+    restart: unless-stopped
+    environment:
+      - POSTGRES_USER=multiplayer
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?}
+      - POSTGRES_DB=multiplayer
+    # A few hundred small rows: sized to stay out of the search index's memory.
+    command: postgres -c shared_buffers=32MB -c max_connections=20
+    volumes:
+      - ${PG_DATA_HOST_DIR:-/srv/spaceguesser/pg_data}:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U multiplayer"]
+      interval: 5s
+      retries: 12
+    networks:
+      - multiplayer
+
+  multiplayer:
+    image: ghcr.io/julie-dujardin/spaceguesser-backend:latest
+    container_name: spaceguesser-multiplayer
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgres://multiplayer:${POSTGRES_PASSWORD:?}@postgres/multiplayer
+      # Required: the server reads an empty list as "any origin", for development.
+      - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?}
+    # No host port: the only way in is the tunnel (TLS terminates at Cloudflare).
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - multiplayer
+
+  cloudflared:
+    image: cloudflare/cloudflared:2026.6.1
+    container_name: spaceguesser-multiplayer-tunnel
+    restart: unless-stopped
+    command: tunnel --no-autoupdate run
+    environment:
+      - TUNNEL_TOKEN=${TUNNEL_TOKEN:?}
+    depends_on:
+      - multiplayer
+    networks:
+      - multiplayer
+
+networks:
+  multiplayer:

@@ -5,6 +5,7 @@
 			"label": "dev",
 			"type": "npm",
 			"script": "dev",
+			"path": "frontend",
 			"isBackground": true,
 			"problemMatcher": {
 				"pattern": { "regexp": "." },

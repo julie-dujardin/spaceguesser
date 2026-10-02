@@ -4,10 +4,16 @@ You are standing somewhere in the solar system. Look around, then say where on
 the map. Built on the [Space Map](https://spacemap.co) SDK — the panorama, the
 map you guess on, and the map that shows how wrong you were are all the SDK's.
 
-Quick play and a custom solo run are in. Daily challenge and multiplayer are
-not: they need a backend this has none of.
+Quick play and a custom solo run are in. Multiplayer has its server and not yet
+its screens; the daily challenge has neither.
+
+- `frontend/` — the game.
+- `backend/` — the multiplayer server: lobbies over WebSockets, in Rust. Its
+  [README](backend/README.md) has the protocol.
+- `infrastructure/` — how both are deployed, and the server's load test.
 
 ```sh
+cd frontend
 pnpm install
 pnpm dev
 ```
@@ -49,7 +55,7 @@ site or a second body rescales the game on its own.
 
 Both recaps link each place back to spacemap.co, into the panorama the round
 was taken from. The SDK hands out entries but not the site's URLs, so
-`src/game/links.ts` spells the route out — `panoramaAt` gives the key it takes.
+`frontend/src/game/links.ts` spells the route out — `panoramaAt` gives the key it takes.
 
 The credit lines are the SDK's, in the corner it draws them, and are not
 removable. The guess map sits clear of the panorama's rather than over it.
@@ -67,6 +73,10 @@ Workers as static assets — no Worker code, just `dist` behind an SPA fallback.
 The credentials live in the `cf-pages-deploy` environment; the token needs
 account-level Workers Scripts: Edit.
 
+The multiplayer server runs on a VPS behind a Cloudflare tunnel:
+[infrastructure/multiplayer/compose](infrastructure/multiplayer/compose/README.md).
+
 ```sh
+cd frontend
 pnpm run deploy   # build and deploy by hand; `pnpm deploy` is pnpm's own command
 ```

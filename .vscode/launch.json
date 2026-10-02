@@ -8,7 +8,7 @@
 			"runtimeExecutable": "/var/lib/flatpak/exports/bin/org.chromium.Chromium",
 			// Vite binds 127.0.0.1 only, and `localhost` may resolve to ::1 first.
 			"url": "http://127.0.0.1:5170",
-			"webRoot": "${workspaceFolder}/src",
+			"webRoot": "${workspaceFolder}/frontend/src",
 			"preLaunchTask": "dev"
 		}
 	]
