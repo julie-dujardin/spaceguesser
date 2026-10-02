@@ -4,8 +4,8 @@ You are standing somewhere in the solar system. Look around, then say where on
 the map. Built on the [Space Map](https://spacemap.co) SDK — the panorama, the
 map you guess on, and the map that shows how wrong you were are all the SDK's.
 
-Quick play and a custom solo run are in. Multiplayer has its server and not yet
-its screens; the daily challenge has neither.
+Quick play, a custom solo run and multiplayer are in. The daily challenge is
+not.
 
 - `frontend/` — the game.
 - `backend/` — the multiplayer server: lobbies over WebSockets, in Rust. Its
@@ -16,6 +16,14 @@ its screens; the daily challenge has neither.
 cd frontend
 pnpm install
 pnpm dev
+```
+
+Multiplayer is there when `VITE_MULTIPLAYER_URL` names a server, and hidden
+when it does not. For development:
+
+```sh
+docker compose up --build   # the multiplayer server, on :8787
+echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 ```
 
 ## Where the panoramas come from
@@ -39,6 +47,26 @@ Scoring follows the genre: points fall off exponentially with the miss, against
 the diagonal of what the panoramas actually cover, 6,050 km, rather than
 against Mars. That number is read from the pool at run time, so a fifth landing
 site or a second body rescales the game on its own.
+
+## Multiplayer
+
+A lobby is a code. The host picks the rules and shares the link, `/j/<code>`,
+or its QR; everyone picks a name and a face and plays the same rounds against
+the same clock. The server only relays: the host's browser draws the rounds,
+and each browser scores its own guess, with the code solo play uses.
+
+One thing differs from solo. With free movement a solo guess is scored against
+wherever the player walked to; a multiplayer guess is scored against where the
+round opened, so that everyone is ranked on one question and the recap has one
+place to show.
+
+The seat is kept in the browser, so a reload, a dropped connection or a
+redeploy of the server lands back in the game. Opening the same seat in a
+second tab moves it there, and the first tab says so rather than fighting for
+it.
+
+The server seats a player under a name and nothing else, so the emoji and its
+colour travel in front of the name (`frontend/src/game/players.ts`).
 
 ## What the SDK does
 

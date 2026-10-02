@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { panoramaUrl } from '../game/links';
 import { MAX_POINTS, formatClock, formatDistance } from '../game/rules';
 import type { Played } from '../game/run';
@@ -6,11 +7,14 @@ import { ResultMap } from './ResultMap';
 interface Props {
 	body: string;
 	played: Played[];
-	onAgain: () => void;
+	/** Absent for a player who is not the one starting the next game. */
+	onAgain?: () => void;
 	onHome: () => void;
+	/** Goes under the total: the standings, in a game that has them. */
+	children?: ReactNode;
 }
 
-export function FinalScore({ body, played, onAgain, onHome }: Props) {
+export function FinalScore({ body, played, onAgain, onHome, children }: Props) {
 	const total = played.reduce((sum, round) => sum + round.points, 0);
 	const best = played.length * MAX_POINTS;
 
@@ -27,6 +31,7 @@ export function FinalScore({ body, played, onAgain, onHome }: Props) {
 						</span>
 					</div>
 				</div>
+				{children}
 				<div className="rounds">
 					{played.map((round, index) => (
 						<a
@@ -54,9 +59,11 @@ export function FinalScore({ body, played, onAgain, onHome }: Props) {
 					))}
 				</div>
 				<div className="acts">
-					<button type="button" className="btn lg" style={{ flex: 1 }} onClick={onAgain}>
-						Play again
-					</button>
+					{onAgain && (
+						<button type="button" className="btn lg" style={{ flex: 1 }} onClick={onAgain}>
+							Play again
+						</button>
+					)}
 					<button type="button" className="btn lg ghost" style={{ flex: 1 }} onClick={onHome}>
 						Home
 					</button>

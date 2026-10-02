@@ -31,6 +31,9 @@ jobs:
       - run: pnpm exec prettier --check .
 
       - run: pnpm build
+        env:
+          # wss://<the tunnel's hostname>/ws. Unset, the build has no multiplayer.
+          VITE_MULTIPLAYER_URL: ${{ vars.MULTIPLAYER_URL }}
 
       - uses: actions/upload-artifact@v4
         with:

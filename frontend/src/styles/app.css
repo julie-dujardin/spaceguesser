@@ -452,17 +452,70 @@ button {
 /* --- home ---------------------------------------------------------------- */
 
 .home {
-	width: 420px;
+	width: 790px;
+	display: grid;
+	grid-template-columns: 290px 1fr;
+}
+
+.home .main {
 	padding: 32px 28px;
 	display: flex;
 	flex-direction: column;
 	align-items: center;
+	justify-content: center;
 	gap: 16px;
 	text-align: center;
 }
 
-.home .btn.ghost {
-	min-width: 160px;
+.home .out {
+	align-self: center;
+}
+
+.aside {
+	padding: 18px 12px 18px 18px;
+	border-right: 1px solid var(--gborder);
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	background: rgb(255 255 255 / 0.03);
+}
+
+.aside .hd {
+	padding: 0 0 10px 10px;
+}
+
+.mode {
+	display: flex;
+	flex-direction: column;
+	gap: 2px;
+	padding: 10px;
+	border-radius: 8px;
+	border: 0;
+	background: transparent;
+	color: var(--fg);
+	text-align: left;
+	cursor: pointer;
+	transition: background 150ms;
+}
+
+.mode:hover {
+	background: rgb(255 255 255 / 0.09);
+}
+
+.mode.framed {
+	border: 1px solid var(--gborder);
+	padding: 13px;
+}
+
+.mode .t {
+	font-size: 13px;
+	font-weight: 500;
+}
+
+.mode .d {
+	font-size: 11.5px;
+	color: var(--mut);
+	font-family: var(--font-mono);
 }
 
 .start {
@@ -501,6 +554,289 @@ button {
 	font-size: 11.5px;
 	font-family: var(--font-mono);
 	color: oklch(0.45 0 0);
+}
+
+/* --- playing with friends ------------------------------------------------ */
+
+input[type='text'] {
+	height: 34px;
+	min-width: 0;
+	padding: 0 11px;
+	border-radius: 8px;
+	border: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.05);
+	color: var(--fg);
+	font-family: inherit;
+	font-size: 13px;
+	outline: 0;
+}
+
+input[type='text']:focus {
+	border-color: rgb(255 255 255 / 0.3);
+}
+
+input.code {
+	flex: 1;
+	font-family: var(--font-mono);
+	letter-spacing: 0.08em;
+}
+
+.btn.tall {
+	height: 34px;
+}
+
+.code-tag {
+	font-size: 11px;
+	letter-spacing: 0.08em;
+}
+
+.note.bad {
+	color: var(--bad);
+}
+
+.lobby {
+	width: 720px;
+	display: grid;
+	grid-template-columns: 1fr 258px;
+}
+
+.share {
+	display: flex;
+	gap: 14px;
+	align-items: flex-start;
+}
+
+.qr {
+	width: 104px;
+	height: 104px;
+	border-radius: 8px;
+	background: #fff;
+	flex: none;
+}
+
+.link {
+	display: flex;
+	gap: 6px;
+	align-items: center;
+	height: 34px;
+	padding: 0 4px 0 11px;
+	border-radius: 8px;
+	border: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.05);
+	font-family: var(--font-mono);
+	font-size: 12px;
+}
+
+.link span {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.link .btn {
+	margin-left: auto;
+	height: 26px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+.rules {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 5px;
+}
+
+.rules > * {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--mut);
+	border: 1px solid var(--gborder);
+	border-radius: 9999px;
+	padding: 3px 8px;
+}
+
+.rules button {
+	background: transparent;
+	color: var(--fg);
+	cursor: pointer;
+	transition: background 150ms;
+}
+
+.rules button:hover {
+	background: rgb(255 255 255 / 0.1);
+}
+
+.roster {
+	padding: 18px;
+	border-left: 1px solid var(--gborder);
+	background: rgb(255 255 255 / 0.03);
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	min-height: 0;
+	overflow: auto;
+}
+
+.pl {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	font-size: 13px;
+}
+
+.pl.away .av,
+.pl.away .nm {
+	opacity: 0.45;
+}
+
+.pl .tag {
+	margin-left: auto;
+	font-size: 10.5px;
+	font-family: var(--font-mono);
+	color: var(--dim);
+	white-space: nowrap;
+}
+
+.nm {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+
+.av {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	font-size: 14px;
+	line-height: 1;
+	flex: none;
+}
+
+.emoji {
+	display: flex;
+	gap: 6px;
+	flex-wrap: wrap;
+}
+
+.emoji button {
+	width: 38px;
+	height: 38px;
+	padding: 0;
+	border-radius: 9px;
+	border: 1px solid var(--gborder);
+	background: transparent;
+	font-size: 18px;
+	cursor: pointer;
+	transition: all 150ms;
+}
+
+.emoji button:hover {
+	background: rgb(255 255 255 / 0.08);
+}
+
+.emoji button[aria-pressed='true'] {
+	border-color: var(--fg);
+	background: rgb(255 255 255 / 0.12);
+}
+
+.sw {
+	display: flex;
+	gap: 6px;
+	padding: 4px;
+}
+
+.sw button {
+	width: 30px;
+	height: 30px;
+	border-radius: 50%;
+	border: 0;
+	cursor: pointer;
+	padding: 0;
+}
+
+.sw button[aria-pressed='true'] {
+	box-shadow:
+		0 0 0 2px #000,
+		0 0 0 4px var(--fg);
+}
+
+.prev {
+	display: flex;
+	align-items: center;
+	gap: 9px;
+	padding: 10px 12px;
+	border: 1px solid var(--gborder);
+	border-radius: 10px;
+	font-size: 13px;
+}
+
+.prev .tag {
+	margin-left: auto;
+	font-size: 10.5px;
+	white-space: nowrap;
+}
+
+/* Who is in the round, lit once their guess is. */
+.party {
+	gap: 4px;
+	padding: 0 6px;
+}
+
+.party > span {
+	opacity: 0.3;
+	transition: opacity 200ms;
+}
+
+.party > span.in {
+	opacity: 1;
+}
+
+.party .av {
+	width: 22px;
+	height: 22px;
+	font-size: 12px;
+}
+
+/* Over the boards as well as the cards: the line can drop on any screen.
+   Under the quit button, the one corner none of them puts anything in. */
+.conn {
+	position: absolute;
+	right: 16px;
+	top: 58px;
+	z-index: 6;
+	height: 28px;
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--mut);
+}
+
+.scrim.over {
+	z-index: 6;
+	background: rgb(0 0 0 / 0.55);
+	pointer-events: auto;
+}
+
+/* A guess on the recap map, wearing its player's face. */
+.emo {
+	display: grid;
+	place-items: center;
+	width: 26px;
+	height: 26px;
+	border-radius: 50%;
+	font-size: 14px;
+	line-height: 1;
+	box-shadow: 0 0 0 1px rgb(0 0 0 / 0.55);
+}
+
+.emo.mine {
+	width: 32px;
+	height: 32px;
+	font-size: 17px;
+	box-shadow:
+		0 0 0 2px #fff,
+		0 0 0 3px rgb(0 0 0 / 0.5);
 }
 
 /* --- results ------------------------------------------------------------- */
@@ -568,8 +904,29 @@ button {
 	transition: background 150ms;
 }
 
-.rk:hover {
+a.rk:hover,
+.rk.me {
 	background: rgb(255 255 255 / 0.09);
+}
+
+.rk .up {
+	margin-left: auto;
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 11.5px;
+	color: var(--good);
+}
+
+.rk .tot {
+	min-width: 48px;
+	margin-left: auto;
+	text-align: right;
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+}
+
+.rk .up + .tot {
+	margin-left: 0;
 }
 
 /* Says the row leaves the app, without shouting it. */
@@ -615,6 +972,28 @@ button {
 }
 
 /* --- small screens ------------------------------------------------------- */
+
+/* Two columns need the room: under it the side column goes below. */
+@media (max-width: 720px) {
+	.home,
+	.lobby {
+		grid-template-columns: minmax(0, 1fr);
+	}
+
+	.home .main {
+		order: -1;
+	}
+
+	.aside,
+	.roster {
+		border: 0;
+		border-top: 1px solid var(--gborder);
+	}
+
+	.aside {
+		padding: 12px;
+	}
+}
 
 @media (max-width: 860px) {
 	.mapw {

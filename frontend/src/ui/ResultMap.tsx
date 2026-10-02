@@ -2,12 +2,17 @@
 
 import { useEffect, useRef } from 'react';
 import type { LonLat } from 'spacemap';
-import { pin, useFlatMap } from './useFlatMap';
+import type { Profile } from '../game/players';
+import { face, pin, useFlatMap } from './useFlatMap';
 
 export interface Placement {
 	/** Null when the round ran out with nothing picked. */
 	guess: LonLat | null;
 	truth: LonLat;
+	/** Worn by the guess in place of the dot, where a dot does not say whose it is. */
+	avatar?: Profile;
+	/** Where everyone else put theirs. */
+	others?: { at: LonLat; avatar: Profile }[];
 }
 
 interface Props {
@@ -27,9 +32,16 @@ const LONE_ZOOM = 4;
 
 /** A view holding every point, with room around them; zoom 1 is the whole body. */
 function framing(rounds: Placement[]): { lon: number; lat: number; zoom: number } {
-	const points = rounds.flatMap(({ guess, truth }) => (guess ? [guess, truth] : [truth]));
+	const points = rounds.flatMap(({ guess, truth, others = [] }) => [
+		truth,
+		...(guess ? [guess] : []),
+		...others.map((other) => other.at)
+	]);
 	if (!points.length) return { lon: 0, lat: 0, zoom: 1 };
-	const lons = points.map((at) => at.lon);
+	// The export writes east longitudes and the map reports clicks either side
+	// of zero, so a guess beside a place near the seam can sit 360° from it:
+	// every point is read on the turn of the map nearest the first.
+	const lons = points.map((at) => at.lon - 360 * Math.round((at.lon - points[0].lon) / 360));
 	const lats = points.map((at) => at.lat);
 	const [west, east] = [Math.min(...lons), Math.max(...lons)];
 	const [south, north] = [Math.min(...lats), Math.max(...lats)];
@@ -63,25 +75,29 @@ export function ResultMap({ body, rounds }: Props) {
 		if (!map) return;
 		// A run's worth of dots needs to say which round each one was.
 		const numbered = rounds.length > 1;
-		const drawn = rounds.flatMap(({ guess, truth }, index) => {
+		const drawn = rounds.flatMap(({ guess, truth, avatar, others = [] }, index) => {
 			const label = numbered ? String(index + 1) : undefined;
-			const actual = map.addMarker({
-				at: truth,
-				element: pin('pin truth', label),
-				align: [0.5, 0.5]
-			});
-			if (!guess) return [actual];
-			return [
+			const miss = (from: LonLat, opacity: number) =>
 				map.addPolyline({
-					points: [guess, truth],
+					points: [from, truth],
 					interpolate: 'geodesic',
 					color: '#ffffff',
-					opacity: 0.45,
+					opacity,
 					widthPx: 1,
 					dash: '4 4'
-				}),
-				map.addMarker({ at: guess, element: pin('pin', label), align: [0.5, 0.5] }),
-				actual
+				});
+			const own = avatar ? face(avatar, true) : pin('pin', label);
+			// In drawing order: the reader's own guess over the others', and the
+			// place itself over them all.
+			return [
+				...others.flatMap((other) => [
+					miss(other.at, 0.25),
+					map.addMarker({ at: other.at, element: face(other.avatar), align: [0.5, 0.5] })
+				]),
+				...(guess
+					? [miss(guess, 0.45), map.addMarker({ at: guess, element: own, align: [0.5, 0.5] })]
+					: []),
+				map.addMarker({ at: truth, element: pin('pin truth', label), align: [0.5, 0.5] })
 			];
 		});
 		return () => drawn.forEach((item) => item.remove());

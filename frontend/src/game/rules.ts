@@ -124,6 +124,15 @@ export function distanceKm(
 	return groundDistanceM(a, b, radiusKm) / 1000;
 }
 
+/** A run's rules, as the labels a lobby shows them in. */
+export function describeRun(settings: RunSettings): string[] {
+	return [
+		`${settings.rounds} rounds`,
+		MOVEMENT_LABELS[settings.movement],
+		settings.timer ? `${settings.timer} s per round` : 'no timer'
+	];
+}
+
 export function formatDistance(km: number): string {
 	if (km < 1) return `${Math.round(km * 1000)} m`;
 	if (km < 100) return `${km.toFixed(1)} km`;

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { MOVEMENT_LABELS, formatClock, type RunSettings } from '../game/rules';
 
 interface Props {
@@ -9,9 +10,11 @@ interface Props {
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
+	/** More pills for the top row. */
+	children?: ReactNode;
 }
 
-export function Hud({ settings, round, rounds, left, onQuit }: Props) {
+export function Hud({ settings, round, rounds, left, onQuit, children }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
 	return (
 		<>
@@ -33,6 +36,7 @@ export function Hud({ settings, round, rounds, left, onQuit }: Props) {
 						</span>
 					</span>
 				)}
+				{children}
 			</div>
 			<div className="hud-topr">
 				<button type="button" className="btn glassy ico" title="Leave run" onClick={onQuit}>

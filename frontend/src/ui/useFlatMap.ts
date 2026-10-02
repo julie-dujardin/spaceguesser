@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createFlatMap, type FlatMap, type FlatMapCreateOptions } from 'spacemap';
+import type { Profile } from '../game/players';
 
 type Options = Omit<FlatMapCreateOptions, 'container'>;
 
@@ -43,5 +44,14 @@ export function pin(className: string, label?: string): HTMLElement {
 	const element = document.createElement('div');
 	element.className = label ? `${className} numbered` : className;
 	if (label) element.textContent = label;
+	return element;
+}
+
+/** A player's guess, wearing their face. */
+export function face(profile: Profile, mine = false): HTMLElement {
+	const element = document.createElement('div');
+	element.className = mine ? 'emo mine' : 'emo';
+	element.style.background = profile.color;
+	element.textContent = profile.emoji;
 	return element;
 }

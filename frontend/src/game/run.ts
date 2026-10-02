@@ -1,7 +1,7 @@
 /** One solo run: the panoramas drawn for it, and what the reader made of them. */
 
 import type { LonLat, PanoramaEntry } from 'spacemap';
-import type { RunSettings } from './rules';
+import { distanceKm, extentKm, scoreFor, type RunSettings } from './rules';
 
 export interface Played {
 	truth: PanoramaEntry;
@@ -12,6 +12,31 @@ export interface Played {
 	/** Seconds still on the clock when the guess went in; null on an untimed run. */
 	secondsLeft: number | null;
 	timedOut: boolean;
+}
+
+/**
+ * What a guess at `at` is worth. `radiusKm` is the body's, which only the map
+ * reports: it always has by the time a point can be clicked, but a round can
+ * run out before that, and has to close anyway.
+ */
+export function play(
+	at: LonLat | null,
+	truth: PanoramaEntry,
+	pool: readonly PanoramaEntry[],
+	radiusKm: number | null,
+	secondsLeft: number | null,
+	timedOut: boolean
+): Played {
+	const guess = radiusKm ? at : null;
+	const km = guess && radiusKm ? distanceKm(guess, truth, radiusKm) : 0;
+	return {
+		truth,
+		guess,
+		distanceKm: km,
+		points: guess && radiusKm ? scoreFor(km, extentKm(pool, radiusKm)) : 0,
+		secondsLeft,
+		timedOut
+	};
 }
 
 export type Phase = 'home' | 'setup' | 'playing' | 'result' | 'final';

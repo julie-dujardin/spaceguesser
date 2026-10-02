@@ -1,8 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, type ReactNode } from 'react';
 import type { PanoramaEntry, LonLat } from 'spacemap';
 import { panoramaUrl } from '../game/links';
 import { BODY_NAMES, formatClock, formatDistance } from '../game/rules';
-import { ResultMap } from './ResultMap';
+import { ResultMap, type Placement } from './ResultMap';
 
 interface Props {
 	body: string;
@@ -16,7 +16,13 @@ interface Props {
 	round: number;
 	rounds: number;
 	timedOut: boolean;
-	onNext: () => void;
+	/** Absent for a player who is not the one moving the game on. */
+	onNext?: () => void;
+	/** Multiplayer: the face on the reader's guess, and the other guesses. */
+	avatar?: Placement['avatar'];
+	others?: Placement['others'];
+	/** Goes under the score: the standings, in a game that has them. */
+	children?: ReactNode;
 }
 
 export function coordinates(at: LonLat): string {
@@ -47,10 +53,16 @@ export function RoundResult({
 	round,
 	rounds,
 	timedOut,
-	onNext
+	onNext,
+	avatar,
+	others,
+	children
 }: Props) {
 	// Stable, so the map is framed once rather than on every render.
-	const placements = useMemo(() => [{ guess, truth }], [guess, truth]);
+	const placements = useMemo(
+		() => [{ guess, truth, avatar, others }],
+		[guess, truth, avatar, others]
+	);
 
 	return (
 		<div className="board">
@@ -86,12 +98,16 @@ export function RoundResult({
 						{guess ? 'time ran out — the last point you picked stood' : 'time ran out'}
 					</span>
 				)}
+				{children}
 				<span className="note">
 					round {round} of {rounds}
+					{!onNext && ' · the host moves on'}
 				</span>
-				<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
-					{round < rounds ? 'Next round' : 'See total'}
-				</button>
+				{onNext && (
+					<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
+						{round < rounds ? 'Next round' : 'See total'}
+					</button>
+				)}
 			</div>
 		</div>
 	);

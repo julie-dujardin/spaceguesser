@@ -1,28 +1,40 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { fetchPanoramas, type LonLat, type PanoramaEntry } from 'spacemap';
-import {
-	MARS,
-	QUICK_PLAY,
-	distanceKm,
-	drawRounds,
-	extentKm,
-	playable,
-	scoreFor
-} from './game/rules';
+import { inviteCode, invitePath, settingsOf } from './game/lobby';
+import { keepProfile } from './game/players';
+import { MARS, QUICK_PLAY, drawRounds, playable } from './game/rules';
 import type { RunSettings } from './game/rules';
-import { INITIAL, reduce } from './game/run';
+import { INITIAL, play, reduce } from './game/run';
+import { MULTIPLAYER, useLobby } from './game/useLobby';
 import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
+import { Friends } from './ui/Friends';
 import { GuessMap } from './ui/GuessMap';
 import { Home } from './ui/Home';
 import { Hud } from './ui/Hud';
 import { Panorama } from './ui/Panorama';
+import { Party } from './ui/Party';
+import { ProfileSetup } from './ui/ProfileSetup';
 import { RoundResult } from './ui/RoundResult';
 
 const BODY = MARS;
 
+/** The way into a multiplayer game, a card at a time. Null is the home screen. */
+type Door =
+	| { at: 'friends' }
+	| { at: 'rules' }
+	/** Picking a face, to open a run with these rules or to join the one at `code`. */
+	| { at: 'profile'; settings: RunSettings; code?: undefined }
+	| { at: 'profile'; code: string }
+	| null;
+
+/** Read once: the page is opened on an invite or it is not. */
+const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
+
 export default function App() {
 	const [run, dispatch] = useReducer(reduce, INITIAL);
+	const party = useLobby(INVITE);
+	const [door, setDoor] = useState<Door>(INVITE ? { at: 'profile', code: INVITE } : null);
 	const [pool, setPool] = useState<PanoramaEntry[] | null>(null);
 	const [poolError, setPoolError] = useState<string | null>(null);
 	/** The panorama behind the home screen, which is also the run's first
@@ -71,21 +83,10 @@ export default function App() {
 	const commit = useCallback(
 		(at: LonLat | null, timedOut: boolean) => {
 			if (!truth || !pool) return;
-			const radius = radiusKm.current;
-			// A point can only be scored against a body whose size the map has
-			// reported. It always has by the time one can be clicked, but a round
-			// can run out before that, and it has to close anyway.
-			const km = at && radius ? distanceKm(at, truth, radius) : 0;
+			const secondsLeft = run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null;
 			dispatch({
 				kind: 'commit',
-				played: {
-					truth,
-					guess: radius ? at : null,
-					distanceKm: km,
-					points: at && radius ? scoreFor(km, extentKm(pool, radius)) : 0,
-					secondsLeft: run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null,
-					timedOut
-				}
+				played: play(at, truth, pool, radiusKm.current, secondsLeft, timedOut)
 			});
 		},
 		[truth, pool, run.settings.timer]
@@ -120,11 +121,38 @@ export default function App() {
 		dispatch({ kind: 'next' });
 	}, []);
 
+	const { lobby } = party;
+	// A seat taken ends whatever else was on screen, and the address becomes the
+	// invite, so the bar can be copied as one and a reload lands back here.
+	const code = lobby?.code;
+	useEffect(() => {
+		if (!code) return;
+		setDoor(null);
+		setMapOpen(false);
+		dispatch({ kind: 'home' });
+		history.replaceState(null, '', invitePath(code));
+		return () => history.replaceState(null, '', '/');
+	}, [code]);
+
+	const enter = (next: Door) => {
+		party.forget();
+		if (!next && !code) history.replaceState(null, '', '/');
+		setDoor(next);
+	};
+
 	const last = run.played[run.played.length - 1];
-	// The home and setup screens sit over the opener; the final tally does not,
-	// so the run ends on its own card rather than on a place already guessed.
-	const standing = run.phase === 'final' ? null : (entry ?? opener);
+	// The home and setup screens sit over the opener, and so does a lobby; the
+	// final tally does not, so a run ends on its own card rather than on a place
+	// already guessed.
+	const standing = lobby
+		? (lobby.round?.entry ?? (lobby.phase === 'final' ? null : opener))
+		: run.phase === 'final'
+			? null
+			: (entry ?? opener);
 	const at = useMemo(() => standing?.id, [standing]);
+	const solo = !lobby && !door;
+	// A seat kept from before is being taken back: nothing else to do yet.
+	const returning = solo && party.status === 'connecting';
 
 	return (
 		<>
@@ -132,15 +160,77 @@ export default function App() {
 				<Panorama
 					body={BODY}
 					at={at}
-					movement={run.settings.movement}
-					onPlace={(placed) => dispatch({ kind: 'stand', entry: placed })}
+					movement={lobby ? settingsOf(lobby.settings).movement : run.settings.movement}
+					onPlace={(placed) => {
+						// A multiplayer round is scored where it opened, for everyone.
+						if (!lobby) dispatch({ kind: 'stand', entry: placed });
+					}}
 					onHeading={setHeading}
 					onEngage={() => setMapOpen(false)}
-					dimmed={run.phase === 'home' || run.phase === 'setup'}
+					dimmed={lobby ? lobby.phase === 'lobby' : run.phase === 'home' || run.phase === 'setup'}
 				/>
 			)}
 
-			{run.phase === 'playing' && (
+			{lobby && (
+				<Party
+					body={BODY}
+					session={party}
+					lobby={lobby}
+					pool={pool}
+					opener={opener}
+					heading={heading}
+					mapOpen={mapOpen}
+					onMapOpen={setMapOpen}
+				/>
+			)}
+
+			{door?.at === 'friends' && (
+				<Friends
+					onCreate={() => enter({ at: 'rules' })}
+					onJoin={(code) => enter({ at: 'profile', code })}
+					onBack={() => enter(null)}
+				/>
+			)}
+
+			{door?.at === 'rules' && (
+				<CustomSetup
+					title="Create run"
+					ready
+					onBack={() => enter({ at: 'friends' })}
+					actions={[
+						{ label: 'Create lobby', go: (settings) => enter({ at: 'profile', settings }) }
+					]}
+				/>
+			)}
+
+			{door?.at === 'profile' && (
+				<ProfileSetup
+					code={door.code}
+					busy={party.status === 'connecting'}
+					trouble={party.trouble}
+					onBack={() => enter(INVITE && door.code === INVITE ? null : { at: 'friends' })}
+					onGo={(profile) => {
+						keepProfile(profile);
+						if (door.code === undefined) party.create(profile, door.settings);
+						else party.join(door.code, profile);
+					}}
+				/>
+			)}
+
+			{returning && (
+				<div className="scrim">
+					<div className="card glass panel" style={{ width: 320 }}>
+						<h2>Rejoining your run…</h2>
+						<div className="acts">
+							<button type="button" className="btn ghost" onClick={party.leave}>
+								Cancel
+							</button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{solo && run.phase === 'playing' && (
 				<div className="hud">
 					<Hud
 						settings={run.settings}
@@ -162,23 +252,37 @@ export default function App() {
 				</div>
 			)}
 
-			{run.phase === 'home' && (
+			{solo && !returning && run.phase === 'home' && (
 				<Home
 					ready={!!pool?.length}
 					onQuickPlay={() => start(QUICK_PLAY)}
 					onCustom={() => dispatch({ kind: 'setup' })}
+					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
+					notice={party.trouble === 'gone' && 'that run ended while you were away'}
 				/>
 			)}
 
-			{run.phase === 'setup' && (
+			{solo && run.phase === 'setup' && (
 				<CustomSetup
+					title="Custom run"
 					ready={!!pool?.length}
-					onStart={start}
 					onBack={() => dispatch({ kind: 'home' })}
+					actions={[
+						{ label: 'Start solo', plays: true, go: start },
+						...(MULTIPLAYER
+							? [
+									{
+										label: 'Create lobby',
+										ghost: true,
+										go: (settings: RunSettings) => enter({ at: 'profile', settings })
+									}
+								]
+							: [])
+					]}
 				/>
 			)}
 
-			{run.phase === 'result' && last && (
+			{solo && run.phase === 'result' && last && (
 				<RoundResult
 					body={BODY}
 					truth={last.truth}
@@ -193,7 +297,7 @@ export default function App() {
 				/>
 			)}
 
-			{run.phase === 'final' && (
+			{solo && run.phase === 'final' && (
 				<FinalScore
 					body={BODY}
 					played={run.played}
@@ -202,7 +306,7 @@ export default function App() {
 				/>
 			)}
 
-			{poolError && run.phase === 'home' && (
+			{poolError && solo && run.phase === 'home' && (
 				<div className="stage-note" style={{ alignItems: 'end', paddingBottom: 24 }}>
 					{poolError}
 				</div>

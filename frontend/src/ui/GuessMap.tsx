@@ -1,6 +1,6 @@
 /** The map in the corner: click a place, then commit to it. */
 
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, type ReactNode } from 'react';
 import type { FlatMarker, LonLat } from 'spacemap';
 import { pin, useFlatMap } from './useFlatMap';
 
@@ -14,6 +14,11 @@ interface Props {
 	onPick: (at: LonLat) => void;
 	onReady: (radiusKm: number | null) => void;
 	onGuess: () => void;
+	/** Said in the foot once the guess is in and others are still out: the map
+	 *  stops taking picks. */
+	waiting?: string;
+	/** Stands where the Guess button was while waiting. */
+	action?: ReactNode;
 }
 
 export function GuessMap({
@@ -24,7 +29,9 @@ export function GuessMap({
 	onOpen,
 	onPick,
 	onReady,
-	onGuess
+	onGuess,
+	waiting,
+	action
 }: Props) {
 	const [container, map, error] = useFlatMap({
 		body,
@@ -38,13 +45,15 @@ export function GuessMap({
 	const ready = useRef(onReady);
 	/** Whether the map was already open when the gesture began. */
 	const taking = useRef(open);
+	const locked = useRef(false);
+	locked.current = waiting !== undefined;
 	pick.current = onPick;
 	ready.current = onReady;
 
 	useEffect(() => {
 		if (!map) return;
 		ready.current(map.bodyRadiusKm);
-		return map.on('click', (at) => at && taking.current && pick.current(at));
+		return map.on('click', (at) => at && taking.current && !locked.current && pick.current(at));
 	}, [map]);
 
 	useEffect(() => {
@@ -73,17 +82,21 @@ export function GuessMap({
 				<span className="mono mut" style={{ fontSize: '11.5px' }} title={error ?? undefined}>
 					{error
 						? 'no map — guess unavailable'
-						: `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`}
+						: (waiting ?? `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`)}
 				</span>
-				<button
-					type="button"
-					className="btn"
-					style={{ marginLeft: 'auto', width: 120 }}
-					disabled={!guess}
-					onClick={onGuess}
-				>
-					Guess
-				</button>
+				{waiting === undefined ? (
+					<button
+						type="button"
+						className="btn"
+						style={{ marginLeft: 'auto', width: 120 }}
+						disabled={!guess}
+						onClick={onGuess}
+					>
+						Guess
+					</button>
+				) : (
+					action
+				)}
 			</div>
 		</div>
 	);

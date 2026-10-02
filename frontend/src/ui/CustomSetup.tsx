@@ -1,8 +1,19 @@
 import { useState } from 'react';
 import { MOVEMENT_LABELS, QUICK_PLAY, type Movement, type RunSettings } from '../game/rules';
 
+export interface SetupAction {
+	label: string;
+	ghost?: boolean;
+	/** Starts a run, which needs somewhere to stand. */
+	plays?: boolean;
+	go: (settings: RunSettings) => void;
+}
+
 interface Props {
-	onStart: (settings: RunSettings) => void;
+	title: string;
+	/** The rules the card opens on. */
+	initial?: RunSettings;
+	actions: SetupAction[];
 	onBack: () => void;
 	ready: boolean;
 }
@@ -32,15 +43,15 @@ function Seg<T extends number | string>({
 	);
 }
 
-export function CustomSetup({ onStart, onBack, ready }: Props) {
-	const [settings, setSettings] = useState<RunSettings>(QUICK_PLAY);
+export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, ready }: Props) {
+	const [settings, setSettings] = useState<RunSettings>(initial);
 	const set = (patch: Partial<RunSettings>) => setSettings((old) => ({ ...old, ...patch }));
 
 	return (
 		<div className="scrim">
 			<div className="card glass panel" style={{ width: 470 }}>
 				<div className="hdr">
-					<h2>Custom run</h2>
+					<h2>{title}</h2>
 					<button type="button" className="btn ghost back" onClick={onBack}>
 						Back
 					</button>
@@ -77,17 +88,21 @@ export function CustomSetup({ onStart, onBack, ready }: Props) {
 							{ value: 120, label: '2 min' }
 						]}
 					/>
+					<span className="note">per round</span>
 				</div>
 				<div className="acts">
-					<button
-						type="button"
-						className="btn lg"
-						style={{ flex: 1 }}
-						disabled={!ready}
-						onClick={() => onStart(settings)}
-					>
-						Start solo
-					</button>
+					{actions.map((action) => (
+						<button
+							key={action.label}
+							type="button"
+							className={`btn lg${action.ghost ? ' ghost' : ''}`}
+							style={{ flex: 1 }}
+							disabled={action.plays && !ready}
+							onClick={() => action.go(settings)}
+						>
+							{action.label}
+						</button>
+					))}
 				</div>
 			</div>
 		</div>
