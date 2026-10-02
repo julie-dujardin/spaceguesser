@@ -14,15 +14,20 @@ export interface BodyInfo {
 	kind: BodyKind;
 	/** Id of the primary of the system it belongs to; its own when it has none. */
 	system: string;
-	/** Only on what orbits the Sun by itself and is not a planet. */
+	/** Only on what orbits the Sun by itself and is not a planet, with the
+	 *  orbit that places it on its zone's map. */
 	zone?: Zone;
-	radiusKm?: number;
+	aAu?: number;
+	tiltDeg?: number;
+	radiusKm: number;
 	/** Pixels round the equator of its best map. */
 	widthPx?: number;
 	/** Has a map a place can be picked on. Without one the body is the whole
 	 *  answer: a gas giant, or a shape with no picture wrapped round it. */
 	surface: boolean;
 	model?: boolean;
+	/** False where no spin is measured: the body has no noon to stand under. */
+	spin?: false;
 }
 
 export const BODIES = catalogue as BodyInfo[];
@@ -81,7 +86,9 @@ const WHOLE_GIANT = 5;
  */
 export function viewDistance(body: BodyInfo): number {
 	if (!body.surface) return body.kind === 'planet' ? WHOLE_GIANT : WHOLE_BODY;
-	if (!body.widthPx) return WHOLE_BODY;
+	// A small body's shape is nothing like the sphere its radius describes, and
+	// an altitude over that sphere can be inside the rock.
+	if (!body.widthPx || (body.model && body.zone && body.kind !== 'dwarf')) return WHOLE_BODY;
 	const pixelsPerRadius = REFERENCE_HEIGHT_PX / (2 * Math.tan((FOV_DEG * Math.PI) / 360));
 	const altitude = ((2 * Math.PI) / body.widthPx) * pixelsPerRadius;
 	return 1 + Math.min(MAX_ALTITUDE, Math.max(MIN_ALTITUDE, altitude));

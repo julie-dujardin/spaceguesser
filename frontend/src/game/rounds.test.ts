@@ -31,12 +31,12 @@ function stops(count: number): Stop[] {
 }
 
 describe('spot', () => {
-	it('always lands where the Sun is at least 15° up', () => {
+	it('always lands where the Sun is at least 40° up', () => {
 		const random = seeded(7);
 		for (let i = 0; i < 2000; i++) {
 			const noon = { lat: random() * 160 - 80, lon: random() * 360 - 180 };
 			const at = spot({ u: random(), v: random() }, noon);
-			expect(apart(at, noon)).toBeLessThanOrEqual(75 + 1e-6);
+			expect(apart(at, noon)).toBeLessThanOrEqual(50 + 1e-6);
 			expect(Math.abs(at.lon)).toBeLessThanOrEqual(180);
 			expect(Math.abs(at.lat)).toBeLessThanOrEqual(90);
 		}
@@ -45,7 +45,7 @@ describe('spot', () => {
 	it('is the sub-solar point itself at u = 0, and the edge of the cap at u = 1', () => {
 		const noon = { lat: 12, lon: -40 };
 		expect(apart(spot({ u: 0, v: 0.3 }, noon), noon)).toBeCloseTo(0, 6);
-		expect(apart(spot({ u: 1, v: 0.3 }, noon), noon)).toBeCloseTo(75, 6);
+		expect(apart(spot({ u: 1, v: 0.3 }, noon), noon)).toBeCloseTo(50, 6);
 	});
 
 	it('covers the whole sphere when there is no noon to stay near', () => {

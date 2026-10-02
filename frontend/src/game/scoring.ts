@@ -60,6 +60,9 @@ export function falloff(max: number, miss: number, size: number): number {
 	return Math.round(max * Math.exp((-10 * miss) / size));
 }
 
+/** A sky nothing was asked of: enough to score a guess on the right body. */
+export const NO_SKY: Sky = { systemsKm: null, bodiesKm: null, systemExtentKm: null };
+
 const NOTHING: Score = { points: 0, system: 0, body: 0, surface: 0, groundKm: null, spaceKm: null };
 
 /**

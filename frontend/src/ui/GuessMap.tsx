@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 import type { FlatMarker, LonLat } from 'spacemap';
+import { bodyOf } from '../game/bodies';
 import { pin, useFlatMap } from './useFlatMap';
 
 interface Props {
@@ -14,6 +15,8 @@ interface Props {
 	onPick: (at: LonLat) => void;
 	onReady: (radiusKm: number | null) => void;
 	onGuess: () => void;
+	/** The round's place is known, so a guess can be scored. */
+	placed: boolean;
 	/** Said in the foot once the guess is in and others are still out: the map
 	 *  stops taking picks. */
 	waiting?: string;
@@ -30,9 +33,12 @@ export function GuessMap({
 	onPick,
 	onReady,
 	onGuess,
+	placed,
 	waiting,
 	action
 }: Props) {
+	// A body with no map is guessed whole: there is nothing to pick.
+	const whole = !bodyOf(body)?.surface;
 	const [container, map, error] = useFlatMap({
 		body,
 		projection: 'equirectangular',
@@ -80,16 +86,18 @@ export function GuessMap({
 			<div className="surface" ref={container} />
 			<div className="foot">
 				<span className="mono mut" style={{ fontSize: '11.5px' }} title={error ?? undefined}>
-					{error
-						? 'no map — guess unavailable'
-						: (waiting ?? `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`)}
+					{whole
+						? (waiting ?? 'no map of this one: the body is the guess')
+						: error
+							? 'no map — guess unavailable'
+							: (waiting ?? `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`)}
 				</span>
 				{waiting === undefined ? (
 					<button
 						type="button"
 						className="btn"
 						style={{ marginLeft: 'auto', width: 120 }}
-						disabled={!guess}
+						disabled={!placed || (!guess && !whole)}
 						onClick={onGuess}
 					>
 						Guess

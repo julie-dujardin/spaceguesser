@@ -26,7 +26,7 @@ export function Home({ onQuickPlay, onCustom, onFriends, ready, notice }: Props)
 					)}
 					<button type="button" className="mode" onClick={onCustom}>
 						<span className="t">Custom run</span>
-						<span className="d">rounds · movement · timer</span>
+						<span className="d">rounds · ground or orbit · movement · timer</span>
 					</button>
 				</div>
 				<div className="main">

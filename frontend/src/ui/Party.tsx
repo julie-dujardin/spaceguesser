@@ -1,11 +1,15 @@
 /** A multiplayer game: the same screens as a solo run, moved on by the server. */
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
-import type { LonLat, PanoramaEntry } from 'spacemap';
+import type { LonLat } from 'spacemap';
+import { bodyOf } from '../game/bodies';
 import { playedBy, settingsOf, slim, standings, type Lobby, type LobbyRound } from '../game/lobby';
 import { profileOf } from '../game/players';
-import { drawRounds, type RunSettings } from '../game/rules';
+import { drawRun, type Modes, type Place, type Round as Asked, type Stop } from '../game/rounds';
+import type { RunSettings } from '../game/rules';
 import { play, type Played } from '../game/run';
+import { NO_SKY } from '../game/scoring';
+import type { Space } from '../game/space';
 import type { LobbySession } from '../game/useLobby';
 import { Avatar } from './Avatar';
 import { CustomSetup } from './CustomSetup';
@@ -17,18 +21,33 @@ import { RoundResult } from './RoundResult';
 import { Standings } from './Standings';
 
 interface Props {
-	body: string;
 	session: LobbySession;
 	lobby: Lobby;
-	pool: PanoramaEntry[] | null;
+	stops: Stop[] | null;
+	/** The modes a run can really be played in, given the ones asked for. */
+	modesFor: (asked: Modes) => Modes;
 	/** What the host has been looking at behind the lobby, and so has seen. */
-	opener: PanoramaEntry | null;
+	opener: Asked | null;
+	/** Where the round on screen is, once that is known. */
+	truth: Place | null;
+	space: Space | null;
 	heading: number;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
 }
 
-export function Party({ body, session, lobby, pool, opener, heading, mapOpen, onMapOpen }: Props) {
+export function Party({
+	session,
+	lobby,
+	stops,
+	modesFor,
+	opener,
+	truth,
+	space,
+	heading,
+	mapOpen,
+	onMapOpen
+}: Props) {
 	const [editing, setEditing] = useState(false);
 	const { you } = session;
 	const hosting = lobby.host === you;
@@ -37,8 +56,9 @@ export function Party({ body, session, lobby, pool, opener, heading, mapOpen, on
 	const played = useMemo(() => playedBy(lobby, you ?? ''), [lobby, you]);
 
 	const start = () => {
-		if (!pool) return;
-		const rounds = drawRounds(pool, settings.rounds, opener ? [opener] : []);
+		if (!stops) return;
+		const taken = opener ? [opener] : [];
+		const rounds = drawRun(stops, settings.rounds, modesFor(settings.modes), taken);
 		session.send({ type: 'start', settings, rounds });
 	};
 	const { round } = lobby;
@@ -67,7 +87,7 @@ export function Party({ body, session, lobby, pool, opener, heading, mapOpen, on
 					<LobbyCard
 						lobby={lobby}
 						you={you}
-						ready={!!pool?.length}
+						ready={!!stops}
 						onStart={start}
 						onEdit={() => setEditing(true)}
 						onLeave={session.leave}
@@ -77,12 +97,12 @@ export function Party({ body, session, lobby, pool, opener, heading, mapOpen, on
 			{lobby.phase === 'playing' && round && (
 				<Round
 					key={round.index}
-					body={body}
 					session={session}
 					lobby={lobby}
 					round={round}
 					settings={settings}
-					pool={pool}
+					truth={truth}
+					space={space}
 					heading={heading}
 					mapOpen={mapOpen}
 					onMapOpen={onMapOpen}
@@ -91,16 +111,15 @@ export function Party({ body, session, lobby, pool, opener, heading, mapOpen, on
 			)}
 
 			{lobby.phase === 'result' && round && (
-				<Result body={body} lobby={lobby} round={round} you={you} onNext={act('next')}>
+				<Result lobby={lobby} round={round} you={you} onNext={act('next')}>
 					<Standings standings={table} you={you} gains />
 				</Result>
 			)}
 
 			{lobby.phase === 'final' && (
 				<FinalScore
-					body={body}
 					played={played}
-					onAgain={hosting && pool?.length ? start : undefined}
+					onAgain={hosting && stops ? start : undefined}
 					onHome={session.leave}
 				>
 					<Standings standings={table} you={you} />
@@ -157,12 +176,12 @@ function useCountdown(endsAt: number | null, skew: number): number | null {
 }
 
 interface RoundProps {
-	body: string;
 	session: LobbySession;
 	lobby: Lobby;
 	round: LobbyRound;
 	settings: RunSettings;
-	pool: PanoramaEntry[] | null;
+	truth: Place | null;
+	space: Space | null;
 	heading: number;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
@@ -171,12 +190,12 @@ interface RoundProps {
 }
 
 function Round({
-	body,
 	session,
 	lobby,
 	round,
 	settings,
-	pool,
+	truth,
+	space,
 	heading,
 	mapOpen,
 	onMapOpen,
@@ -192,18 +211,24 @@ function Round({
 	// Everyone is ranked on the same question, so the guess is scored against
 	// where the round opened rather than wherever this player walked to.
 	const commit = (at: LonLat | null, timedOut: boolean) => {
+		if (!truth) return;
 		const seconds = left === null ? null : timedOut ? 0 : left;
-		// No pool, no scale to score against: the guess goes in unscored.
-		const radius = pool ? radiusKm.current : null;
-		setSent(play(at, slim(round.entry), pool ?? [], radius, seconds, timedOut));
+		const info = bodyOf(truth.body);
+		// A body with no map is guessed whole.
+		const guessed = at || (info && !info.surface && !timedOut) ? { body: truth.body, at } : null;
+		const radius = info?.radiusKm ?? radiusKm.current ?? space?.radiusKm(truth.body) ?? null;
+		setSent(play(slim(round.entry), truth, guessed, NO_SKY, radius, seconds, timedOut));
 	};
 
 	// The clock closes the round on whatever point is picked, as it does solo.
+	// A place the sky has not given yet is waited for: there is nothing to
+	// score against until it has.
 	const expire = useRef(() => {});
 	expire.current = () => commit(guess, true);
+	const placed = !!truth;
 	useEffect(() => {
-		if (left === 0 && !answered) expire.current();
-	}, [left, answered]);
+		if (left === 0 && !answered && placed) expire.current();
+	}, [left, answered, placed]);
 
 	// Again on each new socket: a guess made while the line was down still has
 	// to arrive, and one the server already has is refused harmlessly.
@@ -223,6 +248,7 @@ function Round({
 				settings={settings}
 				round={round.index}
 				rounds={round.total}
+				when={round.entry.time}
 				left={left}
 				onQuit={session.leave}
 			>
@@ -239,7 +265,8 @@ function Round({
 				</span>
 			</Hud>
 			<GuessMap
-				body={body}
+				body={round.entry.body}
+				placed={placed}
 				guess={guess}
 				open={mapOpen}
 				headingDeg={heading}
@@ -272,7 +299,6 @@ function Round({
 }
 
 interface ResultProps {
-	body: string;
 	lobby: Lobby;
 	round: LobbyRound;
 	you: string | null;
@@ -280,7 +306,7 @@ interface ResultProps {
 	children: ReactNode;
 }
 
-function Result({ body, lobby, round, you, onNext, children }: ResultProps) {
+function Result({ lobby, round, you, onNext, children }: ResultProps) {
 	const guesses = lobby.history[round.index];
 	const mine = guesses?.[you ?? ''];
 	const me = lobby.players.find((seat) => seat.id === you);
@@ -289,28 +315,24 @@ function Result({ body, lobby, round, you, onNext, children }: ResultProps) {
 	const key = JSON.stringify([guesses, lobby.players.map((seat) => seat.name)]);
 	const drawn = useMemo(
 		() => ({
-			truth: round.entry,
-			guess: mine?.guess ?? null,
+			// A player who sat the round out still sees where it was, which
+			// anyone's guess says.
+			played: mine ?? playedBy(lobby, you ?? '')[round.index],
 			avatar: me && profileOf(me.name),
 			others: lobby.players.flatMap((seat) => {
-				const at = seat.id !== you && guesses?.[seat.id]?.guess;
-				return at ? [{ at, avatar: profileOf(seat.name) }] : [];
+				const guess = seat.id !== you && guesses?.[seat.id]?.guess;
+				return guess ? [{ guess, avatar: profileOf(seat.name) }] : [];
 			})
 		}),
 		[key]
 	);
+	if (!drawn.played) return null;
 
 	return (
 		<RoundResult
-			body={body}
-			truth={drawn.truth}
-			guess={drawn.guess}
+			played={drawn.played}
 			avatar={drawn.avatar}
 			others={drawn.others}
-			distanceKm={mine?.distanceKm ?? 0}
-			points={mine?.points ?? 0}
-			secondsLeft={mine?.secondsLeft ?? null}
-			timedOut={mine?.timedOut ?? false}
 			round={round.index + 1}
 			rounds={round.total}
 			onNext={onNext}

@@ -17,7 +17,7 @@ export function Standings({ standings, you, gains }: Props) {
 					<Avatar profile={profile} />
 					<span className={`nm${seat.connected ? '' : ' dim'}`}>{profile.name}</span>
 					{gains && (
-						<span className="up">{last ? `+${last.points.toLocaleString('en')}` : '—'}</span>
+						<span className="up">{last ? `+${last.score.points.toLocaleString('en')}` : '—'}</span>
 					)}
 					<span className="tot">{total.toLocaleString('en')}</span>
 				</div>

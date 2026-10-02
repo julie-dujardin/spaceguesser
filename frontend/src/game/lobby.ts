@@ -3,9 +3,10 @@
  * settings, rounds and guesses are this app's own JSON, and are read back here.
  */
 
-import type { PanoramaEntry } from 'spacemap';
 import { profileOf, type Profile } from './players';
+import type { Round } from './rounds';
 import { QUICK_PLAY, type Movement, type RunSettings } from './rules';
+import { NO_SKY, score } from './scoring';
 import type { Played } from './run';
 
 export type LobbyPhase = 'lobby' | 'playing' | 'result' | 'final';
@@ -19,7 +20,8 @@ export interface Seat {
 export interface LobbyRound {
 	index: number;
 	total: number;
-	entry: PanoramaEntry;
+	/** The round itself. The server calls it an entry, and does not read it. */
+	entry: Round;
 	/** Epoch milliseconds on the server's clock; null on an untimed run. */
 	ends_at: number | null;
 	guessed: string[];
@@ -52,7 +54,7 @@ export type ClientMessage =
 	| { type: 'join'; code: string; name: string }
 	| { type: 'rejoin'; code: string; token: string }
 	| { type: 'settings'; settings: RunSettings }
-	| { type: 'start'; settings: RunSettings; rounds: PanoramaEntry[] }
+	| { type: 'start'; settings: RunSettings; rounds: Round[] }
 	| { type: 'guess'; result: Played }
 	// Both name the round they mean, so a second click moves nothing.
 	| { type: 'close_round'; round: number }
@@ -83,16 +85,22 @@ export function settingsOf(value: unknown): RunSettings {
 	return {
 		rounds: Number.isInteger(given.rounds) && given.rounds! > 0 ? given.rounds! : QUICK_PLAY.rounds,
 		movement: MOVEMENTS.includes(given.movement!) ? given.movement! : QUICK_PLAY.movement,
-		timer: typeof given.timer === 'number' && given.timer > 0 ? given.timer : 0
+		timer: typeof given.timer === 'number' && given.timer > 0 ? given.timer : 0,
+		// Neither switched on is no run at all.
+		modes:
+			given.modes && (given.modes.ground || given.modes.orbit)
+				? { ground: !!given.modes.ground, orbit: !!given.modes.orbit }
+				: QUICK_PLAY.modes
 	};
 }
 
-/** What a guess carries of the place it was scored against. The server keeps
- *  every guess in every later snapshot, so the entry's credits and geometry
- *  stay behind; this is what the recaps read. */
-export function slim(entry: PanoramaEntry): PanoramaEntry {
-	const { id, mission, sol, time, lat, lon } = entry;
-	return { id, mission, sol, time, lat, lon };
+/** What a guess carries of the round it answered. The server keeps every
+ *  guess in every later snapshot, so a panorama's credits and geometry stay
+ *  behind; this is what the recaps read. */
+export function slim(round: Round): Round {
+	if (round.mode === 'orbit') return round;
+	const { id, mission, sol, time, lat, lon } = round.entry;
+	return { ...round, entry: { id, mission, sol, time, lat, lon } };
 }
 
 export interface Standing {
@@ -110,7 +118,7 @@ export function standings(lobby: Lobby): Standing[] {
 		.map((seat) => ({
 			seat,
 			profile: profileOf(seat.name),
-			total: lobby.history.reduce((sum, round) => sum + (round[seat.id]?.points ?? 0), 0),
+			total: lobby.history.reduce((sum, round) => sum + (round[seat.id]?.score.points ?? 0), 0),
 			last: latest?.[seat.id]
 		}))
 		.sort((a, b) => b.total - a.total);
@@ -127,10 +135,10 @@ export function playedBy(lobby: Lobby, id: string): Played[] {
 		if (!other) return [];
 		return [
 			{
+				round: other.round,
 				truth: other.truth,
 				guess: null,
-				distanceKm: 0,
-				points: 0,
+				score: score(other.truth, null, NO_SKY, null),
 				secondsLeft: null,
 				timedOut: false
 			}

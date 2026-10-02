@@ -13,6 +13,8 @@ export interface Placement {
 	avatar?: Profile;
 	/** Where everyone else put theirs. */
 	others?: { at: LonLat; avatar: Profile }[];
+	/** On another body than the map's: it keeps its number and is not drawn. */
+	hidden?: boolean;
 }
 
 interface Props {
@@ -32,11 +34,13 @@ const LONE_ZOOM = 4;
 
 /** A view holding every point, with room around them; zoom 1 is the whole body. */
 function framing(rounds: Placement[]): { lon: number; lat: number; zoom: number } {
-	const points = rounds.flatMap(({ guess, truth, others = [] }) => [
-		truth,
-		...(guess ? [guess] : []),
-		...others.map((other) => other.at)
-	]);
+	const points = rounds
+		.filter((round) => !round.hidden)
+		.flatMap(({ guess, truth, others = [] }) => [
+			truth,
+			...(guess ? [guess] : []),
+			...others.map((other) => other.at)
+		]);
 	if (!points.length) return { lon: 0, lat: 0, zoom: 1 };
 	// The export writes east longitudes and the map reports clicks either side
 	// of zero, so a guess beside a place near the seam can sit 360° from it:
@@ -75,7 +79,8 @@ export function ResultMap({ body, rounds }: Props) {
 		if (!map) return;
 		// A run's worth of dots needs to say which round each one was.
 		const numbered = rounds.length > 1;
-		const drawn = rounds.flatMap(({ guess, truth, avatar, others = [] }, index) => {
+		const drawn = rounds.flatMap(({ guess, truth, avatar, others = [], hidden }, index) => {
+			if (hidden) return [];
 			const label = numbered ? String(index + 1) : undefined;
 			const miss = (from: LonLat, opacity: number) =>
 				map.addPolyline({

@@ -65,6 +65,21 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 					/>
 				</div>
 				<div className="field">
+					<span className="hd">rounds are</span>
+					<Seg
+						value={settings.modes.ground ? (settings.modes.orbit ? 'both' : 'ground') : 'orbit'}
+						onChange={(kind) =>
+							set({ modes: { ground: kind !== 'orbit', orbit: kind !== 'ground' } })
+						}
+						options={[
+							{ value: 'both', label: 'both' },
+							{ value: 'ground', label: 'on the ground' },
+							{ value: 'orbit', label: 'from orbit' }
+						]}
+					/>
+					<span className="note">both is a coin toss each round</span>
+				</div>
+				<div className="field">
 					<span className="hd">movement</span>
 					<Seg
 						value={settings.movement}

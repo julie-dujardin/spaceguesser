@@ -4,6 +4,7 @@
  */
 
 import { panoramaAt, type PanoramaEntry } from 'spacemap';
+import type { Round } from './rounds';
 
 const SITE = 'https://spacemap.co';
 
@@ -18,10 +19,18 @@ const TYPE_BY_PREFIX: Record<string, string> = {
 	naif: 'b'
 };
 
+/** The body's own page on spacemap.co. */
+export function bodyUrl(bodyId: string): string {
+	const [prefix, ...rest] = bodyId.split('-');
+	return `${SITE}/view/${TYPE_BY_PREFIX[prefix] ?? 'b'}/${rest.join('-')}`;
+}
+
 /** Standing in this panorama on spacemap.co. */
 export function panoramaUrl(bodyId: string, entry: PanoramaEntry): string {
-	const [prefix, ...rest] = bodyId.split('-');
-	const type = TYPE_BY_PREFIX[prefix] ?? 'b';
-	const at = encodeURIComponent(panoramaAt(entry));
-	return `${SITE}/view/${type}/${rest.join('-')}?at=${at}`;
+	return `${bodyUrl(bodyId)}?at=${encodeURIComponent(panoramaAt(entry))}`;
+}
+
+/** Where a round was, on spacemap.co. */
+export function roundUrl(round: Round): string {
+	return round.mode === 'ground' ? panoramaUrl(round.body, round.entry) : bodyUrl(round.body);
 }

@@ -191,6 +191,27 @@ button {
 	background: rgb(0 0 0 / 0.45);
 }
 
+/* What an orbit round lays over the game's map: the dimming and the notes, and
+   the surface a look-around drag lands on. */
+.stage-over {
+	position: absolute;
+	inset: 0;
+}
+
+.stage-over.turning {
+	cursor: grab;
+	touch-action: none;
+}
+
+.stage-over.turning:active {
+	cursor: grabbing;
+}
+
+/* The map shows its way there, which is not the round's to give away. */
+.stage-over.veiled {
+	background: #0a0a0a;
+}
+
 .stage-note {
 	position: absolute;
 	inset: 0;

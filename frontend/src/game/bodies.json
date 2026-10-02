@@ -3,829 +3,880 @@
 		"id": "naif-199",
 		"name": "Mercury",
 		"kind": "planet",
-		"radiusKm": 2439.8,
+		"system": "naif-199",
+		"radiusKm": 2439.77,
 		"widthPx": 8192,
-		"surface": true,
-		"system": "naif-199"
+		"surface": true
 	},
 	{
 		"id": "naif-299",
 		"name": "Venus",
 		"kind": "planet",
+		"system": "naif-299",
 		"radiusKm": 6051.8,
 		"widthPx": 8192,
-		"surface": true,
-		"system": "naif-299"
+		"surface": false
 	},
 	{
 		"id": "naif-301",
 		"name": "Moon",
 		"kind": "moon",
+		"system": "naif-399",
 		"radiusKm": 1737.4,
 		"widthPx": 16383,
-		"surface": true,
-		"system": "naif-399"
+		"surface": true
 	},
 	{
 		"id": "naif-401",
 		"name": "Phobos",
 		"kind": "moon",
-		"radiusKm": 11.2,
+		"system": "naif-499",
+		"radiusKm": 11.17,
 		"widthPx": 14400,
 		"surface": true,
-		"model": true,
-		"system": "naif-499"
+		"model": true
 	},
 	{
 		"id": "naif-402",
 		"name": "Deimos",
 		"kind": "moon",
+		"system": "naif-499",
 		"radiusKm": 6.3,
 		"widthPx": 7200,
 		"surface": true,
-		"model": true,
-		"system": "naif-499"
+		"model": true
 	},
 	{
 		"id": "naif-499",
 		"name": "Mars",
 		"kind": "planet",
-		"radiusKm": 3389.5,
+		"system": "naif-499",
+		"radiusKm": 3389.53,
 		"widthPx": 16383,
-		"surface": true,
-		"system": "naif-499"
+		"surface": true
 	},
 	{
 		"id": "naif-501",
 		"name": "Io",
 		"kind": "moon",
+		"system": "naif-599",
 		"radiusKm": 1821.5,
 		"widthPx": 11445,
-		"surface": true,
-		"system": "naif-599"
+		"surface": true
 	},
 	{
 		"id": "naif-502",
 		"name": "Europa",
 		"kind": "moon",
+		"system": "naif-599",
 		"radiusKm": 1560.8,
 		"widthPx": 16383,
-		"surface": true,
-		"system": "naif-599"
+		"surface": true
 	},
 	{
 		"id": "naif-503",
 		"name": "Ganymede",
 		"kind": "moon",
+		"system": "naif-599",
 		"radiusKm": 2631.2,
 		"widthPx": 1800,
-		"surface": true,
-		"system": "naif-599"
+		"surface": true
 	},
 	{
 		"id": "naif-504",
 		"name": "Callisto",
 		"kind": "moon",
+		"system": "naif-599",
 		"radiusKm": 2410.3,
 		"widthPx": 1800,
-		"surface": true,
-		"system": "naif-599"
+		"surface": true
 	},
 	{
 		"id": "naif-505",
 		"name": "Amalthea",
 		"kind": "moon",
-		"radiusKm": 87.3,
+		"system": "naif-599",
+		"radiusKm": 87.33,
 		"widthPx": 3600,
 		"surface": true,
-		"model": true,
-		"system": "naif-599"
+		"model": true
 	},
 	{
 		"id": "naif-514",
 		"name": "Thebe",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-599",
+		"radiusKm": 49.67,
 		"surface": false,
-		"system": "naif-599"
+		"model": true
 	},
 	{
 		"id": "naif-599",
 		"name": "Jupiter",
 		"kind": "planet",
+		"system": "naif-599",
 		"radiusKm": 69946,
 		"widthPx": 14400,
-		"surface": false,
-		"system": "naif-599"
+		"surface": false
 	},
 	{
 		"id": "naif-601",
 		"name": "Mimas",
 		"kind": "moon",
-		"radiusKm": 198.4,
+		"system": "naif-699",
+		"radiusKm": 198.37,
 		"widthPx": 6356,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-602",
 		"name": "Enceladus",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 252.1,
 		"widthPx": 15960,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-603",
 		"name": "Tethys",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 531,
 		"widthPx": 13467,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-604",
 		"name": "Dione",
 		"kind": "moon",
-		"radiusKm": 561.4,
+		"system": "naif-699",
+		"radiusKm": 561.43,
 		"widthPx": 14134,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-605",
 		"name": "Rhea",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 763.5,
 		"widthPx": 12015,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-606",
 		"name": "Titan",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 2574.8,
 		"widthPx": 11520,
-		"surface": true,
-		"system": "naif-699"
+		"surface": false
 	},
 	{
 		"id": "naif-607",
 		"name": "Hyperion",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 138.6,
 		"widthPx": 800,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-608",
 		"name": "Iapetus",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 734.5,
 		"widthPx": 11741,
-		"surface": true,
-		"system": "naif-699"
+		"surface": true
 	},
 	{
 		"id": "naif-609",
 		"name": "Phoebe",
 		"kind": "moon",
-		"radiusKm": 106.6,
+		"system": "naif-699",
+		"radiusKm": 106.57,
 		"widthPx": 2879,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-610",
 		"name": "Janus",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 90.33,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-611",
 		"name": "Epimetheus",
 		"kind": "moon",
+		"system": "naif-699",
 		"radiusKm": 58.4,
 		"widthPx": 3600,
 		"surface": true,
-		"model": true,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-612",
 		"name": "Helene",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 18.47,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-613",
 		"name": "Telesto",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 12.63,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-614",
 		"name": "Calypso",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 10.3,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-615",
 		"name": "Atlas",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 15.9,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-616",
 		"name": "Prometheus",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 46,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-617",
 		"name": "Pandora",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 41.5,
 		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-618",
 		"name": "Pan",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-699",
+		"radiusKm": 14.33,
 		"surface": false,
-		"system": "naif-699"
-	},
-	{
-		"id": "naif-635",
-		"name": "Daphnis",
-		"kind": "moon",
-		"model": true,
-		"surface": false,
-		"system": "naif-699"
+		"model": true
 	},
 	{
 		"id": "naif-699",
 		"name": "Saturn",
 		"kind": "planet",
+		"system": "naif-699",
 		"radiusKm": 58300,
 		"widthPx": 2880,
-		"surface": false,
-		"system": "naif-699"
-	},
-	{
-		"id": "naif-701",
-		"name": "Ariel",
-		"kind": "moon",
-		"radiusKm": 578.9,
-		"widthPx": 1440,
-		"surface": true,
-		"system": "naif-799"
-	},
-	{
-		"id": "naif-702",
-		"name": "Umbriel",
-		"kind": "moon",
-		"radiusKm": 584.7,
-		"widthPx": 3600,
-		"surface": true,
-		"system": "naif-799"
-	},
-	{
-		"id": "naif-703",
-		"name": "Titania",
-		"kind": "moon",
-		"radiusKm": 788.9,
-		"widthPx": 1440,
-		"surface": true,
-		"system": "naif-799"
-	},
-	{
-		"id": "naif-704",
-		"name": "Oberon",
-		"kind": "moon",
-		"radiusKm": 761.4,
-		"widthPx": 1440,
-		"surface": true,
-		"system": "naif-799"
+		"surface": false
 	},
 	{
 		"id": "naif-705",
 		"name": "Miranda",
 		"kind": "moon",
-		"radiusKm": 235.8,
+		"system": "naif-799",
+		"radiusKm": 235.83,
 		"widthPx": 1440,
-		"surface": true,
-		"system": "naif-799"
+		"surface": true
 	},
 	{
 		"id": "naif-715",
 		"name": "Puck",
 		"kind": "moon",
+		"system": "naif-799",
 		"radiusKm": 77,
 		"widthPx": 2048,
-		"surface": true,
-		"system": "naif-799"
+		"surface": true
 	},
 	{
 		"id": "naif-799",
 		"name": "Uranus",
 		"kind": "planet",
-		"radiusKm": 25363.7,
-		"surface": false,
-		"system": "naif-799"
+		"system": "naif-799",
+		"radiusKm": 25363.67,
+		"surface": false
 	},
 	{
 		"id": "naif-801",
 		"name": "Triton",
 		"kind": "moon",
+		"system": "naif-899",
 		"radiusKm": 1352.6,
 		"widthPx": 14138,
-		"surface": true,
-		"system": "naif-899"
+		"surface": true
 	},
 	{
 		"id": "naif-807",
 		"name": "Larissa",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-899",
+		"radiusKm": 96,
 		"surface": false,
-		"system": "naif-899"
+		"model": true
 	},
 	{
 		"id": "naif-808",
 		"name": "Proteus",
 		"kind": "moon",
-		"model": true,
+		"system": "naif-899",
+		"radiusKm": 209,
 		"surface": false,
-		"system": "naif-899"
+		"model": true
 	},
 	{
 		"id": "naif-899",
 		"name": "Neptune",
 		"kind": "planet",
+		"system": "naif-899",
 		"radiusKm": 24623,
 		"widthPx": 1800,
-		"surface": false,
-		"system": "naif-899"
+		"surface": false
 	},
 	{
 		"id": "naif-901",
 		"name": "Charon",
 		"kind": "moon",
+		"system": "naif-999",
 		"radiusKm": 606,
 		"widthPx": 6000,
-		"surface": true,
-		"system": "naif-999"
+		"surface": true
 	},
 	{
 		"id": "naif-902",
 		"name": "Nix",
 		"kind": "moon",
-		"radiusKm": 18.9,
+		"system": "naif-999",
+		"radiusKm": 18.93,
 		"widthPx": 2048,
-		"surface": true,
-		"system": "naif-999"
+		"surface": true
 	},
 	{
 		"id": "naif-903",
 		"name": "Hydra",
 		"kind": "moon",
-		"radiusKm": 19.6,
+		"system": "naif-999",
+		"radiusKm": 19.63,
 		"widthPx": 1024,
-		"surface": true,
-		"system": "naif-999"
+		"surface": true
 	},
 	{
 		"id": "naif-999",
 		"name": "Pluto",
 		"kind": "dwarf",
+		"system": "naif-999",
+		"zone": "outer",
+		"aAu": 39.589,
+		"tiltDeg": 17.1,
 		"radiusKm": 1188.3,
 		"widthPx": 5926,
-		"surface": true,
-		"system": "naif-999",
-		"zone": "outer"
+		"surface": true
 	},
 	{
 		"id": "naif-2000001",
 		"name": "Ceres",
 		"kind": "dwarf",
-		"model": true,
-		"surface": true,
-		"widthPx": 8192,
 		"system": "naif-2000001",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.766,
+		"tiltDeg": 10.6,
+		"radiusKm": 473.53,
+		"widthPx": 7383,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-1000012",
 		"name": "67P/Churyumov-Gerasimenko",
 		"kind": "comet",
-		"model": true,
-		"surface": false,
 		"system": "spkid-1000012",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 3.462,
+		"tiltDeg": 7,
+		"radiusKm": 1.72,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-1000036",
 		"name": "1P/Halley",
 		"kind": "comet",
-		"model": true,
-		"surface": false,
 		"system": "spkid-1000036",
-		"zone": "outer"
+		"zone": "outer",
+		"aAu": 17.929,
+		"tiltDeg": 162.2,
+		"radiusKm": 5.33,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-1000041",
 		"name": "103P/Hartley 2",
 		"kind": "comet",
-		"model": true,
-		"surface": true,
-		"widthPx": 3600,
 		"system": "spkid-1000041",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 3.476,
+		"tiltDeg": 13.6,
+		"radiusKm": 0.74,
+		"widthPx": 3600,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-1000093",
 		"name": "9P/Tempel 1",
 		"kind": "comet",
-		"model": true,
-		"surface": false,
 		"system": "spkid-1000093",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 3.146,
+		"tiltDeg": 10.5,
+		"radiusKm": 3,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-1000107",
 		"name": "81P/Wild 2",
 		"kind": "comet",
-		"model": true,
-		"surface": true,
-		"widthPx": 3600,
 		"system": "spkid-1000107",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 3.45,
+		"tiltDeg": 3.2,
+		"radiusKm": 2.03,
+		"widthPx": 3600,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20000004",
 		"name": "Vesta",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 16382,
 		"system": "spkid-20000004",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.361,
+		"tiltDeg": 7.1,
+		"radiusKm": 266,
+		"widthPx": 16382,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20000016",
 		"name": "Psyche",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20000016",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.926,
+		"tiltDeg": 3.1,
+		"radiusKm": 116.67,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20000021",
 		"name": "Lutetia",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20000021",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.434,
+		"tiltDeg": 3.1,
+		"radiusKm": 53,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20000216",
 		"name": "Kleopatra",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20000216",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.795,
+		"tiltDeg": 13.1,
+		"radiusKm": 61,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20000243",
 		"name": "Ida",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 7200,
 		"system": "spkid-20000243",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.863,
+		"tiltDeg": 1.1,
+		"radiusKm": 15.47,
+		"widthPx": 7200,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20000253",
 		"name": "Mathilde",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 3600,
 		"system": "spkid-20000253",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.647,
+		"tiltDeg": 6.7,
+		"radiusKm": 26.67,
+		"widthPx": 3600,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20000433",
 		"name": "Eros",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20000433",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.458,
+		"tiltDeg": 10.8,
+		"radiusKm": 9.33,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20000951",
 		"name": "Gaspra",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 7200,
 		"system": "spkid-20000951",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.21,
+		"tiltDeg": 4.1,
+		"radiusKm": 6.23,
+		"widthPx": 7200,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20001580",
 		"name": "Betulia",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20001580",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.195,
+		"tiltDeg": 52.2,
+		"radiusKm": 2.9,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20001620",
 		"name": "Geographos",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20001620",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.246,
+		"tiltDeg": 13.3,
+		"radiusKm": 1.28,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20002063",
 		"name": "Bacchus",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20002063",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.078,
+		"tiltDeg": 9.4,
+		"radiusKm": 0.51,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20002100",
 		"name": "Ra-Shalom",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20002100",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 0.832,
+		"tiltDeg": 15.8,
+		"radiusKm": 1.15,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20002867",
 		"name": "Steins",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 3600,
 		"system": "spkid-20002867",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.363,
+		"tiltDeg": 9.9,
+		"radiusKm": 2.67,
+		"widthPx": 3600,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20004179",
 		"name": "Toutatis",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20004179",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.543,
+		"tiltDeg": 0.4,
+		"radiusKm": 1.33,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20004486",
 		"name": "Mithra",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20004486",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.205,
+		"tiltDeg": 3,
+		"radiusKm": 0.92,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20004660",
 		"name": "Nereus",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20004660",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.485,
+		"tiltDeg": 1.5,
+		"radiusKm": 0.17,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20004769",
 		"name": "Castalia",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20004769",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.063,
+		"tiltDeg": 8.9,
+		"radiusKm": 0.7,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20006489",
 		"name": "Golevka",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20006489",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.474,
+		"tiltDeg": 2.3,
+		"radiusKm": 0.27,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20008567",
 		"name": "1996 HW1",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20008567",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.046,
+		"tiltDeg": 8.4,
+		"radiusKm": 1.46,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20010115",
 		"name": "1992 SK",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20010115",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.249,
+		"tiltDeg": 15.3,
+		"radiusKm": 0.47,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20025143",
 		"name": "Itokawa",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 7200,
 		"system": "spkid-20025143",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.324,
+		"tiltDeg": 1.6,
+		"radiusKm": 0.17,
+		"widthPx": 7200,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20029075",
 		"name": "1950 DA",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20029075",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.698,
+		"tiltDeg": 12.2,
+		"radiusKm": 0.65,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20033342",
 		"name": "1998 WT24",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20033342",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 0.719,
+		"tiltDeg": 7.4,
+		"radiusKm": 0.22,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20052246",
 		"name": "Donaldjohanson",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20052246",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.384,
+		"tiltDeg": 4.4,
+		"radiusKm": 2.72,
+		"surface": false,
+		"model": true
 	},
 	{
 		"id": "spkid-20052760",
 		"name": "1998 ML14",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20052760",
-		"zone": "inner"
-	},
-	{
-		"id": "spkid-20054509",
-		"name": "YORP",
-		"kind": "asteroid",
-		"model": true,
+		"zone": "inner",
+		"aAu": 2.408,
+		"tiltDeg": 2.4,
+		"radiusKm": 0.5,
 		"surface": false,
-		"system": "spkid-20054509",
-		"zone": "inner"
-	},
-	{
-		"id": "spkid-20065803",
-		"name": "Didymos",
-		"kind": "asteroid",
 		"model": true,
-		"surface": false,
-		"system": "spkid-20065803",
-		"zone": "inner"
+		"spin": false
 	},
 	{
 		"id": "spkid-20066391",
 		"name": "Moshup",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20066391",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 0.642,
+		"tiltDeg": 38.9,
+		"radiusKm": 0.66,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20099942",
 		"name": "Apophis",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20099942",
-		"zone": "inner"
-	},
-	{
-		"id": "spkid-20101955",
-		"name": "Bennu",
-		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 11836,
-		"system": "spkid-20101955",
-		"zone": "inner"
-	},
-	{
-		"id": "spkid-20136617",
-		"name": "1994 CC",
-		"kind": "asteroid",
-		"model": true,
+		"zone": "inner",
+		"aAu": 0.922,
+		"tiltDeg": 3.3,
+		"radiusKm": 0.17,
 		"surface": false,
-		"system": "spkid-20136617",
-		"zone": "inner"
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20153591",
 		"name": "2001 SN263",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20153591",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 1.988,
+		"tiltDeg": 6.7,
+		"radiusKm": 1,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20162173",
 		"name": "Ryugu",
 		"kind": "asteroid",
-		"model": true,
-		"surface": true,
-		"widthPx": 3600,
 		"system": "spkid-20162173",
-		"zone": "inner"
-	},
-	{
-		"id": "spkid-20162421",
-		"name": "2000 ET70",
-		"kind": "asteroid",
-		"model": true,
+		"zone": "inner",
+		"aAu": 1.191,
+		"tiltDeg": 5.9,
+		"radiusKm": 0.48,
 		"surface": false,
-		"system": "spkid-20162421",
-		"zone": "inner"
+		"model": true
 	},
 	{
 		"id": "spkid-20276049",
 		"name": "2002 CE26",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20276049",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 2.233,
+		"tiltDeg": 47.3,
+		"radiusKm": 1.75,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20341843",
 		"name": "2008 EV5",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20341843",
-		"zone": "inner"
+		"zone": "inner",
+		"aAu": 0.96,
+		"tiltDeg": 7.4,
+		"radiusKm": 0.2,
+		"surface": false,
+		"model": true,
+		"spin": false
 	},
 	{
 		"id": "spkid-20486958",
 		"name": "Arrokoth",
 		"kind": "asteroid",
-		"model": true,
-		"surface": false,
 		"system": "spkid-20486958",
-		"zone": "outer"
+		"zone": "outer",
+		"aAu": 44.053,
+		"tiltDeg": 2.5,
+		"radiusKm": 8.17,
+		"surface": false,
+		"model": true
 	}
 ]

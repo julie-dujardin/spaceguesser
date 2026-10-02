@@ -1,15 +1,8 @@
-/** What a run is made of, and what a guess is worth. */
+/** What a run is made of. */
 
 import type { PanoramaEntry } from 'spacemap';
 import { groundDistanceM } from 'spacemap';
-
-/** The only body with published panoramas today. `fetchPanoramaIndex` lists
- *  the rest as they land. */
-export const MARS = 'naif-499';
-
-/** The SDK names bodies but does not say what they are called, so the one
- *  body in play is named here. */
-export const BODY_NAMES: Record<string, string> = { [MARS]: 'Mars' };
+import type { Modes } from './rounds';
 
 export type Movement = 'free' | 'look' | 'frozen';
 
@@ -18,9 +11,16 @@ export interface RunSettings {
 	movement: Movement;
 	/** Seconds a round lasts; 0 for no timer. */
 	timer: number;
+	/** Which kinds of round are drawn; a coin toss between them when both are. */
+	modes: Modes;
 }
 
-export const QUICK_PLAY: RunSettings = { rounds: 5, movement: 'free', timer: 0 };
+export const QUICK_PLAY: RunSettings = {
+	rounds: 5,
+	movement: 'free',
+	timer: 0,
+	modes: { ground: true, orbit: true }
+};
 
 export const MOVEMENT_LABELS: Record<Movement, string> = {
 	free: 'free',
@@ -88,34 +88,6 @@ export function drawRounds(
 	return picked;
 }
 
-export const MAX_POINTS = 5000;
-
-/**
- * How far apart the ends of the pool are: the diagonal of what the panoramas
- * cover, which is the distance a guess can be wrong by and still be on the
- * board. Scoring against it rather than against the body keeps a run fair as
- * coverage grows — today two craters on Mars, tomorrow whatever lands.
- */
-export function extentKm(pool: readonly PanoramaEntry[], radiusKm: number): number {
-	if (pool.length < 2) return Math.PI * radiusKm;
-	const lats = pool.map((e) => e.lat);
-	const lons = pool.map((e) => e.lon);
-	const corner = (pick: (values: number[]) => number) => ({
-		lat: pick(lats),
-		lon: pick(lons)
-	});
-	return distanceKm(
-		corner((v) => Math.min(...v)),
-		corner((v) => Math.max(...v)),
-		radiusKm
-	);
-}
-
-/** Points fall off exponentially with the miss, as the genre has them. */
-export function scoreFor(distanceKm: number, extentKm: number): number {
-	return Math.round(MAX_POINTS * Math.exp((-10 * distanceKm) / extentKm));
-}
-
 export function distanceKm(
 	a: { lat: number; lon: number },
 	b: { lat: number; lon: number },
@@ -126,8 +98,10 @@ export function distanceKm(
 
 /** A run's rules, as the labels a lobby shows them in. */
 export function describeRun(settings: RunSettings): string[] {
+	const { ground, orbit } = settings.modes;
 	return [
 		`${settings.rounds} rounds`,
+		ground && orbit ? 'ground and orbit' : ground ? 'ground only' : 'orbit only',
 		MOVEMENT_LABELS[settings.movement],
 		settings.timer ? `${settings.timer} s per round` : 'no timer'
 	];
@@ -142,4 +116,10 @@ export function formatDistance(km: number): string {
 export function formatClock(seconds: number): string {
 	const s = Math.max(0, Math.ceil(seconds));
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
+}
+
+/** A round's moment, to the minute: the sky is exact about it, so the reader
+ *  who wants to work the positions out may. */
+export function formatWhen(time: number): string {
+	return `${new Date(time).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }

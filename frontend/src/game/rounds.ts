@@ -47,9 +47,10 @@ export interface Place extends LonLat {
  *  sky as it is, wide enough that every round is not the same sky. */
 const WINDOW_MS = 30 * 86_400_000;
 
-/** The Sun stands at least this high over a drawn place, so the ground is in
- *  full light rather than raked by a terminator. */
-const MIN_SUN_DEG = 15;
+/** The Sun stands at least this high over a drawn place. A coarse map is seen
+ *  from far enough to show the whole disc, and one centred any nearer the
+ *  terminator is half night. */
+const MIN_SUN_DEG = 40;
 
 const RAD = Math.PI / 180;
 

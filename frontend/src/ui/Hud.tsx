@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MOVEMENT_LABELS, formatClock, type RunSettings } from '../game/rules';
+import { MOVEMENT_LABELS, formatClock, formatWhen, type RunSettings } from '../game/rules';
 
 interface Props {
 	settings: RunSettings;
@@ -7,6 +7,8 @@ interface Props {
 	/** How many rounds were drawn, which thin coverage can cut short of what
 	 *  the settings asked for. */
 	rounds: number;
+	/** The round's moment, which is when the sky is as the reader sees it. */
+	when: number;
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
@@ -14,7 +16,7 @@ interface Props {
 	children?: ReactNode;
 }
 
-export function Hud({ settings, round, rounds, left, onQuit, children }: Props) {
+export function Hud({ settings, round, rounds, when, left, onQuit, children }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
 	return (
 		<>
@@ -27,6 +29,10 @@ export function Hud({ settings, round, rounds, left, onQuit, children }: Props) 
 					</span>
 					<span className="sep" />
 					<span className="mono mut">{MOVEMENT_LABELS[settings.movement]}</span>
+					<span className="sep" />
+					<span className="mono mut when" title="the date and time of this round">
+						{formatWhen(when)}
+					</span>
 				</span>
 				{left !== null && (
 					<span className="pill glass clock">
