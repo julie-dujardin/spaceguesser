@@ -1332,15 +1332,18 @@ a.rk:hover,
 	}
 
 	/* The quit button owns the top-right corner. The status pill has no width
-	   to spare beside it, so it gives up the wordmark, and the clock drops to
-	   its own line rather than running off the screen. */
+	   to spare beside it, so it gives up the wordmark and the movement mode,
+	   which the reader chose and can feel, and the clock drops to its own line
+	   rather than running off the screen. */
 	.hud-top {
 		right: 60px;
 		flex-wrap: wrap;
 	}
 
 	.status .mark,
-	.status .mark + .sep {
+	.status .mark + .sep,
+	.status .move,
+	.status .move + .sep {
 		display: none;
 	}
 }

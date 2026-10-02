@@ -28,7 +28,7 @@ export function Hud({ settings, round, rounds, when, left, onQuit, children }: P
 						round {round + 1} / {rounds}
 					</span>
 					<span className="sep" />
-					<span className="mono mut">{MOVEMENT_LABELS[settings.movement]}</span>
+					<span className="mono mut move">{MOVEMENT_LABELS[settings.movement]}</span>
 					<span className="sep" />
 					<span className="mono mut when" title="the date and time of this round">
 						{formatWhen(when)}
