@@ -20,6 +20,8 @@ const LOAD_TIMEOUT_MS = 20_000;
 const SETTLE_FRAMES = 4;
 /** A body the map will not settle on by now is one it cannot show. */
 const SETTLE_TIMEOUT_MS = 25_000;
+/** A spin the map has not fetched by now is taken as not measured. */
+const SPIN_TIMEOUT_MS = 5_000;
 /** A flight lands in a few seconds or not at all. */
 const FLIGHT_TIMEOUT_MS = 8_000;
 
@@ -66,6 +68,8 @@ function toSurface(point: Vec, radiusKm: number) {
 
 export class Space {
 	private hold: CameraHold | null = null;
+	/** Counts the times the camera changed hands. */
+	private turn = 0;
 
 	private constructor(
 		readonly map: SpaceMap,
@@ -128,12 +132,18 @@ export class Space {
 	 */
 	async travel(time: number, body: string): Promise<void> {
 		this.release();
+		const turn = this.turn;
+		// Whoever takes the camera next ends this: it must not jump it back.
+		const mine = () => {
+			if (turn !== this.turn) throw new Error(`the map was sent elsewhere than ${body}`);
+		};
 		this.cover(false);
 		this.map.clock.setDate(new Date(time));
 		const deadline = Date.now() + LOAD_TIMEOUT_MS;
 		while (!this.map.getBody(body)) {
 			if (Date.now() > deadline) throw new Error(`${body} never loaded`);
 			await new Promise((resolve) => setTimeout(resolve, 100));
+			mine();
 		}
 		const settled = Date.now() + SETTLE_TIMEOUT_MS;
 		for (let tries = 0; Date.now() < settled; tries++) {
@@ -141,12 +151,15 @@ export class Space {
 			// A jump is instant, and enough for anything the map already draws as
 			// a body. One of the belt's dots only becomes a body by being flown to.
 			if (tries % 2 === 0) this.map.jumpTo(target);
-			else
+			else {
 				await Promise.race([
 					this.map.flyTo(target).catch(() => {}),
 					new Promise((resolve) => setTimeout(resolve, FLIGHT_TIMEOUT_MS))
 				]);
+				mine();
+			}
 			await this.frames(SETTLE_FRAMES);
+			mine();
 			if (this.map.getCamera()?.body !== body) continue;
 			if (!this.map.getBody(body)?.placed) throw new Error(`${body} is nowhere at that date`);
 			return;
@@ -157,7 +170,16 @@ export class Space {
 	/** The place an orbit round is over, which only the sky at its time says. */
 	async place(round: OrbitRound): Promise<Place> {
 		await this.travel(round.time, round.body);
-		const noon = this.map.getSubsolarPoint(round.body);
+		const turn = this.turn;
+		// The map answers once it knows how the body spins, which it fetches on
+		// arriving: before that the place would turn away from the Sun with it.
+		const deadline = Date.now() + SPIN_TIMEOUT_MS;
+		let noon = this.map.getSubsolarPoint(round.body);
+		while (!noon && Date.now() < deadline) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+			if (turn !== this.turn) throw new Error(`the map was sent elsewhere than ${round.body}`);
+			noon = this.map.getSubsolarPoint(round.body);
+		}
 		return { body: round.body, ...(noon ? spot(round, noon) : anywhere(round)) };
 	}
 
@@ -210,6 +232,7 @@ export class Space {
 
 	/** Give the camera back to the map. */
 	release(): void {
+		this.turn++;
 		this.hold?.release();
 		this.hold = null;
 	}

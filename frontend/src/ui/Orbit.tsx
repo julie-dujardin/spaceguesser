@@ -8,6 +8,8 @@ import { DOWN, type Gaze, type Space } from '../game/space';
 interface Props {
 	/** Null while the map is still coming up. */
 	space: Space | null;
+	/** Why there will be no map, when there will not. */
+	unavailable?: string | null;
 	round: OrbitRound;
 	movement: Movement;
 	/** The place the round turned out to be over, once the sky has said. */
@@ -26,6 +28,7 @@ const TURN = 0.15;
 
 export function Orbit({
 	space,
+	unavailable,
 	round,
 	movement,
 	onPlace,
@@ -106,8 +109,8 @@ export function Orbit({
 		>
 			{dimmed && <div className="stage-dim" />}
 			<div className="stage-shade" />
-			{!place && !error && <div className="stage-note">dropping in…</div>}
-			{error && <div className="stage-note">{error}</div>}
+			{!place && !error && !unavailable && <div className="stage-note">dropping in…</div>}
+			{(error ?? unavailable) && <div className="stage-note">{error ?? unavailable}</div>}
 		</div>
 	);
 }

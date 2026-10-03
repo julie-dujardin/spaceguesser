@@ -95,9 +95,9 @@ export default function App() {
 
 	const ready = !!stops && (stops.length > 0 || canOrbit);
 	useEffect(() => {
-		if (!stops || opener) return;
+		if (!stops || !ready || opener) return;
 		setOpener(drawRun(stops, 1, modesFor(QUICK_PLAY.modes))[0] ?? null);
-	}, [stops, opener, modesFor]);
+	}, [stops, ready, opener, modesFor]);
 	// An orbit opener with no map to show it in gives way to a stop.
 	useEffect(() => {
 		if (!canOrbit && opener?.mode === 'orbit') setOpener(null);
@@ -154,12 +154,15 @@ export default function App() {
 			// A body with no map is guessed whole.
 			const guessed = at || (info && !info.surface && !timedOut) ? { body: truth.body, at } : null;
 			const radius = info?.radiusKm ?? radiusKm.current ?? space?.radiusKm(truth.body) ?? null;
+			// The card describes the stop the guess is scored against.
+			const stood =
+				round.mode === 'ground' && run.standing ? { ...round, entry: run.standing } : round;
 			dispatch({
 				kind: 'commit',
-				played: play(round, truth, guessed, NO_SKY, radius, secondsLeft, timedOut)
+				played: play(stood, truth, guessed, NO_SKY, radius, secondsLeft, timedOut)
 			});
 		},
-		[truth, round, run.settings.timer, space]
+		[truth, round, run.standing, run.settings.timer, space]
 	);
 
 	// The round's clock. It reads the guess and the round's ending through refs,
@@ -249,6 +252,7 @@ export default function App() {
 			{shown?.mode === 'orbit' && (
 				<Orbit
 					space={space}
+					unavailable={spaceError}
 					round={shown}
 					movement={movement}
 					onPlace={setOver}
@@ -263,7 +267,7 @@ export default function App() {
 				<Party
 					session={party}
 					lobby={lobby}
-					stops={stops}
+					stops={ready ? stops : null}
 					modesFor={modesFor}
 					opener={opener}
 					truth={truth}

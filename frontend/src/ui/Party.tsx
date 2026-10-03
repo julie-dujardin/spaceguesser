@@ -3,7 +3,15 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import type { LonLat } from 'spacemap';
 import { bodyOf } from '../game/bodies';
-import { playedBy, settingsOf, slim, standings, type Lobby, type LobbyRound } from '../game/lobby';
+import {
+	playedBy,
+	playedIn,
+	settingsOf,
+	slim,
+	standings,
+	type Lobby,
+	type LobbyRound
+} from '../game/lobby';
 import { profileOf } from '../game/players';
 import { drawRun, type Modes, type Place, type Round as Asked, type Stop } from '../game/rounds';
 import type { RunSettings } from '../game/rules';
@@ -23,6 +31,7 @@ import { Standings } from './Standings';
 interface Props {
 	session: LobbySession;
 	lobby: Lobby;
+	/** Null until there is something to draw a run from. */
 	stops: Stop[] | null;
 	/** The modes a run can really be played in, given the ones asked for. */
 	modesFor: (asked: Modes) => Modes;
@@ -317,7 +326,7 @@ function Result({ lobby, round, you, onNext, children }: ResultProps) {
 		() => ({
 			// A player who sat the round out still sees where it was, which
 			// anyone's guess says.
-			played: mine ?? playedBy(lobby, you ?? '')[round.index],
+			played: mine ?? playedIn(lobby, you ?? '', round.index),
 			avatar: me && profileOf(me.name),
 			others: lobby.players.flatMap((seat) => {
 				const guess = seat.id !== you && guesses?.[seat.id]?.guess;
@@ -326,7 +335,22 @@ function Result({ lobby, round, you, onNext, children }: ResultProps) {
 		}),
 		[key]
 	);
-	if (!drawn.played) return null;
+	// Nobody got to the round, so nobody can say where it was.
+	if (!drawn.played)
+		return (
+			<div className="board">
+				<div className="rpanel glass">
+					<span className="hd">round {round.index + 1}</span>
+					<span className="note">nobody reached this one</span>
+					{children}
+					{onNext && (
+						<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
+							{round.index + 1 < round.total ? 'Next round' : 'See total'}
+						</button>
+					)}
+				</div>
+			</div>
+		);
 
 	return (
 		<RoundResult

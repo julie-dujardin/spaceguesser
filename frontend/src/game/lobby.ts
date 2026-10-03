@@ -124,24 +124,25 @@ export function standings(lobby: Lobby): Standing[] {
 		.sort((a, b) => b.total - a.total);
 }
 
-/** One player's run, round by round. A round they sat out still happened
- *  somewhere, which another player's guess can say; one nobody answered is
- *  left out. */
+/** One player's round. A round they sat out still happened somewhere, which
+ *  another player's guess can say; null for one nobody answered. */
+export function playedIn(lobby: Lobby, id: string, index: number): Played | null {
+	const round = lobby.history[index] ?? {};
+	const own = round[id];
+	if (own) return own;
+	const other = Object.values(round)[0];
+	if (!other) return null;
+	return {
+		round: other.round,
+		truth: other.truth,
+		guess: null,
+		score: score(other.truth, null, NO_SKY, null),
+		secondsLeft: null,
+		timedOut: false
+	};
+}
+
+/** One player's run, round by round, less the rounds nobody answered. */
 export function playedBy(lobby: Lobby, id: string): Played[] {
-	return lobby.history.flatMap((round) => {
-		const own = round[id];
-		if (own) return [own];
-		const other = Object.values(round)[0];
-		if (!other) return [];
-		return [
-			{
-				round: other.round,
-				truth: other.truth,
-				guess: null,
-				score: score(other.truth, null, NO_SKY, null),
-				secondsLeft: null,
-				timedOut: false
-			}
-		];
-	});
+	return lobby.history.flatMap((_, index) => playedIn(lobby, id, index) ?? []);
 }
