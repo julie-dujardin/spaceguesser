@@ -322,6 +322,7 @@
 		"kind": "planet",
 		"system": "naif-799",
 		"radiusKm": 25363.67,
+		"widthPx": 4096,
 		"surface": false
 	},
 	{

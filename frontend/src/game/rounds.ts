@@ -2,7 +2,7 @@
 
 import type { LonLat, PanoramaEntry } from 'spacemap';
 import { BODIES, type BodyInfo } from './bodies';
-import { drawRounds } from './rules';
+import { drawRounds, formatTaken, formatWhen } from './rules';
 
 /** A panorama, and the body it was taken on. */
 export interface Stop {
@@ -12,9 +12,10 @@ export interface Stop {
 
 interface Asked {
 	body: string;
-	/** Epoch milliseconds the round happens at: when the panorama was taken on
-	 *  the ground, the run's date from orbit. The bodies are where they are
-	 *  then, which is what a guess on the wrong one is measured against. */
+	/** Epoch milliseconds the round is measured at, the same for every round of
+	 *  a run: the bodies are where they are then, which is what a guess on the
+	 *  wrong one is measured against, and one map can show every miss of it.
+	 *  A panorama shows its own date instead, see `shownDate`. */
 	time: number;
 }
 
@@ -39,6 +40,12 @@ export interface OrbitRound extends Asked {
 export type Round = GroundRound | OrbitRound;
 export type Mode = Round['mode'];
 
+/** The date a round shows. A panorama has its own, the day it was taken; the
+ *  run's date is only where the bodies are when a miss is measured. */
+export function shownDate(round: Round): string {
+	return round.mode === 'ground' ? formatTaken(round.entry.time) : formatWhen(round.time);
+}
+
 /** A place on a body, which is what a round is finally about. */
 export interface Place extends LonLat {
 	body: string;
@@ -48,7 +55,7 @@ export interface Place extends LonLat {
  *  sky as it is, wide enough that every run is not the same sky. */
 const WINDOW_MS = 30 * 86_400_000;
 
-/** The date a run's orbit rounds share. */
+/** The date of a run. */
 export function drawDate(now = Date.now(), random: () => number = Math.random): number {
 	return Math.round(now + (2 * random() - 1) * WINDOW_MS);
 }
@@ -82,13 +89,6 @@ export function spot(round: Pick<OrbitRound, 'u' | 'v'>, noon: LonLat): LonLat {
  *  anywhere is as good as anywhere. */
 export function anywhere(round: Pick<OrbitRound, 'u' | 'v'>): LonLat {
 	return { lat: Math.asin(2 * round.u - 1) / RAD, lon: round.v * 360 - 180 };
-}
-
-/** When a panorama was taken. An entry with no readable date falls back on
- *  `otherwise`: a round at the wrong date is worth more than no round. */
-function taken(entry: PanoramaEntry, otherwise: number): number {
-	const time = Date.parse(entry.time);
-	return Number.isNaN(time) ? otherwise : time;
 }
 
 export interface Modes {
@@ -129,12 +129,7 @@ export function drawRun(
 			const stood = spent.flatMap((round) => (round.mode === 'ground' ? [round.entry] : []));
 			const [entry] = drawRounds(entries, 1, stood);
 			if (entry) {
-				drawn.push({
-					mode: 'ground',
-					body: bodyOfEntry.get(entry.id)!,
-					entry,
-					time: taken(entry, date)
-				});
+				drawn.push({ mode: 'ground', body: bodyOfEntry.get(entry.id)!, entry, time: date });
 				continue;
 			}
 			// The stops ran out: the rest of the run is flown.

@@ -3,7 +3,7 @@ import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { inviteCode, invitePath, settingsOf } from './game/lobby';
 import { keepProfile } from './game/players';
-import { drawRun, type Modes, type Place, type Round, type Stop } from './game/rounds';
+import { drawRun, shownDate, type Modes, type Place, type Round, type Stop } from './game/rounds';
 import { QUICK_PLAY, playable } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
@@ -112,9 +112,7 @@ export default function App() {
 			const modes = modesFor(settings.modes);
 			// The opener is the first round only when the run plays its kind.
 			const first = modes[opener.mode] ? [opener] : [];
-			// An opener from orbit already has the run's date; one on the ground has its own.
-			const date = first[0]?.mode === 'orbit' ? first[0].time : undefined;
-			const rest = drawRun(stops, settings.rounds - first.length, modes, first, date);
+			const rest = drawRun(stops, settings.rounds - first.length, modes, first, first[0]?.time);
 			const drawn = [...first, ...rest];
 			dispatch({ kind: 'start', settings, drawn });
 			// The opener is spent: draw the next one now, so leaving the run finds a
@@ -348,7 +346,7 @@ export default function App() {
 						settings={run.settings}
 						round={run.round}
 						rounds={run.drawn.length}
-						when={round.time}
+						when={shownDate(round)}
 						left={left}
 						onQuit={() => dispatch({ kind: 'home' })}
 					/>

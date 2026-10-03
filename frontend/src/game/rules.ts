@@ -38,9 +38,23 @@ export function movementName(movement: Movement): string {
  *  with nothing between 358° and 359.6°. */
 const MIN_HFOV_DEG = 359.5;
 
+/** Played whatever their sweep, which the export does not measure: they are
+ *  the only views there are of the Moon, Venus and Titan. */
+const ANY_SWEEP = new Set([
+	'apollo11',
+	'apollo12',
+	'apollo14',
+	'apollo15',
+	'apollo16',
+	'apollo17',
+	'venera13',
+	'huygens'
+]);
+
 /** Whether a stop goes in the pool: the view can open it, all the way round. */
 export function playable(entry: PanoramaEntry): boolean {
-	return isViewable(entry) && (entry.hfov_deg ?? 0) >= MIN_HFOV_DEG;
+	if (!isViewable(entry)) return false;
+	return ANY_SWEEP.has(entry.mission ?? '') || (entry.hfov_deg ?? 0) >= MIN_HFOV_DEG;
 }
 
 /** Two panoramas from the same stop are the same round twice over. */
@@ -130,6 +144,14 @@ export function formatClock(seconds: number): string {
 
 /** A round's moment, to the minute: the sky is exact about it, so the reader
  *  who wants to work the positions out may. */
+/** A panorama's date as the export writes it: a day, or a moment that is UTC
+ *  whether or not it says so. Read as text, so no browser's timezone gets in. */
+export function formatTaken(time: string): string {
+	const [, day, clock] = /^(\d{4}-\d\d-\d\d)(?:T(\d\d:\d\d))?/.exec(time) ?? [];
+	if (!day) return time;
+	return clock ? `${day} ${clock} UTC` : day;
+}
+
 export function formatWhen(time: number): string {
 	return `${new Date(time).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }

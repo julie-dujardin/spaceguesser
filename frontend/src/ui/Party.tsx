@@ -12,7 +12,14 @@ import {
 	type LobbyRound
 } from '../game/lobby';
 import { profileOf } from '../game/players';
-import { drawRun, type Modes, type Place, type Round as Asked, type Stop } from '../game/rounds';
+import {
+	drawRun,
+	shownDate,
+	type Modes,
+	type Place,
+	type Round as Asked,
+	type Stop
+} from '../game/rounds';
 import type { RunSettings } from '../game/rules';
 import { play, type Played } from '../game/run';
 import { NO_SKY, type Guess } from '../game/scoring';
@@ -276,7 +283,7 @@ function Round({
 				settings={settings}
 				round={round.index}
 				rounds={round.total}
-				when={round.entry.time}
+				when={shownDate(round.entry)}
 				left={left}
 				onQuit={session.leave}
 			>

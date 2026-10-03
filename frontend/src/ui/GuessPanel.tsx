@@ -14,6 +14,7 @@ import {
 	type SystemMapView
 } from 'spacemap';
 import { bodyOf } from '../game/bodies';
+import { TERMS } from '../game/host';
 import { PICKER, ROOT, intoSystem, levelTitle, search, trailTo, type Level } from '../game/picker';
 import type { Guess } from '../game/scoring';
 import { pin, useFlatMap } from './useFlatMap';
@@ -61,6 +62,7 @@ function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTa
 		let made: SystemMap | null = null;
 		let dropped = false;
 		createSystemMap({
+			...TERMS,
 			container: element,
 			view: viewOf(opening.current),
 			...PICKER,

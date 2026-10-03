@@ -1,6 +1,7 @@
 /** The round's panorama, filling the screen behind the HUD. */
 
 import { useEffect, useRef, useState } from 'react';
+import { TERMS } from '../game/host';
 import { createPanorama, type PanoramaEntry, type PanoramaView } from 'spacemap';
 import type { Movement } from '../game/rules';
 
@@ -41,6 +42,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 		let dropped = false;
 		setError(null);
 		createPanorama({
+			...TERMS,
 			container: element,
 			body,
 			at: opening.current,

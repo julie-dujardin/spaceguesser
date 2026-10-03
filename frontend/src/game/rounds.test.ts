@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance } from './bodies';
-import { anywhere, drawDate, drawRun, spot, type Stop } from './rounds';
+import { anywhere, drawDate, drawRun, shownDate, spot, type Stop } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -85,26 +85,36 @@ describe('drawRun', () => {
 		expect(new Set(run.map((round) => round.body)).size).toBe(count);
 	});
 
-	it('flies every orbit round of a run at the one date', () => {
+	it('gives every round of a run the one date', () => {
 		const run = drawRun(stops(40), 50, { ground: true, orbit: true }, [], now, seeded(5));
-		const flown = run.filter((round) => round.mode === 'orbit');
-		expect(new Set(flown.map((round) => round.time))).toEqual(new Set([now]));
-	});
-
-	it('stands on the ground when the panorama was taken', () => {
-		const dated = stops(40).map((stop, i) => ({
-			...stop,
-			entry: { ...stop.entry, time: new Date(Date.UTC(2010, 0, 1 + i)).toISOString() }
-		}));
-		const run = drawRun(dated, 10, { ground: true, orbit: false }, [], now, seeded(7));
-		for (const round of run)
-			expect(round.time).toBe(Date.parse((round as { entry: { time: string } }).entry.time));
+		expect(new Set(run.map((round) => round.time))).toEqual(new Set([now]));
 	});
 
 	it('draws a date within thirty days of now', () => {
 		const random = seeded(6);
 		for (let i = 0; i < 200; i++)
 			expect(Math.abs(drawDate(now, random) - now)).toBeLessThanOrEqual(30 * 86_400_000);
+	});
+});
+
+describe('shownDate', () => {
+	const on = (time: string) =>
+		shownDate({ mode: 'ground', body: 'naif-499', time: 0, entry: { time } as PanoramaEntry });
+
+	it('shows a panorama at its own date, in UTC whatever the export left off', () => {
+		expect(on('2012-08-08T05:01:47Z')).toBe('2012-08-08 05:01 UTC');
+		expect(on('2004-01-04T05:01:47.477')).toBe('2004-01-04 05:01 UTC');
+	});
+
+	it('shows no time of day the export does not have', () => {
+		expect(on('1969-07-21')).toBe('1969-07-21');
+	});
+
+	it("shows a flown round at the run's date", () => {
+		const time = Date.UTC(2026, 9, 2, 12, 30);
+		expect(shownDate({ mode: 'orbit', body: 'naif-499', time, u: 0, v: 0 })).toBe(
+			'2026-10-02 12:30 UTC'
+		);
 	});
 });
 

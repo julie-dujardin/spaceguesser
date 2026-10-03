@@ -90,9 +90,12 @@ async function widthOf(bundle, tiers = ['high', 'medium', 'low']) {
 	return 0;
 }
 
-/** The best map this app may draw: the first with no licence attached. */
+/** The best map this app may draw: the first that is open, or licensed for
+ *  non-commercial use, which the game is. */
 function openMap(id, texture, tiers, alternates = []) {
-	return [{ id, tiers, ...texture }, ...alternates].find((map) => map.type && !map.distribution);
+	return [{ id, tiers, ...texture }, ...alternates].find(
+		(map) => map.type && (!map.distribution || map.distribution === 'non-commercial')
+	);
 }
 
 const KINDS = { planet: 'planet', dwarf_planet: 'dwarf', moon: 'moon', comet: 'comet' };

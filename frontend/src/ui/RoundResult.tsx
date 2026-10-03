@@ -37,10 +37,9 @@ export function describe(round: Round): string {
 	const parts: string[] = [];
 	if (entry.mission) parts.push(entry.mission[0].toUpperCase() + entry.mission.slice(1));
 	if (entry.sol !== undefined) parts.push(`sol ${entry.sol}`);
-	// The export's own field, so unreadable only if the export is wrong; a
-	// missing date is worth less than the card it would otherwise throw away.
-	const day = new Date(entry.time);
-	if (!Number.isNaN(day.getTime())) parts.push(day.toISOString().slice(0, 10));
+	// Read as text: the export's dates are UTC, and not all of them say so.
+	const day = /^\d{4}-\d\d-\d\d/.exec(entry.time)?.[0];
+	if (day) parts.push(day);
 	return parts.join(' · ');
 }
 

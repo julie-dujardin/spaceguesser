@@ -37,16 +37,16 @@ one alone.
 and that goes all the way round the horizon, since a partial sweep leaves out
 whatever would have given the place away. That is some 4,300 of the fourteen
 thousand on Mars, from Curiosity, Perseverance, Opportunity, Spirit and
-InSight. The Apollo landings and Venera 13 have no full sweep, so the Moon and
-Venus are not in the pool; Yutu-2's traverse has no imagery to open and
-Huygens' is under a licence the game does not accept. A run never draws two
+InSight. The six Apollo landings, Venera 13 and Huygens' descent over Titan
+play whatever their sweep: they are the only views there are of their worlds.
+Yutu-2's traverse has no imagery to open. A run never draws two
 stops from the same place, and never comes back to a probe within three rounds
-while the pool has one to spare. The round happens when the panorama was
-taken, which is the date the HUD shows.
+while the pool has one to spare. The HUD shows the date the panorama was
+taken; a miss is still measured at the run's date, below.
 
 **From orbit**, in the Solar System map, over one of the 81 bodies in
-`frontend/src/game/bodies.json`: every body the export has an openly licensed
-map or a measured shape of, less Earth. The round happens at the run's date,
+`frontend/src/game/bodies.json`: every body the export has a map the game
+may draw or a measured shape of, less Earth. The round happens at the run's date,
 drawn within thirty days of today when the run starts and shown in the HUD, and
 the place is somewhere the Sun stands at least 40° high at that date — the sky decides, so the round is drawn
 as two numbers and comes out the same for everyone playing it. The camera hangs
@@ -87,10 +87,10 @@ genre has it, `max · e^(−10 · miss / size)`:
 
 A small body is a system of one. A body guessed whole takes the place's points
 with it. The misses between bodies are measured in the Solar System map at the
-round's date, so the same wrong guess is worth more the month the two planets
-are on the same side of the Sun. The map a run ends on shows the whole run at
-the run's date, and each round at its own. For a rock of the belt that is its
-orbit at that date: the map places it without flying there.
+run's date, so the same wrong guess is worth more the month the two planets
+are on the same side of the Sun, and the map a run ends on can draw every miss
+as long as it was scored. For a rock of the belt that is its orbit at
+that date: the map places it without flying there.
 
 ## Multiplayer
 
