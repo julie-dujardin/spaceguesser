@@ -73,11 +73,14 @@ export function Party({
 	// sets itself up again for whatever changes identity.
 	const told = JSON.stringify([lobby.history, lobby.players.map((seat) => seat.name)]);
 	const everyoneElse = useMemo(
-		() => (index: number) =>
-			lobby.players.flatMap((seat) => {
-				const guess = seat.id !== you && lobby.history[index]?.[seat.id]?.guess;
+		() => (index: number) => {
+			// The tally counts the rounds somebody answered, as `playedBy` does.
+			const answered = lobby.history.filter((round) => Object.keys(round).length > 0);
+			return lobby.players.flatMap((seat) => {
+				const guess = seat.id !== you && answered[index]?.[seat.id]?.guess;
 				return guess ? [{ guess, avatar: profileOf(seat.name) }] : [];
-			}),
+			});
+		},
 		[told, you]
 	);
 	const me = lobby.players.find((seat) => seat.id === you);
