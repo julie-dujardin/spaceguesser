@@ -6,14 +6,14 @@
  */
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { LonLat } from 'spacemap';
-import { bodyOf, systemOf, type BodyKind } from '../game/bodies';
+import type { Anchor, LonLat } from 'spacemap';
+import { bodyOf, systemOf } from '../game/bodies';
 import type { Profile } from '../game/players';
 import type { Place, Round } from '../game/rounds';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import { ResultMap, type Placement } from './ResultMap';
-import { face, pin, pins } from './useFlatMap';
+import { MISS, OTHER_MISS, OWN_MISS, face, pin, pins } from './useFlatMap';
 
 export interface RecapGuess {
 	guess: Guess;
@@ -49,14 +49,9 @@ const HOLD = 2.4;
 /** How far back a round starts when every guess is on the right body. */
 const BACK_OFF = 2.6;
 
-/** Nearer than this the belt has thinned to nothing, and a rock of it can be
- *  drawn without the rest. */
-const SWARM_CLEAR_KM = 3_000_000;
-
-/** A miss is drawn as the body's own map draws it. */
-const MISS = { color: '#ffffff', widthPx: 1.5, dash: '4 4' };
-const OWN_MISS = 0.45;
-const OTHER_MISS = 0.25;
+/** Wider than on the body's own map: a line in the scene is not snapped to
+ *  the pixels, and at one of them it reads as dots. */
+const MISS_WIDTH_PX = 1.5;
 
 /** The last of the slider is the body's own map coming up over the globe. */
 const FLAT_FROM = 0.88;
@@ -90,19 +85,12 @@ function bodiesIn(rounds: RecapRound[]): string[] {
 	]);
 }
 
-/** The kinds of small body that had a part in these rounds. */
-function kindsIn(rounds: RecapRound[]): Set<BodyKind> {
-	return new Set(bodiesIn(rounds).flatMap((id) => bodyOf(id)?.kind ?? []));
-}
-
 export function Recap({ space, rounds, focus }: Props) {
 	/** 0 is as far as the view goes, 1 as near. */
 	const [zoom, setZoom] = useState(0);
 	const [flight, setFlight] = useState<Flight | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const flying = useRef<number | null>(null);
-	/** The kinds of body the rounds on screen involve. */
-	const kinds = useRef<Set<BodyKind>>(new Set());
 	// A lobby hands the same rounds over as new objects on every snapshot.
 	const key = JSON.stringify(rounds);
 	const shown = useRef(rounds);
@@ -119,7 +107,6 @@ export function Recap({ space, rounds, focus }: Props) {
 		() => () => {
 			space?.dress(null);
 			space?.hands(null);
-			space?.map.setPinnedBodies([]);
 		},
 		[space]
 	);
@@ -136,29 +123,44 @@ export function Recap({ space, rounds, focus }: Props) {
 
 		// A pin on the far side of its body is hidden rather than shown through
 		// it: the reader can turn the body round.
-		const mark = (body: string, at: LonLat | null, element: HTMLElement, below = false) =>
+		const mark = (body: string, at: LonLat | null, element: HTMLElement, under = false) =>
 			drawn.push(
 				map.addMarker({
 					anchor: anchorOf(body, at),
 					element,
-					align: below ? [0.5, -1.1] : [0.5, 0.5],
+					align: [0.5, under ? 0 : 0.5],
 					occlude: !!at
 				})
 			);
+		/** The dashed line of a miss, where the map knows both ends. */
+		const join = (from: Anchor, to: Anchor, mine = true) => {
+			const offset = map.offsetKm(from, to);
+			if (!offset) return;
+			drawn.push(
+				map.addPolyline({
+					...MISS,
+					widthPx: MISS_WIDTH_PX,
+					anchor: from,
+					points: [[0, 0, 0], offset],
+					opacity: mine ? OWN_MISS : OTHER_MISS
+				})
+			);
+		};
 
 		const run = async () => {
 			const all = shown.current;
 			const one = focus === null ? null : all[focus];
 			// The whole run is on one map, which has one date: the last round's.
+			// A line there joins a guess to its place; how far apart they were on
+			// the round's own date is the tally's to say.
 			const time = (one ?? all[all.length - 1]).round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;
-			kinds.current = kindsIn(one ? [one] : all);
-			space.dress(kinds.current);
-			// What was guessed and what was right stay named from however far: a
-			// moon by its planet, which is all the map draws of it from outside.
 			const involved = bodiesIn(one ? [one] : all);
-			map.setPinnedBodies([...new Set([...involved, ...involved.map(systemOf)])]);
+			space.dress(involved);
+			// A guessed rock may still be streaming in, and has no line until it is.
+			await space.known(involved);
+			if (dropped) return;
 
 			let next: Flight;
 			if (one) {
@@ -166,27 +168,27 @@ export function Recap({ space, rounds, focus }: Props) {
 				const mapped = !!bodyOf(truth.body)?.surface;
 				const place = anchorOf(truth.body, mapped ? truth : null);
 				let widest = 0;
+				// From as far as another body is seen, a place on it is the body, and
+				// the guesses on it share its dot: side by side, not over one another.
+				const away = new Map<string, HTMLElement[]>();
 				// The reader's own guess over the others', the place over them all.
 				const ordered = [...one.guesses].sort((a, b) => Number(!!a.mine) - Number(!!b.mine));
 				for (const { guess, avatar, mine } of ordered) {
 					const there = anchorOf(guess.body, guess.at);
-					const offset = map.offsetKm(place, there);
 					// A body the map never loaded has nowhere to pin a guess.
-					if (!offset) continue;
+					if (!map.offsetKm(place, there)) continue;
+					const element = avatar ? face(avatar, mine) : pin('pin');
 					if (guess.body !== truth.body) {
 						widest = Math.max(widest, space.apart(truth.body, guess.body) ?? 0);
-						drawn.push(
-							map.addPolyline({
-								...MISS,
-								anchor: place,
-								points: [[0, 0, 0], offset],
-								opacity: mine ? OWN_MISS : OTHER_MISS
-							})
-						);
-					} else if (guess.at && mapped) {
+						join(place, there, mine);
+						away.set(guess.body, [...(away.get(guess.body) ?? []), element]);
+						continue;
+					}
+					if (guess.at && mapped) {
 						drawn.push(
 							map.addSurfacePolyline({
 								...MISS,
+								widthPx: MISS_WIDTH_PX,
 								body: truth.body,
 								points: [guess.at, truth],
 								interpolate: 'geodesic',
@@ -194,10 +196,9 @@ export function Recap({ space, rounds, focus }: Props) {
 							})
 						);
 					}
-					// From as far as another body is seen, a place on it is the body.
-					const at = guess.body === truth.body ? guess.at : null;
-					mark(guess.body, at, avatar ? face(avatar, mine) : pin('pin'));
+					mark(guess.body, guess.at, element);
 				}
+				for (const [body, row] of away) mark(body, null, row.length > 1 ? pins(row) : row[0]);
 				mark(truth.body, mapped ? truth : null, pin('pin truth'));
 				const nearKm = space.standoffKm(truth.body);
 				next = {
@@ -221,20 +222,15 @@ export function Recap({ space, rounds, focus }: Props) {
 					const label = String(index + 1);
 					stack(truth.body, pin('pin truth', label));
 					const own = guesses.find((entry) => entry.mine)?.guess;
-					if (!own) return;
+					// A guess on the right body is the place's own pin from here.
+					if (!own || own.body === truth.body) return;
 					stack(own.body, pin('pin', label));
-					const offset = map.offsetKm({ body: truth.body }, { body: own.body });
-					if (own.body === truth.body || !offset) return;
-					drawn.push(
-						map.addPolyline({
-							...MISS,
-							anchor: { body: truth.body },
-							points: [[0, 0, 0], offset],
-							opacity: OWN_MISS
-						})
-					);
+					// Between the dots the pins are under: two bodies of one system
+					// have no line to draw at this scale.
+					const [from, to] = [systemOf(truth.body), systemOf(own.body)];
+					if (from !== to) join({ body: from }, { body: to });
 				});
-				for (const [system, row] of rows) mark(system, null, pins(row), true);
+				for (const [system, row] of rows) mark(system, null, pins(row, true), true);
 				const fit = Math.min(RUN_FAR_KM, Math.max(RUN_NEAR_KM, reach * HOLD));
 				next = {
 					body: SUN,
@@ -280,7 +276,6 @@ export function Recap({ space, rounds, focus }: Props) {
 		if (!space || !flight) return;
 		const distanceKm = flight.farKm * (flight.nearKm / flight.farKm) ** approach;
 		space.frame(flight.body, distanceKm);
-		space.dress(kinds.current, distanceKm < SWARM_CLEAR_KM);
 	}, [space, flight, approach]);
 
 	// The view is the reader's to turn and to zoom with the wheel as well, and

@@ -519,9 +519,22 @@ button {
 	background: var(--good);
 }
 
+/* A long run is mostly Mars: its pins wrap rather than run off the screen. */
 .pins {
 	display: flex;
+	flex-wrap: wrap;
+	justify-content: center;
 	gap: 7px;
+	max-width: 118px;
+}
+
+.pins > * {
+	flex: none;
+}
+
+/* Clear of the ring the map draws round the body. */
+.pins.under {
+	margin-top: 20px;
 }
 
 .pin.numbered {

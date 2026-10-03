@@ -3,7 +3,7 @@
 import { useEffect, useRef } from 'react';
 import type { LonLat } from 'spacemap';
 import type { Profile } from '../game/players';
-import { face, pin, useFlatMap } from './useFlatMap';
+import { MISS, OTHER_MISS, OWN_MISS, face, pin, useFlatMap } from './useFlatMap';
 
 export interface Placement {
 	/** Null when the round ran out with nothing picked. */
@@ -79,23 +79,22 @@ export function ResultMap({ body, rounds }: Props) {
 			const label = numbered ? String(index + 1) : undefined;
 			const miss = (from: LonLat, opacity: number) =>
 				map.addPolyline({
+					...MISS,
 					points: [from, truth],
 					interpolate: 'geodesic',
-					color: '#ffffff',
 					opacity,
-					widthPx: 1,
-					dash: '4 4'
+					widthPx: 1
 				});
 			const own = avatar ? face(avatar, true) : pin('pin', label);
 			// In drawing order: the reader's own guess over the others', and the
 			// place itself over them all.
 			return [
 				...others.flatMap((other) => [
-					miss(other.at, 0.25),
+					miss(other.at, OTHER_MISS),
 					map.addMarker({ at: other.at, element: face(other.avatar), align: [0.5, 0.5] })
 				]),
 				...(guess
-					? [miss(guess, 0.45), map.addMarker({ at: guess, element: own, align: [0.5, 0.5] })]
+					? [miss(guess, OWN_MISS), map.addMarker({ at: guess, element: own, align: [0.5, 0.5] })]
 					: []),
 				map.addMarker({ at: truth, element: pin('pin truth', label), align: [0.5, 0.5] })
 			];

@@ -47,10 +47,16 @@ export function pin(className: string, label?: string): HTMLElement {
 	return element;
 }
 
-/** Pins that share a place, side by side. */
-export function pins(row: HTMLElement[]): HTMLElement {
+/** The line from a guess to its place, on either map. */
+export const MISS = { color: '#ffffff', dash: '4 4' } as const;
+export const OWN_MISS = 0.45;
+export const OTHER_MISS = 0.25;
+
+/** Pins that share a place, side by side: on it, or `under` it where the
+ *  place has a name of its own to leave clear. */
+export function pins(row: HTMLElement[], under = false): HTMLElement {
 	const element = document.createElement('div');
-	element.className = 'pins';
+	element.className = under ? 'pins under' : 'pins';
 	element.append(...row);
 	return element;
 }

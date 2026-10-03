@@ -132,8 +132,9 @@ ends on the body's own map; a slider is the same flight by hand. The end of a
 run shows every round on one map of the whole system, each guess joined to its
 place by the dashed line the body's own map draws a miss with, and a row of the
 tally looks at that round alone. The bodies guessed and the right ones are
-pinned with `setPinnedBodies`, so they keep their names and orbits from
-however far.
+pinned with `setPinnedBodies`, so the map keeps their rings and orbits from
+however far; where two of them are too close on screen for both names, one
+gives way until the reader zooms in.
 
 Both recaps link back to spacemap.co: into the panorama a ground round was
 taken from, onto the body a round from orbit was over. The SDK hands out

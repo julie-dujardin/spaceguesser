@@ -6,7 +6,7 @@
  */
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
-import { bodyOf, membersOf, systemOf, viewDistance, type BodyKind } from './bodies';
+import { bodyOf, membersOf, systemOf, viewDistance } from './bodies';
 import { anywhere, spot, type OrbitRound, type Place, type Round } from './rounds';
 import { NO_SKY, type Sky } from './scoring';
 
@@ -24,6 +24,8 @@ const SETTLE_TIMEOUT_MS = 25_000;
 const SPIN_TIMEOUT_MS = 5_000;
 /** A hidden tab draws no frames: measure from where the map is rather than wait. */
 const MEASURE_TIMEOUT_MS = 1_500;
+/** A guessed body still streaming in is waited for this long, then left off. */
+const KNOWN_TIMEOUT_MS = 3_000;
 /** A flight lands in a few seconds or not at all. */
 const FLIGHT_TIMEOUT_MS = 8_000;
 
@@ -73,6 +75,8 @@ export class Space {
 	/** Counts the times the camera changed hands. */
 	private turn = 0;
 	private covered = false;
+	/** What the map was last dressed for. */
+	private dressed: readonly string[] | null | undefined;
 
 	private constructor(
 		readonly map: SpaceMap,
@@ -98,19 +102,30 @@ export class Space {
 	 * What the map draws besides the bodies. A round shows the whole sky and
 	 * names none of it: names and orbits would answer it. A recap names what it
 	 * shows, and leaves out the swarms of small bodies: the belt is a brown fog
-	 * over everything from far off. One of `kinds` that had a part in it comes
-	 * back once the camera is `close` enough for the swarm to have thinned to
-	 * nothing, since the round's own rock is drawn with it. Null is a round.
-	 * Layers are hidden rather than left out when the map opens: one left out
-	 * then is never fetched.
+	 * over everything from far off. The bodies of `recap`, the ones guessed
+	 * and the right ones, are pinned: drawn out of their hidden swarm and named
+	 * from however far, a moon by its planet, which is all the map draws of it
+	 * from outside its system. Null is a round. Layers are hidden rather than
+	 * left out when the map opens: one left out then is never fetched.
 	 */
-	dress(recap: ReadonlySet<BodyKind> | null, close = false): void {
+	dress(recap: readonly string[] | null): void {
+		if (recap === this.dressed) return;
+		this.dressed = recap;
 		const named = recap !== null;
 		this.map.setLayerVisible('labels', named);
 		this.map.setLayerVisible('orbits', named);
-		this.map.setLayerVisible('asteroids', !recap || (close && recap.has('asteroid')));
-		this.map.setLayerVisible('comets', !recap || (close && recap.has('comet')));
-		this.map.setLayerVisible('dwarfPlanets', !recap || recap.has('dwarf'));
+		for (const swarm of ['asteroids', 'comets', 'dwarfPlanets'] as const)
+			this.map.setLayerVisible(swarm, !named);
+		this.map.setPinnedBodies([...new Set(recap?.flatMap((id) => [id, systemOf(id)]))]);
+	}
+
+	/** Resolves once the map has loaded every one of `bodies`, or has had as
+	 *  long as a recap can wait for one. */
+	async known(bodies: readonly string[]): Promise<void> {
+		const deadline = Date.now() + KNOWN_TIMEOUT_MS;
+		while (Date.now() < deadline && !bodies.every((id) => this.map.getBody(id))) {
+			await new Promise((resolve) => setTimeout(resolve, 100));
+		}
 	}
 
 	/** Let the reader turn the view and zoom it between two distances, or, with
