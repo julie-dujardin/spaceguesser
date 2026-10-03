@@ -72,6 +72,7 @@ export class Space {
 	private hold: CameraHold | null = null;
 	/** Counts the times the camera changed hands. */
 	private turn = 0;
+	private covered = false;
 
 	private constructor(
 		readonly map: SpaceMap,
@@ -137,6 +138,7 @@ export class Space {
 	 *  over its canvas — the rings round far bodies, its credit line — is HTML
 	 *  and would show through, so the whole of it goes. */
 	cover(covered: boolean): void {
+		this.covered = covered;
 		this.map.setCovered(covered);
 		this.container.style.visibility = covered ? 'hidden' : '';
 	}
@@ -282,22 +284,25 @@ export class Space {
 	 */
 	async measure(round: Round, truth: Place, guessed: string | null): Promise<Sky> {
 		if (!guessed || guessed === truth.body) return NO_SKY;
-		if (round.mode === 'ground') {
-			this.map.clock.setDate(new Date(round.time));
-			this.map.setCovered(false);
-			try {
+		try {
+			if (round.mode === 'ground') {
+				this.map.clock.setDate(new Date(round.time));
+				this.map.setCovered(false);
 				await Promise.race([
 					this.frames(2),
 					new Promise((resolve) => setTimeout(resolve, MEASURE_TIMEOUT_MS))
 				]);
-			} finally {
-				this.map.setCovered(true);
 			}
+			return this.sky(truth.body, guessed);
+		} catch {
+			return NO_SKY;
+		} finally {
+			// As it is wanted now: a recap may have uncovered the map meanwhile.
+			this.map.setCovered(this.covered);
 		}
-		return this.sky(truth.body, guessed);
 	}
 
-	/** The map must already be at the round's time, around `truth`. */
+	/** The map must already be at the round's time. */
 	private sky(truth: string, guessed: string): Sky {
 		const between = (a: string, b: string) => this.map.distanceKm({ body: a }, { body: b });
 		const system = systemOf(truth);
