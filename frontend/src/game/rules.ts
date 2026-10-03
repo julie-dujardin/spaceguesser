@@ -28,9 +28,9 @@ export const MOVEMENT_LABELS: Record<Movement, string> = {
 	frozen: 'no pan or zoom'
 };
 
-/** A sweep narrower than this is a strip of ground with no horizon to read,
- *  which is a coin toss rather than a puzzle. */
-const MIN_SPHERE_PERCENT = 25;
+/** Only a full turn of the horizon plays: a partial sweep leaves the player
+ *  guessing what lies outside it. Full mosaics land a pixel short of 360°. */
+const MIN_HFOV_DEG = 359.5;
 
 /** Two panoramas from the same stop are the same round twice over. */
 const SAME_PLACE_DEG = 0.002;
@@ -42,7 +42,7 @@ const PROBE_GAP = 3;
 
 /** Playable panoramas, in no particular order. */
 export function playable(entries: readonly PanoramaEntry[]): PanoramaEntry[] {
-	return entries.filter((e) => (e.sphere_percent ?? 0) >= MIN_SPHERE_PERCENT);
+	return entries.filter((e) => (e.hfov_deg ?? 0) >= MIN_HFOV_DEG);
 }
 
 /** An entry with no mission stands alone rather than joining a pool of

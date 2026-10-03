@@ -28,24 +28,25 @@ echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 
 ## Where the panoramas come from
 
-The published export has ground panoramas on four Mars probes: Curiosity in
-Gale, Spirit in Gusev, Perseverance in Jezero and InSight on Elysium Planitia,
-4,006 of them. Panoramas covering less than a quarter of the sphere are
-dropped — a narrow strip of ground has no horizon to read — which leaves 2,086
-to draw rounds from. Elsewhere the export is a handful of single views, Venera
-13, the Apollo landings, Huygens, and none of them clear that bar, so Mars is
-the game.
+The published export has some fourteen thousand ground panoramas on Mars,
+from the rovers and landers that have worked there. Only the ones that go all
+the way round the horizon play — a partial sweep leaves the player guessing
+what lies outside it — which leaves 4,313 to draw rounds from: Curiosity in
+Gale, Opportunity on Meridiani Planum, Perseverance in Jezero, Spirit in Gusev
+and InSight on Elysium Planitia. Elsewhere the export is a handful of single
+views, Venera 13, the Apollo landings, Huygens, and none of them is a full
+turn, so Mars is the game.
 
 A run never draws two stops from the same place, and never comes back to a
-probe within three rounds while the pool has one to spare. That evens the three
+probe within three rounds while the pool has one to spare. That evens the four
 rovers out instead of following the length of their traverses, Curiosity's
-being three times Spirit's; InSight, a lander with two panoramas over the bar
-and both from the one spot, stays the rare round it should be. So a round turns
-on which probe, worth up to 6,033 km of error between Perseverance and Spirit,
+being three times Spirit's; InSight, a lander with ten panoramas over the bar
+and all from the one spot, stays the rare round it should be. So a round turns
+on which probe, worth up to 9,670 km of error between Opportunity and Spirit,
 and then on where along the traverse.
 Scoring follows the genre: points fall off exponentially with the miss, against
-the diagonal of what the panoramas actually cover, 6,050 km, rather than
-against Mars. That number is read from the pool at run time, so a fifth landing
+the diagonal of what the panoramas actually cover, 5,190 km, rather than
+against Mars. That number is read from the pool at run time, so another landing
 site or a second body rescales the game on its own.
 
 ## Multiplayer
