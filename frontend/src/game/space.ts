@@ -1,15 +1,13 @@
 /**
  * The Solar System map the game keeps for its whole life. It is the view of an
- * orbit round, and it is also the one thing that knows where the bodies are at
- * a round's time: where the Sun stands over a place, how far apart two guesses
- * of a system are.
+ * orbit round and of a recap, and it says where the Sun stands over the place
+ * an orbit round looks at.
  */
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
-import { bodyOf, membersOf, systemOf, viewDistance } from './bodies';
+import { bodyOf, systemOf, viewDistance } from './bodies';
 import { TERMS } from './host';
-import { anywhere, spot, type OrbitRound, type Place, type Round } from './rounds';
-import { NO_SKY, type Sky } from './scoring';
+import { anywhere, spot, type OrbitRound, type Place } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -23,8 +21,6 @@ const SETTLE_FRAMES = 4;
 const SETTLE_TIMEOUT_MS = 25_000;
 /** A spin the map has not fetched by now is taken as not measured. */
 const SPIN_TIMEOUT_MS = 5_000;
-/** A hidden tab draws no frames: measure from where the map is rather than wait. */
-const MEASURE_TIMEOUT_MS = 1_500;
 /** A guessed body still streaming in is waited for this long, then left off. */
 const KNOWN_TIMEOUT_MS = 3_000;
 /** A flight lands in a few seconds or not at all. */
@@ -75,7 +71,6 @@ export class Space {
 	private hold: CameraHold | null = null;
 	/** Counts the times the camera changed hands. */
 	private turn = 0;
-	private covered = false;
 	/** What the map was last dressed for. */
 	private dressed: readonly string[] | null | undefined;
 
@@ -155,7 +150,6 @@ export class Space {
 	 *  over its canvas — the rings round far bodies, its credit line — is HTML
 	 *  and would show through, so the whole of it goes. */
 	cover(covered: boolean): void {
-		this.covered = covered;
 		this.map.setCovered(covered);
 		this.container.style.visibility = covered ? 'hidden' : '';
 	}
@@ -290,49 +284,5 @@ export class Space {
 		this.turn++;
 		this.hold?.release();
 		this.hold = null;
-	}
-
-	/**
-	 * The sky a guess on `guessed` is scored against. The right body needs
-	 * none; any other is measured at the round's date, where an orbit round's
-	 * map already is. Under a panorama the map is somewhere else in time, and
-	 * is moved there for a frame without being shown. A sky the map cannot
-	 * give is no sky: the guess is still scored, for what it got right.
-	 */
-	async measure(round: Round, truth: Place, guessed: string | null): Promise<Sky> {
-		if (!guessed || guessed === truth.body) return NO_SKY;
-		try {
-			if (round.mode === 'ground') {
-				this.map.clock.setDate(new Date(round.time));
-				this.map.setCovered(false);
-				await Promise.race([
-					this.frames(2),
-					new Promise((resolve) => setTimeout(resolve, MEASURE_TIMEOUT_MS))
-				]);
-			}
-			return this.sky(truth.body, guessed);
-		} catch {
-			return NO_SKY;
-		} finally {
-			// As it is wanted now: a recap may have uncovered the map meanwhile.
-			this.map.setCovered(this.covered);
-		}
-	}
-
-	/** The map must already be at the round's time. */
-	private sky(truth: string, guessed: string): Sky {
-		const between = (a: string, b: string) => this.map.distanceKm({ body: a }, { body: b });
-		const system = systemOf(truth);
-		const sameSystem = systemOf(guessed) === system;
-		const reaches = membersOf(system)
-			.filter((member) => member.id !== system)
-			.map((member) => between(system, member.id));
-		return {
-			systemsKm: sameSystem ? 0 : between(system, systemOf(guessed)),
-			bodiesKm: sameSystem ? between(truth, guessed) : null,
-			systemExtentKm: reaches.some((km) => km === null)
-				? null
-				: 2 * Math.max(0, ...(reaches as number[]))
-		};
 	}
 }

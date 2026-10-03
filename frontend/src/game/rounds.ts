@@ -2,7 +2,7 @@
 
 import type { LonLat, PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance, type BodyInfo } from './bodies';
-import { drawRounds, formatTaken, formatWhen } from './rules';
+import { drawRounds, formatTaken, formatWhen, takenAt } from './rules';
 
 /** A panorama, and the body it was taken on. */
 export interface Stop {
@@ -12,10 +12,9 @@ export interface Stop {
 
 interface Asked {
 	body: string;
-	/** Epoch milliseconds the round is measured at, the same for every round of
-	 *  a run: the bodies are where they are then, which is what a guess on the
-	 *  wrong one is measured against, and one map can show every miss of it.
-	 *  A panorama shows its own date instead, see `shownDate`. */
+	/** The run's date in epoch milliseconds, the same for every round of it:
+	 *  when a flown round happens, and where one map shows the whole run. A
+	 *  panorama has its own date, see `shownDate` and `measuredAt`. */
 	time: number;
 }
 
@@ -40,10 +39,15 @@ export interface OrbitRound extends Asked {
 export type Round = GroundRound | OrbitRound;
 export type Mode = Round['mode'];
 
-/** The date a round shows. A panorama has its own, the day it was taken; the
- *  run's date is only where the bodies are when a miss is measured. */
+/** The date a round shows: a panorama's is the day it was taken. */
 export function shownDate(round: Round): string {
 	return round.mode === 'ground' ? formatTaken(round.entry.time) : formatWhen(round.time);
+}
+
+/** Epoch milliseconds a miss is measured at: the bodies were where they were
+ *  when the round happened, which for a panorama is when it was taken. */
+export function measuredAt(round: Round): number {
+	return (round.mode === 'ground' ? takenAt(round.entry.time) : null) ?? round.time;
 }
 
 /** How high over the ground a round looks from, in km: a flown round's

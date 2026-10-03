@@ -15,7 +15,8 @@ import {
 import { QUICK_PLAY, playable } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
-import { NO_SKY, type Guess } from './game/scoring';
+import { measure } from './game/measure';
+import type { Guess } from './game/scoring';
 import { MULTIPLAYER, useLobby } from './game/useLobby';
 import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
@@ -170,9 +171,7 @@ export default function App() {
 			committing.current = true;
 			const secondsLeft = run.settings.timer > 0 ? (timedOut ? 0 : (remaining.current ?? 0)) : null;
 			setMeasuring(true);
-			// Only a guess on another body needs the sky; the map is asked nothing
-			// for one on the right body.
-			const sky = space ? await space.measure(round, truth, guessed?.body ?? null) : NO_SKY;
+			const sky = await measure(round, truth, guessed?.body ?? null);
 			setMeasuring(false);
 			committing.current = false;
 			// The run was left, or started over, while the sky was read.
@@ -186,7 +185,7 @@ export default function App() {
 				played: play(stood, truth, guessed, sky, radius, secondsLeft, timedOut)
 			});
 		},
-		[truth, round, run.standing, run.settings.timer, space]
+		[truth, round, run.standing, run.settings.timer]
 	);
 
 	// The round's clock. It reads the guess and the round's ending through refs,

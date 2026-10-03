@@ -148,8 +148,6 @@ export function formatClock(seconds: number): string {
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** A round's moment, to the minute: the sky is exact about it, so the reader
- *  who wants to work the positions out may. */
 /** A panorama's date as the export writes it: a day, or a moment that is UTC
  *  whether or not it says so. Read as text, so no browser's timezone gets in. */
 export function formatTaken(time: string): string {
@@ -158,6 +156,16 @@ export function formatTaken(time: string): string {
 	return clock ? `${day} ${clock} UTC` : day;
 }
 
+/** The same date as epoch milliseconds, a bare day being its midnight. Null
+ *  when the export wrote something else. */
+export function takenAt(time: string): number | null {
+	const [, day, clock] = /^(\d{4}-\d\d-\d\d)(?:T(\d\d:\d\d(?::\d\d)?))?/.exec(time) ?? [];
+	const at = day ? Date.parse(`${day}T${clock ?? '00:00'}Z`) : NaN;
+	return Number.isNaN(at) ? null : at;
+}
+
+/** A round's moment, to the minute: the sky is exact about it, so the reader
+ *  who wants to work the positions out may. */
 export function formatWhen(time: number): string {
 	return `${new Date(time).toISOString().slice(0, 16).replace('T', ' ')} UTC`;
 }

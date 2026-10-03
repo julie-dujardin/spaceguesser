@@ -42,7 +42,7 @@ play whatever their sweep: they are the only views there are of their worlds.
 Yutu-2's traverse has no imagery to open. A run never draws two
 stops from the same place, and never comes back to a probe within three rounds
 while the pool has one to spare. The HUD shows the date the panorama was
-taken; a miss is still measured at the run's date, below.
+taken, and a miss is measured at that date, below.
 
 **From orbit**, in the Solar System map, over one of the 81 bodies in
 `frontend/src/game/bodies.json`: every body the export has a map the game
@@ -86,11 +86,12 @@ genre has it, `max · e^(−10 · miss / size)`:
 | the place  | 2,500  | along the ground                      | half the body's circumference        |
 
 A small body is a system of one. A body guessed whole takes the place's points
-with it. The misses between bodies are measured in the Solar System map at the
-run's date, so the same wrong guess is worth more the month the two planets
-are on the same side of the Sun, and the map a run ends on can draw every miss
-as long as it was scored. For a rock of the belt that is its orbit at
-that date: the map places it without flying there.
+with it. The misses between bodies are measured where the bodies were when the round
+happened: the run's date from orbit, the day a panorama was taken on the
+ground. So the same wrong guess is worth more the month the two planets are on
+the same side of the Sun. For a rock of the belt that is its orbit at that
+date. The map a run ends on draws every miss at the run's date, so the line of
+a miss from a panorama is not as long as it was scored.
 
 ## Multiplayer
 

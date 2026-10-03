@@ -23,7 +23,8 @@ import {
 } from '../game/rounds';
 import type { RunSettings } from '../game/rules';
 import { play, type Played } from '../game/run';
-import { NO_SKY, type Guess } from '../game/scoring';
+import { measure } from '../game/measure';
+import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import type { LobbySession } from '../game/useLobby';
 import { Avatar } from './Avatar';
@@ -134,7 +135,6 @@ export function Party({
 					round={round}
 					settings={settings}
 					truth={truth}
-					space={space}
 					heading={heading}
 					mapOpen={mapOpen}
 					onMapOpen={onMapOpen}
@@ -216,7 +216,6 @@ interface RoundProps {
 	round: LobbyRound;
 	settings: RunSettings;
 	truth: Place | null;
-	space: Space | null;
 	heading: number;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
@@ -230,7 +229,6 @@ function Round({
 	round,
 	settings,
 	truth,
-	space,
 	heading,
 	mapOpen,
 	onMapOpen,
@@ -250,7 +248,7 @@ function Round({
 		if (!truth || measuring) return;
 		const seconds = left === null ? null : timedOut ? 0 : left;
 		setMeasuring(true);
-		const sky = space ? await space.measure(round.entry, truth, guessed?.body ?? null) : NO_SKY;
+		const sky = await measure(round.entry, truth, guessed?.body ?? null);
 		setMeasuring(false);
 		const radius = bodyOf(truth.body)?.radiusKm ?? null;
 		setSent(play(slim(round.entry), truth, guessed, sky, radius, seconds, timedOut));

@@ -1,7 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance } from './bodies';
-import { altitudeKm, anywhere, drawDate, drawRun, shownDate, spot, type Stop } from './rounds';
+import {
+	altitudeKm,
+	anywhere,
+	drawDate,
+	drawRun,
+	measuredAt,
+	shownDate,
+	spot,
+	type Stop
+} from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -115,6 +124,26 @@ describe('shownDate', () => {
 		expect(shownDate({ mode: 'orbit', body: 'naif-499', time, u: 0, v: 0 })).toBe(
 			'2026-10-02 12:30 UTC'
 		);
+	});
+});
+
+describe('measuredAt', () => {
+	const RUN = Date.UTC(2026, 9, 2, 12, 30);
+	const on = (time: string) =>
+		measuredAt({ mode: 'ground', body: 'naif-499', time: RUN, entry: { time } as PanoramaEntry });
+
+	it('measures a panorama when it was taken, in UTC whatever the export left off', () => {
+		expect(on('2012-08-08T05:01:47Z')).toBe(Date.UTC(2012, 7, 8, 5, 1, 47));
+		expect(on('2004-01-04T05:01:47.477')).toBe(Date.UTC(2004, 0, 4, 5, 1, 47));
+		expect(on('1969-07-21')).toBe(Date.UTC(1969, 6, 21));
+	});
+
+	it("falls back to the run's date for a panorama with no date to read", () => {
+		expect(on('')).toBe(RUN);
+	});
+
+	it("measures a flown round at the run's date", () => {
+		expect(measuredAt({ mode: 'orbit', body: 'naif-499', time: RUN, u: 0, v: 0 })).toBe(RUN);
 	});
 });
 

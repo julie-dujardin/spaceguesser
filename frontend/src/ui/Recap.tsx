@@ -150,7 +150,8 @@ export function Recap({ space, rounds, focus }: Props) {
 		const run = async () => {
 			const all = shown.current;
 			const one = focus === null ? null : all[focus];
-			// A run has one date, so one map shows every miss of it as it was scored.
+			// One map shows the whole run at the run's date. A panorama's miss was
+			// measured at its own date, so its line here is not to that scale.
 			const time = (one ?? all[all.length - 1]).round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;
