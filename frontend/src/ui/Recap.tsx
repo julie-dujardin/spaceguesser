@@ -231,7 +231,9 @@ export function Recap({ space, rounds, focus }: Props) {
 	const mapped = !!one && !!bodyOf(one.truth.body)?.surface;
 	// The camera has finished its way in by the time the map starts over it.
 	const approach = mapped ? Math.min(1, zoom / FLAT_FROM) : zoom;
-	const flat = mapped ? Math.max(0, (zoom - FLAT_FROM) / (1 - FLAT_FROM)) : 0;
+	// With no map to fly in, or a flight that failed, the flat map is the recap.
+	const flown = !!space && !error;
+	const flat = !mapped ? 0 : flown ? Math.max(0, (zoom - FLAT_FROM) / (1 - FLAT_FROM)) : 1;
 
 	useEffect(() => {
 		if (!space || !flight) return;
@@ -282,8 +284,8 @@ export function Recap({ space, rounds, focus }: Props) {
 					<ResultMap key={`${focus}:${one.truth.body}`} body={one.truth.body} rounds={placements} />
 				</div>
 			)}
-			{!flight && !error && <div className="stage-note">finding the place…</div>}
-			{error && <div className="stage-note">{error}</div>}
+			{space && !flight && !error && <div className="stage-note">finding the place…</div>}
+			{error && !mapped && <div className="stage-note">{error}</div>}
 			{flight && (
 				<label className="zoomer glass">
 					<span aria-hidden="true">−</span>

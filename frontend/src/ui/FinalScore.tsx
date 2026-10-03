@@ -68,6 +68,8 @@ export function FinalScore({ space, played, others, avatar, onAgain, onHome, chi
 							title={focus === index ? 'back to the whole run' : 'look at this round'}
 							onClick={() => setFocus(focus === index ? null : index)}
 							onKeyDown={(event) => {
+								// A key on the link inside the row is the link's.
+								if (event.target !== event.currentTarget) return;
 								if (event.key !== 'Enter' && event.key !== ' ') return;
 								event.preventDefault();
 								setFocus(focus === index ? null : index);
