@@ -13,6 +13,7 @@ import {
 } from '../game/lobby';
 import { profileOf } from '../game/players';
 import {
+	altitudeKm,
 	drawRun,
 	shownDate,
 	type Modes,
@@ -284,6 +285,7 @@ function Round({
 				round={round.index}
 				rounds={round.total}
 				when={shownDate(round.entry)}
+				altitude={altitudeKm(round.entry)}
 				left={left}
 				onQuit={session.leave}
 			>

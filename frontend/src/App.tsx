@@ -3,7 +3,15 @@ import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { inviteCode, invitePath, settingsOf } from './game/lobby';
 import { keepProfile } from './game/players';
-import { drawRun, shownDate, type Modes, type Place, type Round, type Stop } from './game/rounds';
+import {
+	altitudeKm,
+	drawRun,
+	shownDate,
+	type Modes,
+	type Place,
+	type Round,
+	type Stop
+} from './game/rounds';
 import { QUICK_PLAY, playable } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
@@ -347,6 +355,7 @@ export default function App() {
 						round={run.round}
 						rounds={run.drawn.length}
 						when={shownDate(round)}
+						altitude={altitudeKm(round)}
 						left={left}
 						onQuit={() => dispatch({ kind: 'home' })}
 					/>

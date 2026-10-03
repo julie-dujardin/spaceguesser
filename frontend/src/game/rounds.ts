@@ -1,7 +1,7 @@
 /** What a round asks: a place stood on, or a place stood over. */
 
 import type { LonLat, PanoramaEntry } from 'spacemap';
-import { BODIES, type BodyInfo } from './bodies';
+import { BODIES, bodyOf, viewDistance, type BodyInfo } from './bodies';
 import { drawRounds, formatTaken, formatWhen } from './rules';
 
 /** A panorama, and the body it was taken on. */
@@ -44,6 +44,14 @@ export type Mode = Round['mode'];
  *  run's date is only where the bodies are when a miss is measured. */
 export function shownDate(round: Round): string {
 	return round.mode === 'ground' ? formatTaken(round.entry.time) : formatWhen(round.time);
+}
+
+/** How high over the ground a round looks from, in km: a flown round's
+ *  standoff, or a panorama taken on the way down. Null standing on it. */
+export function altitudeKm(round: Round): number | null {
+	if (round.mode === 'ground') return round.entry.altitude_m ? round.entry.altitude_m / 1000 : null;
+	const body = bodyOf(round.body);
+	return body ? (viewDistance(body) - 1) * body.radiusKm : null;
 }
 
 /** A place on a body, which is what a round is finally about. */

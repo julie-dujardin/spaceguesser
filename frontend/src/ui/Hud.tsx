@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { formatClock, movementName, type RunSettings } from '../game/rules';
+import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
 
 interface Props {
 	settings: RunSettings;
@@ -9,6 +9,8 @@ interface Props {
 	rounds: number;
 	/** The round's date, as it is shown. */
 	when: string;
+	/** Kilometres over the ground; null when standing on it. */
+	altitude: number | null;
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
@@ -16,7 +18,7 @@ interface Props {
 	children?: ReactNode;
 }
 
-export function Hud({ settings, round, rounds, when, left, onQuit, children }: Props) {
+export function Hud({ settings, round, rounds, when, altitude, left, onQuit, children }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
 	return (
 		<>
@@ -34,6 +36,11 @@ export function Hud({ settings, round, rounds, when, left, onQuit, children }: P
 						{when}
 					</span>
 				</span>
+				{altitude !== null && (
+					<span className="pill status">
+						<span className="mono mut">altitude {formatAltitude(altitude)}</span>
+					</span>
+				)}
 				{left !== null && (
 					<span className="pill glass clock">
 						<span className="v">{formatClock(left)}</span>

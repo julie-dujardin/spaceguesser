@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance } from './bodies';
-import { anywhere, drawDate, drawRun, shownDate, spot, type Stop } from './rounds';
+import { altitudeKm, anywhere, drawDate, drawRun, shownDate, spot, type Stop } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -115,6 +115,24 @@ describe('shownDate', () => {
 		expect(shownDate({ mode: 'orbit', body: 'naif-499', time, u: 0, v: 0 })).toBe(
 			'2026-10-02 12:30 UTC'
 		);
+	});
+});
+
+describe('altitudeKm', () => {
+	const on = (entry: Partial<PanoramaEntry>) =>
+		altitudeKm({ mode: 'ground', body: 'naif-606', time: 0, entry: entry as PanoramaEntry });
+
+	it('is nothing for a panorama taken on the ground', () => {
+		expect(on({})).toBeNull();
+	});
+
+	it('is how high a panorama was taken on the way down', () => {
+		expect(on({ altitude_m: 10_000 })).toBe(10);
+	});
+
+	it('is the standoff of a flown round', () => {
+		const km = altitudeKm({ mode: 'orbit', body: 'naif-499', time: 0, u: 0, v: 0 });
+		expect(km).toBeGreaterThan(0);
 	});
 });
 

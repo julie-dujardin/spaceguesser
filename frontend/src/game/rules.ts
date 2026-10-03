@@ -137,6 +137,12 @@ export function formatDistance(km: number): string {
 	return `${Math.round(km).toLocaleString('en')} km`;
 }
 
+/** An altitude is a round figure: the camera's is chosen, not measured. */
+export function formatAltitude(km: number): string {
+	if (km < 1) return `${Math.round(km * 1000)} m`;
+	return `${Number(km.toPrecision(2)).toLocaleString('en')} km`;
+}
+
 export function formatClock(seconds: number): string {
 	const s = Math.max(0, Math.ceil(seconds));
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
