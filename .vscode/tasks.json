@@ -3,9 +3,24 @@
 	"tasks": [
 		{
 			"label": "dev",
+			"dependsOn": ["backend", "frontend"]
+		},
+		{
+			"label": "backend",
+			"type": "shell",
+			// Detached, so an already running stack is a no-op rather than a
+			// log to wait on.
+			"command": "docker compose up --build --wait",
+			"options": { "cwd": "${workspaceFolder}" },
+			"problemMatcher": []
+		},
+		{
+			"label": "frontend",
 			"type": "npm",
 			"script": "dev",
 			"path": "frontend",
+			// Multiplayer is hidden unless a server is named.
+			"options": { "env": { "VITE_MULTIPLAYER_URL": "ws://127.0.0.1:8787/ws" } },
 			"isBackground": true,
 			"problemMatcher": {
 				"pattern": { "regexp": "." },
