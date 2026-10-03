@@ -41,7 +41,8 @@ InSight. The Apollo landings and Venera 13 have no full sweep, so the Moon and
 Venus are not in the pool; Yutu-2's traverse has no imagery to open and
 Huygens' is under a licence the game does not accept. A run never draws two
 stops from the same place, and never comes back to a probe within three rounds
-while the pool has one to spare.
+while the pool has one to spare. The round happens when the panorama was
+taken, which is the date the HUD shows.
 
 **From orbit**, in the Solar System map, over one of the 81 bodies in
 `frontend/src/game/bodies.json`: every body the export has an openly licensed
@@ -86,10 +87,10 @@ genre has it, `max · e^(−10 · miss / size)`:
 
 A small body is a system of one. A body guessed whole takes the place's points
 with it. The misses between bodies are measured in the Solar System map at the
-run's date, so the same wrong guess is worth more the month the two planets
-are on the same side of the Sun, and the map a run ends on can draw every miss
-as long as it was scored. For a rock of the belt that is its orbit at
-that date: the map places it without flying there.
+round's date, so the same wrong guess is worth more the month the two planets
+are on the same side of the Sun. The map a run ends on shows the whole run at
+the run's date, and each round at its own. For a rock of the belt that is its
+orbit at that date: the map places it without flying there.
 
 ## Multiplayer
 

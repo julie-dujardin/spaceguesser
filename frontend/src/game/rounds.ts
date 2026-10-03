@@ -12,9 +12,9 @@ export interface Stop {
 
 interface Asked {
 	body: string;
-	/** Epoch milliseconds the round happens at, the same for every round of a
-	 *  run: the bodies are where they are then, which is what a guess on the
-	 *  wrong one is measured against, and one map can show every miss of it. */
+	/** Epoch milliseconds the round happens at: when the panorama was taken on
+	 *  the ground, the run's date from orbit. The bodies are where they are
+	 *  then, which is what a guess on the wrong one is measured against. */
 	time: number;
 }
 
@@ -44,11 +44,11 @@ export interface Place extends LonLat {
 	body: string;
 }
 
-/** A run happens within this long of now, either side: near enough to be the
+/** A run is flown within this long of now, either side: near enough to be the
  *  sky as it is, wide enough that every run is not the same sky. */
 const WINDOW_MS = 30 * 86_400_000;
 
-/** The date of a run. */
+/** The date a run's orbit rounds share. */
 export function drawDate(now = Date.now(), random: () => number = Math.random): number {
 	return Math.round(now + (2 * random() - 1) * WINDOW_MS);
 }
@@ -84,6 +84,13 @@ export function anywhere(round: Pick<OrbitRound, 'u' | 'v'>): LonLat {
 	return { lat: Math.asin(2 * round.u - 1) / RAD, lon: round.v * 360 - 180 };
 }
 
+/** When a panorama was taken. An entry with no readable date falls back on
+ *  `otherwise`: a round at the wrong date is worth more than no round. */
+function taken(entry: PanoramaEntry, otherwise: number): number {
+	const time = Date.parse(entry.time);
+	return Number.isNaN(time) ? otherwise : time;
+}
+
 export interface Modes {
 	ground: boolean;
 	orbit: boolean;
@@ -99,16 +106,16 @@ function pickBody(spent: readonly Round[], random: () => number): BodyInfo {
 /**
  * `count` rounds, each a coin toss between the modes switched on. Stops are
  * drawn as they always were, spread across probes; bodies are drawn evenly and
- * not twice while there is one left. `taken` is read as the rounds just before
- * these, and `time` is theirs when these go on with their run. With no stops
- * to draw from, every round is from orbit.
+ * not twice while there is one left. `before` is read as the rounds just before
+ * these, and `date` is the run's when these go on with it. With no stops to
+ * draw from, every round is from orbit.
  */
 export function drawRun(
 	stops: readonly Stop[],
 	count: number,
 	modes: Modes,
-	taken: readonly Round[] = [],
-	time = drawDate(),
+	before: readonly Round[] = [],
+	date = drawDate(),
 	random: () => number = Math.random
 ): Round[] {
 	const ground = modes.ground && stops.length > 0;
@@ -117,17 +124,28 @@ export function drawRun(
 	const bodyOfEntry = new Map(stops.map((stop) => [stop.entry.id, stop.body]));
 	const entries = stops.map((stop) => stop.entry);
 	for (let i = 0; i < count; i++) {
-		const spent = [...taken, ...drawn];
+		const spent = [...before, ...drawn];
 		if (ground && (!orbit || random() < 0.5)) {
 			const stood = spent.flatMap((round) => (round.mode === 'ground' ? [round.entry] : []));
 			const [entry] = drawRounds(entries, 1, stood);
 			if (entry) {
-				drawn.push({ mode: 'ground', body: bodyOfEntry.get(entry.id)!, entry, time });
+				drawn.push({
+					mode: 'ground',
+					body: bodyOfEntry.get(entry.id)!,
+					entry,
+					time: taken(entry, date)
+				});
 				continue;
 			}
 			// The stops ran out: the rest of the run is flown.
 		}
-		drawn.push({ mode: 'orbit', body: pickBody(spent, random).id, time, u: random(), v: random() });
+		drawn.push({
+			mode: 'orbit',
+			body: pickBody(spent, random).id,
+			time: date,
+			u: random(),
+			v: random()
+		});
 	}
 	return drawn;
 }

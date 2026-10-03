@@ -28,6 +28,11 @@ export const MOVEMENT_LABELS: Record<Movement, string> = {
 	frozen: 'no pan or zoom'
 };
 
+/** A movement named where no heading says what the word is about. */
+export function movementName(movement: Movement): string {
+	return movement === 'free' ? 'free movement' : MOVEMENT_LABELS[movement];
+}
+
 /** Only a full turn of the horizon plays: a partial sweep leaves the reader
  *  guessing what lies outside it. Full mosaics land a pixel short of 360°,
  *  with nothing between 358° and 359.6°. */
@@ -103,7 +108,7 @@ export function describeRun(settings: RunSettings): string[] {
 	return [
 		`${settings.rounds} rounds`,
 		ground && orbit ? 'ground and orbit' : ground ? 'ground only' : 'orbit only',
-		MOVEMENT_LABELS[settings.movement],
+		movementName(settings.movement),
 		settings.timer ? `${settings.timer} s per round` : 'no timer'
 	];
 }

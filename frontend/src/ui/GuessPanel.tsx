@@ -210,7 +210,7 @@ export function GuessPanel({
 	const complete = !!guess && (!info?.surface || !!guess.at);
 	const hint =
 		level.kind !== 'body'
-			? 'pick where you are'
+			? ''
 			: info?.surface
 				? guess?.at
 					? `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`
@@ -246,7 +246,7 @@ export function GuessPanel({
 					<input
 						type="search"
 						value={query}
-						placeholder="search a body"
+						placeholder="search"
 						aria-label="Search a body"
 						disabled={locked}
 						onChange={(event) => setQuery(event.target.value)}

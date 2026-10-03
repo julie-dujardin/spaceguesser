@@ -17,23 +17,20 @@ export function Home({ onQuickPlay, onCustom, onFriends, ready, notice }: Props)
 		<div className="scrim">
 			<div className="card glass home">
 				<div className="aside">
-					<span className="hd">other modes</span>
 					{onFriends && (
 						<button type="button" className="mode" onClick={onFriends}>
 							<span className="t">Play with friends</span>
-							<span className="d">one lobby · invite by link</span>
 						</button>
 					)}
 					<button type="button" className="mode" onClick={onCustom}>
 						<span className="t">Custom run</span>
-						<span className="d">rounds · ground or orbit · movement · timer</span>
 					</button>
 				</div>
 				<div className="main">
 					<h1>spaceguesser</h1>
 					<p className="lede">
-						Figure out where you are in the solar system. Look around, then place your guess on the
-						map.
+						<span>Figure out where you are in the solar system.</span>
+						<span>Look around, then place your guess on the map.</span>
 					</p>
 					<button type="button" className="start" onClick={onQuickPlay} disabled={!ready}>
 						<span className="t">Quick play</span>

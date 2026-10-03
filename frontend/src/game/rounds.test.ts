@@ -85,9 +85,20 @@ describe('drawRun', () => {
 		expect(new Set(run.map((round) => round.body)).size).toBe(count);
 	});
 
-	it('gives every round of a run the one date', () => {
+	it('flies every orbit round of a run at the one date', () => {
 		const run = drawRun(stops(40), 50, { ground: true, orbit: true }, [], now, seeded(5));
-		expect(new Set(run.map((round) => round.time))).toEqual(new Set([now]));
+		const flown = run.filter((round) => round.mode === 'orbit');
+		expect(new Set(flown.map((round) => round.time))).toEqual(new Set([now]));
+	});
+
+	it('stands on the ground when the panorama was taken', () => {
+		const dated = stops(40).map((stop, i) => ({
+			...stop,
+			entry: { ...stop.entry, time: new Date(Date.UTC(2010, 0, 1 + i)).toISOString() }
+		}));
+		const run = drawRun(dated, 10, { ground: true, orbit: false }, [], now, seeded(7));
+		for (const round of run)
+			expect(round.time).toBe(Date.parse((round as { entry: { time: string } }).entry.time));
 	});
 
 	it('draws a date within thirty days of now', () => {

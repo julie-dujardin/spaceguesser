@@ -150,8 +150,9 @@ export function Recap({ space, rounds, focus }: Props) {
 		const run = async () => {
 			const all = shown.current;
 			const one = focus === null ? null : all[focus];
-			// A run has one date, so one map shows every miss of it as it was scored.
-			const time = (one ?? all[all.length - 1]).round.time;
+			// The whole run is shown at the date its orbit rounds share, where it has one.
+			const flown = all.find(({ round }) => round.mode === 'orbit');
+			const time = (one ?? flown ?? all[all.length - 1]).round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;
 			const involved = bodiesIn(one ? [one] : all);

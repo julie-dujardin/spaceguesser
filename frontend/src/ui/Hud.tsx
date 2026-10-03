@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import { MOVEMENT_LABELS, formatClock, formatWhen, type RunSettings } from '../game/rules';
+import { formatClock, formatWhen, movementName, type RunSettings } from '../game/rules';
 
 interface Props {
 	settings: RunSettings;
@@ -28,7 +28,7 @@ export function Hud({ settings, round, rounds, when, left, onQuit, children }: P
 						round {round + 1} / {rounds}
 					</span>
 					<span className="sep" />
-					<span className="mono mut move">{MOVEMENT_LABELS[settings.movement]}</span>
+					<span className="mono mut move">{movementName(settings.movement)}</span>
 					<span className="sep" />
 					<span className="mono mut when" title="the date and time of this round">
 						{formatWhen(when)}

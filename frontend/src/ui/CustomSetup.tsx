@@ -72,12 +72,11 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 							set({ modes: { ground: kind !== 'orbit', orbit: kind !== 'ground' } })
 						}
 						options={[
-							{ value: 'both', label: 'both' },
 							{ value: 'ground', label: 'on the ground' },
-							{ value: 'orbit', label: 'from orbit' }
+							{ value: 'orbit', label: 'from orbit' },
+							{ value: 'both', label: 'both' }
 						]}
 					/>
-					<span className="note">both is a coin toss each round</span>
 				</div>
 				<div className="field">
 					<span className="hd">movement</span>
@@ -91,7 +90,7 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 					/>
 				</div>
 				<div className="field">
-					<span className="hd">timer</span>
+					<span className="hd">round timer</span>
 					<Seg
 						value={settings.timer}
 						onChange={(timer) => set({ timer })}
@@ -103,7 +102,6 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 							{ value: 120, label: '2 min' }
 						]}
 					/>
-					<span className="note">per round</span>
 				</div>
 				<div className="acts">
 					{actions.map((action) => (

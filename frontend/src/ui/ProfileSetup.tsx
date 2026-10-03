@@ -90,7 +90,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 				<div className="prev">
 					<Avatar profile={profile} />
 					<span className={named ? 'nm' : 'nm mut'}>{named ? profile.name : 'pick a name'}</span>
-					<span className="mono dim tag">how others see your guesses</span>
+					<span className="mono dim tag">how others see you</span>
 				</div>
 				{trouble && <span className="note bad">{TROUBLES[trouble] ?? trouble}</span>}
 				<div className="acts">

@@ -112,7 +112,9 @@ export default function App() {
 			const modes = modesFor(settings.modes);
 			// The opener is the first round only when the run plays its kind.
 			const first = modes[opener.mode] ? [opener] : [];
-			const rest = drawRun(stops, settings.rounds - first.length, modes, first, first[0]?.time);
+			// An opener from orbit already has the run's date; one on the ground has its own.
+			const date = first[0]?.mode === 'orbit' ? first[0].time : undefined;
+			const rest = drawRun(stops, settings.rounds - first.length, modes, first, date);
 			const drawn = [...first, ...rest];
 			dispatch({ kind: 'start', settings, drawn });
 			// The opener is spent: draw the next one now, so leaving the run finds a
