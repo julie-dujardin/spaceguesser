@@ -33,13 +33,15 @@ echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 A round is one of two kinds, a coin toss each time unless a custom run asks for
 one alone.
 
-**On the ground**, in a panorama: any the export has that the view can open,
-however narrow its sweep. That is some fourteen thousand on Mars, and on the
-Moon and Venus the handful from the Apollo landings and Venera 13, which are
-in the pool and accordingly rare. Yutu-2's traverse has no imagery to open and
-Huygens' is under a licence the game does not accept, so neither plays. A run
-never draws two stops from the same place, and never comes back to a probe
-within three rounds while the pool has one to spare.
+**On the ground**, in a panorama: any the export has that the view can open
+and that goes all the way round the horizon, since a partial sweep leaves out
+whatever would have given the place away. That is some 4,300 of the fourteen
+thousand on Mars, from Curiosity, Perseverance, Opportunity, Spirit and
+InSight. The Apollo landings and Venera 13 have no full sweep, so the Moon and
+Venus are not in the pool; Yutu-2's traverse has no imagery to open and
+Huygens' is under a licence the game does not accept. A run never draws two
+stops from the same place, and never comes back to a probe within three rounds
+while the pool has one to spare.
 
 **From orbit**, in the Solar System map, over one of the 81 bodies in
 `frontend/src/game/bodies.json`: every body the export has an openly licensed

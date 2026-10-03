@@ -1,7 +1,7 @@
 /** What a run is made of. */
 
 import type { PanoramaEntry } from 'spacemap';
-import { groundDistanceM } from 'spacemap';
+import { groundDistanceM, isViewable } from 'spacemap';
 import type { Modes } from './rounds';
 
 export type Movement = 'free' | 'look' | 'frozen';
@@ -27,6 +27,16 @@ export const MOVEMENT_LABELS: Record<Movement, string> = {
 	look: 'look only',
 	frozen: 'no pan or zoom'
 };
+
+/** Only a full turn of the horizon plays: a partial sweep leaves the reader
+ *  guessing what lies outside it. Full mosaics land a pixel short of 360°,
+ *  with nothing between 358° and 359.6°. */
+const MIN_HFOV_DEG = 359.5;
+
+/** Whether a stop goes in the pool: the view can open it, all the way round. */
+export function playable(entry: PanoramaEntry): boolean {
+	return isViewable(entry) && (entry.hfov_deg ?? 0) >= MIN_HFOV_DEG;
+}
 
 /** Two panoramas from the same stop are the same round twice over. */
 const SAME_PLACE_DEG = 0.002;
