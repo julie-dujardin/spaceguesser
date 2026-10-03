@@ -22,6 +22,8 @@ const SETTLE_FRAMES = 4;
 const SETTLE_TIMEOUT_MS = 25_000;
 /** A spin the map has not fetched by now is taken as not measured. */
 const SPIN_TIMEOUT_MS = 5_000;
+/** A hidden tab draws no frames: measure from where the map is rather than wait. */
+const MEASURE_TIMEOUT_MS = 1_500;
 /** A flight lands in a few seconds or not at all. */
 const FLIGHT_TIMEOUT_MS = 8_000;
 
@@ -70,9 +72,6 @@ export class Space {
 	private hold: CameraHold | null = null;
 	/** Counts the times the camera changed hands. */
 	private turn = 0;
-	/** Where the reader hangs and which way they look, to put them back there
-	 *  after the map has been elsewhere to measure. */
-	private stood: { place: Place; gaze: Gaze } | null = null;
 
 	private constructor(
 		readonly map: SpaceMap,
@@ -206,7 +205,6 @@ export class Space {
 
 	/** The place an orbit round is over, which only the sky at its time says. */
 	async place(round: OrbitRound): Promise<Place> {
-		this.stood = null;
 		await this.travel(round.time, round.body);
 		const turn = this.turn;
 		// The map answers once it knows how the body spins, which it fetches on
@@ -229,7 +227,6 @@ export class Space {
 	look(place: Place, gaze: Gaze): void {
 		const radius = this.radiusKm(place.body);
 		if (!radius) return;
-		this.stood = { place, gaze };
 		const altitude = this.standoffKm(place.body) - radius;
 		const pitch = Math.min(MAX_PITCH, Math.max(-90, gaze.pitch)) * RAD;
 		const heading = gaze.heading * RAD;
@@ -278,25 +275,26 @@ export class Space {
 
 	/**
 	 * The sky a guess on `guessed` is scored against. The right body needs
-	 * none; any other sends the map to the round's time to say how far off it
-	 * was that day. A sky the map cannot give is no sky: the guess is still
-	 * scored, for what it got right.
+	 * none; any other is measured at the round's date, where an orbit round's
+	 * map already is. Under a panorama the map is somewhere else in time, and
+	 * is moved there for a frame without being shown. A sky the map cannot
+	 * give is no sky: the guess is still scored, for what it got right.
 	 */
 	async measure(round: Round, truth: Place, guessed: string | null): Promise<Sky> {
 		if (!guessed || guessed === truth.body) return NO_SKY;
-		const back = round.mode === 'orbit' ? this.stood : null;
-		try {
-			// A dot in the belt has no position to measure from until it has been
-			// flown to; it keeps one afterwards.
-			if (!this.map.getBody(guessed)?.placed) await this.travel(round.time, guessed);
-			await this.travel(round.time, truth.body);
-			return this.sky(truth.body, guessed);
-		} catch {
-			return NO_SKY;
-		} finally {
-			if (back) this.look(back.place, back.gaze);
-			else if (round.mode === 'ground') this.cover(true);
+		if (round.mode === 'ground') {
+			this.map.clock.setDate(new Date(round.time));
+			this.map.setCovered(false);
+			try {
+				await Promise.race([
+					this.frames(2),
+					new Promise((resolve) => setTimeout(resolve, MEASURE_TIMEOUT_MS))
+				]);
+			} finally {
+				this.map.setCovered(true);
+			}
 		}
+		return this.sky(truth.body, guessed);
 	}
 
 	/** The map must already be at the round's time, around `truth`. */

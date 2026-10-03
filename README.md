@@ -33,14 +33,13 @@ echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 A round is one of two kinds, a coin toss each time unless a custom run asks for
 one alone.
 
-**On the ground**, in a panorama. The published export has ground panoramas on
-five Mars probes — Curiosity, Perseverance, Spirit, Opportunity and InSight.
-Panoramas covering less than a quarter of the sphere are dropped: a narrow
-strip of ground has no horizon to read. Elsewhere the export is a handful of
-single views, Venera 13, the Apollo landings, Huygens, and none of them clear
-that bar yet; the pool is read from every body the export lists, so they play
-the day they do. A run never draws two stops from the same place, and never
-comes back to a probe within three rounds while the pool has one to spare.
+**On the ground**, in a panorama: any the export has that the view can open,
+however narrow its sweep. That is some fourteen thousand on Mars, and on the
+Moon and Venus the handful from the Apollo landings and Venera 13, which are
+in the pool and accordingly rare. Yutu-2's traverse has no imagery to open and
+Huygens' is under a licence the game does not accept, so neither plays. A run
+never draws two stops from the same place, and never comes back to a probe
+within three rounds while the pool has one to spare.
 
 **From orbit**, in the Solar System map, over one of the 81 bodies in
 `frontend/src/game/bodies.json`: every body the export has an openly licensed
@@ -86,7 +85,8 @@ genre has it, `max · e^(−10 · miss / size)`:
 A small body is a system of one. A body guessed whole takes the place's points
 with it. The misses between bodies are measured in the Solar System map at the
 round's date, so the same wrong guess is worth more the month the two planets
-are on the same side of the Sun.
+are on the same side of the Sun. For a rock of the belt that is its orbit at
+that date: the map places it without flying there.
 
 ## Multiplayer
 

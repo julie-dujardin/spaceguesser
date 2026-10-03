@@ -28,10 +28,6 @@ export const MOVEMENT_LABELS: Record<Movement, string> = {
 	frozen: 'no pan or zoom'
 };
 
-/** Only a full turn of the horizon plays: a partial sweep leaves the player
- *  guessing what lies outside it. Full mosaics land a pixel short of 360°. */
-const MIN_HFOV_DEG = 359.5;
-
 /** Two panoramas from the same stop are the same round twice over. */
 const SAME_PLACE_DEG = 0.002;
 
@@ -39,11 +35,6 @@ const SAME_PLACE_DEG = 0.002;
  *  allows it: one traverse several rounds running is one puzzle asked twice.
  *  Where it cannot, the gap shrinks rather than the run. */
 const PROBE_GAP = 3;
-
-/** Playable panoramas, in no particular order. */
-export function playable(entries: readonly PanoramaEntry[]): PanoramaEntry[] {
-	return entries.filter((e) => (e.hfov_deg ?? 0) >= MIN_HFOV_DEG);
-}
 
 /** An entry with no mission stands alone rather than joining a pool of
  *  unknowns that would then block each other. */

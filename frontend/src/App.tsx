@@ -1,10 +1,10 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
+import { fetchPanoramaIndex, fetchPanoramas, isViewable } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { inviteCode, invitePath, settingsOf } from './game/lobby';
 import { keepProfile } from './game/players';
 import { drawRun, type Modes, type Place, type Round, type Stop } from './game/rounds';
-import { QUICK_PLAY, playable } from './game/rules';
+import { QUICK_PLAY } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
 import { NO_SKY, type Guess } from './game/scoring';
@@ -37,12 +37,13 @@ type Door =
 /** Read once: the page is opened on an invite or it is not. */
 const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
 
-/** Every stop worth standing at, on every body that has any. */
+/** Every stop on every body that has any, however narrow its sweep: the
+ *  ones the view can open. */
 async function fetchStops(): Promise<Stop[]> {
 	const bodies = (await fetchPanoramaIndex()).filter((body) => !NO_GROUND.has(body.id));
 	const lists = await Promise.all(
 		bodies.map(async ({ id }) =>
-			playable(await fetchPanoramas(id)).map((entry) => ({ body: id, entry }))
+			(await fetchPanoramas(id)).filter(isViewable).map((entry) => ({ body: id, entry }))
 		)
 	);
 	return lists.flat();
