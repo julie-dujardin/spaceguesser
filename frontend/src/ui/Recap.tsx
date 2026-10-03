@@ -150,9 +150,7 @@ export function Recap({ space, rounds, focus }: Props) {
 		const run = async () => {
 			const all = shown.current;
 			const one = focus === null ? null : all[focus];
-			// The whole run is on one map, which has one date: the last round's.
-			// A line there joins a guess to its place; how far apart they were on
-			// the round's own date is the tally's to say.
+			// A run has one date, so one map shows every miss of it as it was scored.
 			const time = (one ?? all[all.length - 1]).round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;

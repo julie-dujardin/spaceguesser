@@ -12,8 +12,9 @@ export interface Stop {
 
 interface Asked {
 	body: string;
-	/** Epoch milliseconds the round happens at: the bodies are where they were
-	 *  then, which is what a guess on the wrong one is measured against. */
+	/** Epoch milliseconds the round happens at, the same for every round of a
+	 *  run: the bodies are where they are then, which is what a guess on the
+	 *  wrong one is measured against, and one map can show every miss of it. */
 	time: number;
 }
 
@@ -43,9 +44,14 @@ export interface Place extends LonLat {
 	body: string;
 }
 
-/** Rounds happen within this long of now, either side: near enough to be the
- *  sky as it is, wide enough that every round is not the same sky. */
+/** A run happens within this long of now, either side: near enough to be the
+ *  sky as it is, wide enough that every run is not the same sky. */
 const WINDOW_MS = 30 * 86_400_000;
+
+/** The date of a run. */
+export function drawDate(now = Date.now(), random: () => number = Math.random): number {
+	return Math.round(now + (2 * random() - 1) * WINDOW_MS);
+}
 
 /** The Sun stands at least this high over a drawn place. A coarse map is seen
  *  from far enough to show the whole disc, and one centred any nearer the
@@ -94,14 +100,15 @@ function pickBody(spent: readonly Round[], random: () => number): BodyInfo {
  * `count` rounds, each a coin toss between the modes switched on. Stops are
  * drawn as they always were, spread across probes; bodies are drawn evenly and
  * not twice while there is one left. `taken` is read as the rounds just before
- * these. With no stops to draw from, every round is from orbit.
+ * these, and `time` is theirs when these go on with their run. With no stops
+ * to draw from, every round is from orbit.
  */
 export function drawRun(
 	stops: readonly Stop[],
 	count: number,
 	modes: Modes,
 	taken: readonly Round[] = [],
-	now = Date.now(),
+	time = drawDate(),
 	random: () => number = Math.random
 ): Round[] {
 	const ground = modes.ground && stops.length > 0;
@@ -111,7 +118,6 @@ export function drawRun(
 	const entries = stops.map((stop) => stop.entry);
 	for (let i = 0; i < count; i++) {
 		const spent = [...taken, ...drawn];
-		const time = Math.round(now + (2 * random() - 1) * WINDOW_MS);
 		if (ground && (!orbit || random() < 0.5)) {
 			const stood = spent.flatMap((round) => (round.mode === 'ground' ? [round.entry] : []));
 			const [entry] = drawRounds(entries, 1, stood);

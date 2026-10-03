@@ -112,7 +112,8 @@ export default function App() {
 			const modes = modesFor(settings.modes);
 			// The opener is the first round only when the run plays its kind.
 			const first = modes[opener.mode] ? [opener] : [];
-			const drawn = [...first, ...drawRun(stops, settings.rounds - first.length, modes, first)];
+			const rest = drawRun(stops, settings.rounds - first.length, modes, first, first[0]?.time);
+			const drawn = [...first, ...rest];
 			dispatch({ kind: 'start', settings, drawn });
 			// The opener is spent: draw the next one now, so leaving the run finds a
 			// place it has not already used. Moving between menus leaves it alone.
@@ -209,7 +210,7 @@ export default function App() {
 	const redraw = () => {
 		if (!stops || lobby || shown?.mode !== 'orbit') return;
 		const modes = modesFor(run.phase === 'playing' ? run.settings.modes : QUICK_PLAY.modes);
-		const [fresh] = drawRun(stops, 1, modes, [...run.drawn, shown]);
+		const [fresh] = drawRun(stops, 1, modes, [...run.drawn, shown], shown.time);
 		if (!fresh) return;
 		if (run.phase === 'playing') dispatch({ kind: 'redraw', round: fresh });
 		else setOpener(fresh);

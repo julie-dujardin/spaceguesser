@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance } from './bodies';
-import { anywhere, drawRun, spot, type Stop } from './rounds';
+import { anywhere, drawDate, drawRun, spot, type Stop } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -85,10 +85,15 @@ describe('drawRun', () => {
 		expect(new Set(run.map((round) => round.body)).size).toBe(count);
 	});
 
-	it('keeps every round within thirty days of now', () => {
+	it('gives every round of a run the one date', () => {
 		const run = drawRun(stops(40), 50, { ground: true, orbit: true }, [], now, seeded(5));
-		for (const round of run)
-			expect(Math.abs(round.time - now)).toBeLessThanOrEqual(30 * 86_400_000);
+		expect(new Set(run.map((round) => round.time))).toEqual(new Set([now]));
+	});
+
+	it('draws a date within thirty days of now', () => {
+		const random = seeded(6);
+		for (let i = 0; i < 200; i++)
+			expect(Math.abs(drawDate(now, random) - now)).toBeLessThanOrEqual(30 * 86_400_000);
 	});
 });
 
