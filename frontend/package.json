@@ -15,7 +15,7 @@
 	"dependencies": {
 		"react": "^19.2.0",
 		"react-dom": "^19.2.0",
-		"spacemap": "^0.1.2",
+		"spacemap": "^0.1.5",
 		"three": "^0.183.2",
 		"uqr": "^0.1.3"
 	},

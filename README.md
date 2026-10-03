@@ -148,12 +148,9 @@ removable. The guess panel sits clear of the view's rather than over it.
 ## The SDK
 
 `spacemap` comes from npm, with `three` as a peer dependency the app pins
-itself. The game is ahead of the published package: `createSystemMap`,
-`distanceKm`, `offsetKm`, `getSubsolarPoint`, `isViewable`, `setPinnedBodies`,
-dashed lines and a flat map that opens Ceres and Vesta are on the
-`sdk-dash-pinned` branch of the map's repository.
-Until that is published and the version here bumped, build it there with
-`pnpm build:sdk:npm` and put it in place of the installed one:
+itself. To play against a build of the map's repository that is not published
+yet, build it there with `pnpm build:sdk:npm` and put it in place of the
+installed one; `pnpm install` puts the published one back:
 
 ```sh
 frontend/scripts/use-local-sdk.sh ../space-map
