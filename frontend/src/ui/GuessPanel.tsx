@@ -183,7 +183,8 @@ export function GuessPanel({
 	const locked = waiting !== undefined;
 	/** Whether the panel was already open when the gesture began: the tap that
 	 *  opens it also lands as a click, on a box that has grown since, and a
-	 *  pick from it would be nowhere the reader aimed. */
+	 *  pick from it would be nowhere the reader aimed. A key is pressed on what
+	 *  already has the focus, which opened the panel on arriving. */
 	const taking = useRef(open);
 	const live = () => taking.current && !locked;
 
@@ -224,6 +225,7 @@ export function GuessPanel({
 				taking.current = open;
 				onOpen();
 			}}
+			onKeyDownCapture={() => (taking.current = true)}
 			onFocusCapture={onOpen}
 		>
 			<div className="head">

@@ -84,6 +84,8 @@ export function reduce(run: Run, action: Action): Run {
 				drawn: run.drawn.map((round, i) => (i === run.round ? action.round : round))
 			};
 		case 'commit':
+			// A guess still being measured when the run was left has no run to land in.
+			if (run.phase !== 'playing') return run;
 			return { ...run, phase: 'result', played: [...run.played, action.played] };
 		case 'next':
 			return run.round + 1 >= run.drawn.length

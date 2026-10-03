@@ -148,6 +148,8 @@ export default function App() {
 	useEffect(() => space?.cover(shown?.mode !== 'orbit'), [space, shown?.mode]);
 
 	const committing = useRef(false);
+	const current = useRef(round);
+	current.current = round;
 	const commit = useCallback(
 		async (guessed: Guess | null, timedOut: boolean) => {
 			if (!truth || !round || committing.current) return;
@@ -159,6 +161,8 @@ export default function App() {
 			const sky = space ? await space.measure(round, truth, guessed?.body ?? null) : NO_SKY;
 			setMeasuring(false);
 			committing.current = false;
+			// The run was left, or started over, while the sky was read.
+			if (current.current !== round) return;
 			const radius = bodyOf(truth.body)?.radiusKm ?? null;
 			// The card describes the stop the guess is scored against.
 			const stood =
