@@ -129,8 +129,11 @@ colour travel in front of the name (`frontend/src/game/players.ts`).
 
 A recap opens far enough back to hold every guess, flies in to the place, and
 ends on the body's own map; a slider is the same flight by hand. The end of a
-run shows every round on one map of the whole system, and a row of the tally
-looks at that round alone.
+run shows every round on one map of the whole system, each guess joined to its
+place by the dashed line the body's own map draws a miss with, and a row of the
+tally looks at that round alone. The bodies guessed and the right ones are
+pinned with `setPinnedBodies`, so they keep their names and orbits from
+however far.
 
 Both recaps link back to spacemap.co: into the panorama a ground round was
 taken from, onto the body a round from orbit was over. The SDK hands out
@@ -144,8 +147,9 @@ removable. The guess panel sits clear of the view's rather than over it.
 
 `spacemap` comes from npm, with `three` as a peer dependency the app pins
 itself. The game is ahead of the published package: `createSystemMap`,
-`distanceKm`, `offsetKm`, `getSubsolarPoint`, `isViewable` and a flat map that
-opens Ceres and Vesta are on the `sdk-remount` branch of the map's repository.
+`distanceKm`, `offsetKm`, `getSubsolarPoint`, `isViewable`, `setPinnedBodies`,
+dashed lines and a flat map that opens Ceres and Vesta are on the
+`sdk-dash-pinned` branch of the map's repository.
 Until that is published and the version here bumped, build it there with
 `pnpm build:sdk:npm` and put it in place of the installed one:
 

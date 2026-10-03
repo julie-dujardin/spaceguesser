@@ -47,6 +47,14 @@ export function pin(className: string, label?: string): HTMLElement {
 	return element;
 }
 
+/** Pins that share a place, side by side. */
+export function pins(row: HTMLElement[]): HTMLElement {
+	const element = document.createElement('div');
+	element.className = 'pins';
+	element.append(...row);
+	return element;
+}
+
 /** A player's guess, wearing their face. */
 export function face(profile: Profile, mine = false): HTMLElement {
 	const element = document.createElement('div');

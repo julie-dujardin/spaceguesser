@@ -519,6 +519,11 @@ button {
 	background: var(--good);
 }
 
+.pins {
+	display: flex;
+	gap: 7px;
+}
+
 .pin.numbered {
 	width: 18px;
 	height: 18px;
