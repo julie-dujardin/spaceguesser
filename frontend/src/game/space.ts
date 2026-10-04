@@ -97,20 +97,21 @@ export class Space {
 
 	/**
 	 * What the map draws besides the bodies. A round shows the whole sky and
-	 * names none of it: names and orbits would answer it. A recap names what it
-	 * shows, and leaves out the swarms of small bodies: the belt is a brown fog
-	 * over everything from far off. The bodies of `recap`, the ones guessed
-	 * and the right ones, are pinned: drawn out of their hidden swarm and named
-	 * from however far, a moon by its planet, which is all the map draws of it
-	 * from outside its system. Null is a round. Layers are hidden rather than
-	 * left out when the map opens: one left out then is never fetched.
+	 * marks none of it: names, orbits and the rings round far bodies would
+	 * answer it. A recap names what it shows, and leaves out the swarms of
+	 * small bodies: the belt is a brown fog over everything from far off. The
+	 * bodies of `recap`, the ones guessed and the right ones, are pinned: drawn
+	 * out of their hidden swarm and named from however far, a moon by its
+	 * planet, which is all the map draws of it from outside its system. Null is
+	 * a round. Layers are hidden rather than left out when the map opens: one
+	 * left out then is never fetched.
 	 */
 	dress(recap: readonly string[] | null): void {
 		if (recap === this.dressed) return;
 		this.dressed = recap;
 		const named = recap !== null;
-		this.map.setLayerVisible('labels', named);
-		this.map.setLayerVisible('orbits', named);
+		for (const mark of ['labels', 'halos', 'orbits'] as const)
+			this.map.setLayerVisible(mark, named);
 		for (const swarm of ['asteroids', 'comets', 'dwarfPlanets'] as const)
 			this.map.setLayerVisible(swarm, !named);
 		this.map.setPinnedBodies([...new Set(recap?.flatMap((id) => [id, systemOf(id)]))]);
