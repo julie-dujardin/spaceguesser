@@ -15,7 +15,7 @@
 import { WebSocket } from 'k6/websockets';
 import { Counter, Trend } from 'k6/metrics';
 
-const URL = __ENV.WS_URL || 'ws://127.0.0.1:8787/ws';
+const URL = __ENV.WS_URL || 'ws://127.0.0.1:8788/ws';
 const LOBBIES = parseInt(__ENV.LOBBIES || '50', 10);
 const PLAYERS = parseInt(__ENV.PLAYERS || '4', 10);
 const ROUNDS = parseInt(__ENV.ROUNDS || '5', 10);

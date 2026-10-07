@@ -1,0 +1,33 @@
+# What the sweep runs against: this checkout's server and the database as
+# deployed, on a port and a project of their own, next to the development stack.
+name: spaceguesser-loadtest
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    environment:
+      - POSTGRES_USER=multiplayer
+      - POSTGRES_PASSWORD=loadtest
+      - POSTGRES_DB=multiplayer
+    command: postgres -c shared_buffers=32MB -c max_connections=20
+    # In memory: what a commit costs on this machine's disk says nothing of the
+    # VPS's, and a sweep is a commit per message.
+    tmpfs:
+      - /var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U multiplayer"]
+      interval: 2s
+      retries: 15
+
+  multiplayer:
+    build: ../../../backend
+    environment:
+      - DATABASE_URL=postgres://multiplayer:loadtest@postgres/multiplayer
+    # Every player is an open file, and a container's soft limit is 1024.
+    ulimits:
+      nofile: 65536
+    ports:
+      - "127.0.0.1:8788:8787"
+    depends_on:
+      postgres:
+        condition: service_healthy

@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Sweep the multiplayer server across CPU allotments to size it on the VPS. Per
-# CPU count, live-limit the container and ramp the number of lobbies; the point
-# where round_close latency starts rising is the sustainable load, and the
-# container's memory mid-run over the player count is the cost of a connection.
+# CPU count, ramp the number of lobbies; the point where round_close latency
+# starts rising is the sustainable load, and the container's memory mid-run over
+# the player count is the cost of a connection.
 #
 # Usage: ./run-sweep.sh [MODE] [CONTAINER]     MODE: play|hold
 #   play  short think time: message throughput, which is what CPU limits
@@ -12,8 +12,12 @@ set -euo pipefail
 cd "$(dirname "$0")"
 
 MODE="${1:-play}"
-CONTAINER="${2:-spaceguesser-multiplayer-1}"
-export WS_URL="${WS_URL:-ws://127.0.0.1:8787/ws}"
+CONTAINER="${2:-spaceguesser-loadtest-multiplayer-1}"
+# On the VPS the database shares the server's cores, so its CPU is part of the bill.
+POSTGRES="${CONTAINER/multiplayer/postgres}"
+export WS_URL="${WS_URL:-ws://127.0.0.1:8788/ws}"
+HEALTH="http${WS_URL#ws}"
+HEALTH="${HEALTH%/ws}/healthz"
 export PLAYERS="${PLAYERS:-4}"
 export ROUNDS="${ROUNDS:-5}"
 DURATION="${DURATION:-30}"
@@ -30,10 +34,11 @@ fi
 # Every simulated player is a socket here too.
 ulimit -n 65536 2>/dev/null || echo ">> could not raise the open-file limit; large runs will fail to connect"
 
-# quota -1 is the only reliable "unlimited" reset — `--cpus 0` is a silent no-op.
+# Every core, as `--cpus 0` is a silent no-op and `--cpu-quota -1` sticks: the
+# next `--cpus` is then dropped at the restart.
 restore() {
-	echo ">> restoring container to unlimited CPU"
-	docker update --cpu-quota -1 "$CONTAINER" >/dev/null 2>&1 || true
+	echo ">> restoring container to every CPU"
+	docker update --cpus "$(nproc)" "$CONTAINER" >/dev/null 2>&1 || true
 }
 trap restore EXIT
 
@@ -44,7 +49,13 @@ for c in $CPUS; do
 	echo "=================================================================="
 	echo ">> limiting $CONTAINER to $c CPU(s)"
 	docker update --cpus "$c" "$CONTAINER" >/dev/null
-	sleep 2
+	# Started under the limit, the server sizes its threads to it as it would on
+	# a VPS that size, and its memory reads from idle: it gives none back.
+	docker restart "$CONTAINER" >/dev/null
+	for _ in $(seq 30); do
+		curl -sf -o /dev/null "$HEALTH" && break
+		sleep 1
+	done
 
 	for l in $LOBBYLIST; do
 		tag="${MODE}_${c}c_l${l}"
@@ -54,7 +65,8 @@ for c in $CPUS; do
 		k6_pid=$!
 		# Sampled with every lobby up and playing, before the run winds down.
 		sleep $((DURATION * 2 / 3))
-		usage="$(docker stats --no-stream --format '{{.CPUPerc}} cpu, {{.MemUsage}}' "$CONTAINER" 2>/dev/null || echo '?')"
+		usage="$(docker stats --no-stream --format '{{.Name}} {{.CPUPerc}} {{.MemUsage}}' "$CONTAINER" "$POSTGRES" 2>/dev/null |
+			awk -v server="$CONTAINER" '$1 == server { s = $2 " cpu, " $3 } $1 != server { p = " | postgres " $2 " cpu" } END { print s p }')"
 		wait "$k6_pid" || true
 		# Compact one-line readout from the JSON summary.
 		python3 - "$tag" "$usage" <<'PY'
