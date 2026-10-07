@@ -1,3 +1,6 @@
+# The default is the directory's name, which the search stack on the same host shares.
+name: spaceguesser-multiplayer
+
 services:
   postgres:
     image: postgres:18-alpine
