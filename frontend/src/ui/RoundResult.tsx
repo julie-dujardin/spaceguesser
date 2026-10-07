@@ -89,7 +89,7 @@ export function RoundResult({
 					)}
 					<a
 						className="out mono"
-						href={roundUrl(played.round)}
+						href={roundUrl(played.round, truth)}
 						target="_blank"
 						rel="noopener noreferrer"
 					>

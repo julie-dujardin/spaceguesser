@@ -140,9 +140,9 @@ however far; where two of them are too close on screen for both names, one
 gives way until the reader zooms in.
 
 Both recaps link back to spacemap.co: into the panorama a ground round was
-taken from, onto the body a round from orbit was over. The SDK hands out
-entries but not the site's URLs, so `frontend/src/game/links.ts` spells the
-routes out.
+taken from, and into the map over the place a round from orbit was flown, at
+its date and from as high. The SDK hands out entries but not the site's URLs,
+so `frontend/src/game/links.ts` spells the routes out.
 
 The credit lines are the SDK's, in the corner it draws them, and are not
 removable. The guess panel sits clear of the view's rather than over it.

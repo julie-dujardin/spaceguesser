@@ -34,24 +34,24 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 				<div className="panel">
 					<div className="hdr">
 						<h2>Lobby</h2>
-						<span className="mono dim code-tag">{lobby.code}</span>
 						<button type="button" className="btn ghost back" onClick={onLeave}>
 							Leave
 						</button>
 					</div>
-					<div className="share">
-						<Qr text={url} />
-						<div className="col" style={{ gap: 8, flex: 1, minWidth: 0 }}>
-							<span className="hd">invite link</span>
-							<div className="link">
-								<span>{url.replace(/^https?:\/\//, '')}</span>
-								<button type="button" className="btn ghost" onClick={copy}>
-									{copied ? 'Copied' : 'Copy'}
-								</button>
+					<div className="field">
+						<span className="hd">invite link</span>
+						<div className="share">
+							<Qr text={url} />
+							<span className="or">or</span>
+							<div className="col" style={{ gap: 8, flex: 1, minWidth: 0 }}>
+								<div className="link">
+									<span>{url.replace(/^https?:\/\//, '')}</span>
+									<button type="button" className="btn ghost" onClick={copy}>
+										{copied ? 'Copied' : 'Copy'}
+									</button>
+								</div>
+								<span className="note">Anyone with the link can join until the host starts</span>
 							</div>
-							<span className="note">
-								QR opens the same link. Anyone with it can join until the host starts.
-							</span>
 						</div>
 					</div>
 					<div className="field">
@@ -102,7 +102,7 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 						);
 					})}
 					<span className="note" style={{ marginTop: 'auto' }}>
-						host controls the start
+						host starts the game
 					</span>
 				</div>
 			</div>

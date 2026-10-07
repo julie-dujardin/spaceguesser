@@ -822,7 +822,27 @@ input.code {
 .share {
 	display: flex;
 	gap: 14px;
-	align-items: flex-start;
+	align-items: center;
+}
+
+/* A rule the height of the QR, broken by its word. */
+.or {
+	align-self: stretch;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 6px;
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--dim);
+}
+
+.or::before,
+.or::after {
+	content: '';
+	flex: 1;
+	width: 1px;
+	background: var(--gborder);
 }
 
 .qr {
@@ -844,6 +864,10 @@ input.code {
 	background: rgb(255 255 255 / 0.05);
 	font-family: var(--font-mono);
 	font-size: 12px;
+}
+
+.share .note {
+	text-wrap: balance;
 }
 
 .link span {
@@ -1294,6 +1318,29 @@ a.rk:hover,
 
 	.aside {
 		padding: 12px;
+	}
+}
+
+/* The row leaves the link too short to read the code in: the link goes under
+   the QR, and the rule lies down between them. */
+@media (max-width: 480px) {
+	.share {
+		flex-direction: column;
+		align-items: stretch;
+	}
+
+	.share .qr {
+		align-self: center;
+	}
+
+	.or {
+		flex-direction: row;
+	}
+
+	.or::before,
+	.or::after {
+		width: auto;
+		height: 1px;
 	}
 }
 

@@ -86,7 +86,7 @@ export function FinalScore({ space, played, others, avatar, onAgain, onHome, chi
 							<span className="gain">{round.score.points.toLocaleString('en')}</span>
 							<a
 								className="go"
-								href={roundUrl(round.round)}
+								href={roundUrl(round.round, round.truth)}
 								target="_blank"
 								rel="noopener noreferrer"
 								title="show in spacemap"
