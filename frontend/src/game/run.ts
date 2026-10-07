@@ -1,6 +1,7 @@
 /** One solo run: the rounds drawn for it, and what the reader made of them. */
 
 import type { PanoramaEntry } from 'spacemap';
+import type { PastRun } from './history';
 import type { Place, Round } from './rounds';
 import type { RunSettings } from './rules';
 import { score, type Guess, type Score, type Sky } from './scoring';
@@ -37,6 +38,8 @@ export interface Run {
 	/** Opened from a link rather than played here: a tally to look at, with no
 	 *  rules to play it again by. */
 	shared: boolean;
+	/** Opened from the history: this browser's own run, looked at again. */
+	past: PastRun | null;
 	settings: RunSettings;
 	drawn: Round[];
 	round: number;
@@ -49,8 +52,9 @@ export type Action =
 	| { kind: 'home' }
 	| { kind: 'setup' }
 	| { kind: 'start'; settings: RunSettings; drawn: Round[] }
-	/** A run someone shared, as its link told it. */
-	| { kind: 'visit'; played: Played[] }
+	/** A run someone shared, as its link told it, or one of the reader's own
+	 *  from the history. */
+	| { kind: 'visit'; played: Played[]; past?: PastRun }
 	| { kind: 'stand'; entry: PanoramaEntry }
 	/** The round on screen cannot be played, and this one takes its turn. */
 	| { kind: 'redraw'; round: Round }
@@ -60,6 +64,7 @@ export type Action =
 export const INITIAL: Run = {
 	phase: 'home',
 	shared: false,
+	past: null,
 	settings: { rounds: 0, movement: 'free', timer: 0, modes: { ground: true, orbit: true } },
 	drawn: [],
 	round: 0,
@@ -77,6 +82,7 @@ export function reduce(run: Run, action: Action): Run {
 			return {
 				phase: 'playing',
 				shared: false,
+				past: null,
 				settings: action.settings,
 				drawn: action.drawn,
 				round: 0,
@@ -84,7 +90,14 @@ export function reduce(run: Run, action: Action): Run {
 				played: []
 			};
 		case 'visit':
-			return { ...INITIAL, phase: 'final', shared: true, played: action.played };
+			return {
+				...INITIAL,
+				phase: 'final',
+				shared: !action.past,
+				past: action.past ?? null,
+				settings: action.past?.settings ?? INITIAL.settings,
+				played: action.played
+			};
 		case 'stand':
 			return { ...run, standing: action.entry };
 		case 'redraw':

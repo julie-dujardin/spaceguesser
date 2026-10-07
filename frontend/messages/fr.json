@@ -156,6 +156,21 @@
 	"play": "Jouer",
 	"home": "Accueil",
 	"host_can_restart": "l'hôte peut lancer une autre partie",
+	"with_friends": "Entre amis",
+	"place_of": [
+		{
+			"declarations": [
+				"input place",
+				"input of",
+				"local placeOrdinal = place: plural type=ordinal"
+			],
+			"selectors": ["placeOrdinal"],
+			"match": {
+				"placeOrdinal=one": "{place}er sur {of}",
+				"placeOrdinal=other": "{place}e sur {of}"
+			}
+		}
+	],
 	"reconnecting": "reconnexion…",
 	"displaced_title": "Partie ouverte ailleurs",
 	"displaced_lede": "Cette place a été ouverte dans un autre onglet ou sur un autre appareil, et une place ne se joue que d'un endroit à la fois.",

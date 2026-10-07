@@ -74,8 +74,8 @@ function hash(text: string): number {
 	return 4294967296 * (2097151 & h2) + (h1 >>> 0);
 }
 
-/** The path of the link to a run; null for a run that does not fit in one. */
-export function sharePath(played: readonly Played[]): string | null {
+/** A run packed as a link carries it; null for a run that does not fit in one. */
+export function shareCode(played: readonly Played[]): string | null {
 	if (!played.length) return null;
 	const view = new DataView(new ArrayBuffer(HEAD_BYTES + ROUND_BYTES * played.length));
 	let at = 0;
@@ -108,7 +108,13 @@ export function sharePath(played: readonly Played[]): string | null {
 		if (guess?.at) putPlace(guess.at);
 	}
 	const bytes = String.fromCharCode(...new Uint8Array(view.buffer, 0, at));
-	return `/r/${btoa(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')}`;
+	return btoa(bytes).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+
+/** The path of the link to a run; null for a run that does not fit in one. */
+export function sharePath(played: readonly Played[]): string | null {
+	const code = shareCode(played);
+	return code === null ? null : `/r/${code}`;
 }
 
 /** The run a share link carries, still packed, if `path` is one. */

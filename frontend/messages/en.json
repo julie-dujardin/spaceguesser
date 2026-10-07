@@ -146,6 +146,23 @@
 	"play": "Play",
 	"home": "Home",
 	"host_can_restart": "the host can start another run",
+	"with_friends": "With friends",
+	"place_of": [
+		{
+			"declarations": [
+				"input place",
+				"input of",
+				"local placeOrdinal = place: plural type=ordinal"
+			],
+			"selectors": ["placeOrdinal"],
+			"match": {
+				"placeOrdinal=one": "{place}st of {of}",
+				"placeOrdinal=two": "{place}nd of {of}",
+				"placeOrdinal=few": "{place}rd of {of}",
+				"placeOrdinal=other": "{place}th of {of}"
+			}
+		}
+	],
 	"reconnecting": "reconnecting…",
 	"displaced_title": "Playing somewhere else",
 	"displaced_lede": "This seat was opened in another tab or on another device, and a seat is played from one place at a time.",
