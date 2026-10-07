@@ -16,6 +16,10 @@ interface Props {
 	others?: (round: number) => RecapGuess[];
 	/** The face on the reader's own guesses. */
 	avatar?: RecapGuess['avatar'];
+	/** The path of the link to this run, where it has one to hand out. */
+	share?: string;
+	/** Someone's run, looked at from its link. */
+	shared?: boolean;
 	/** Absent for a player who is not the one starting the next game. */
 	onAgain?: () => void;
 	onHome: () => void;
@@ -23,9 +27,20 @@ interface Props {
 	children?: ReactNode;
 }
 
-export function FinalScore({ space, played, others, avatar, onAgain, onHome, children }: Props) {
+export function FinalScore({
+	space,
+	played,
+	others,
+	avatar,
+	share,
+	shared,
+	onAgain,
+	onHome,
+	children
+}: Props) {
 	const total = played.reduce((sum, round) => sum + round.score.points, 0);
 	const best = played.length * MAX_POINTS;
+	const [copied, setCopied] = useState(false);
 	/** The round looked at by itself; null for the whole run on one map. */
 	const [focus, setFocus] = useState<number | null>(null);
 	const recap = useMemo(
@@ -43,12 +58,27 @@ export function FinalScore({ space, played, others, avatar, onAgain, onHome, chi
 		[played, others, avatar, focus]
 	);
 
+	const send = () => {
+		const url = location.origin + share;
+		// A phone has a sheet of its own for this, and nowhere to paste from.
+		if (navigator.share && matchMedia('(pointer: coarse)').matches) {
+			const text = `${total.toLocaleString('en')} of ${best.toLocaleString('en')} points on spaceguesser`;
+			// Closing the sheet is a rejection, and nothing went wrong.
+			void navigator.share({ text, url }).catch(() => {});
+			return;
+		}
+		void navigator.clipboard?.writeText(url).then(() => {
+			setCopied(true);
+			setTimeout(() => setCopied(false), 1200);
+		});
+	};
+
 	return (
 		<div className="board">
 			<Recap space={space} rounds={recap} focus={focus} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">run complete</span>
+					<span className="hd">{shared ? 'shared run' : 'run complete'}</span>
 					<div className="score">
 						<b>{total.toLocaleString('en')}</b>
 						<span className="mono mut" style={{ fontSize: 12 }}>
@@ -100,12 +130,28 @@ export function FinalScore({ space, played, others, avatar, onAgain, onHome, chi
 				</div>
 				<div className="acts">
 					{onAgain && (
-						<button type="button" className="btn lg" style={{ flex: 1 }} onClick={onAgain}>
+						<button
+							type="button"
+							className="btn lg"
+							// Beside a share button it takes a row to itself: it leads.
+							style={{ flex: share ? '1 0 100%' : 1 }}
+							onClick={onAgain}
+						>
 							Play again
 						</button>
 					)}
-					<button type="button" className="btn lg ghost" style={{ flex: 1 }} onClick={onHome}>
-						Home
+					{share && (
+						<button type="button" className="btn lg ghost" style={{ flex: 1 }} onClick={send}>
+							{copied ? 'Link copied' : 'Share'}
+						</button>
+					)}
+					<button
+						type="button"
+						className={`btn lg${shared ? '' : ' ghost'}`}
+						style={{ flex: 1 }}
+						onClick={onHome}
+					>
+						{shared ? 'Play' : 'Home'}
 					</button>
 				</div>
 			</div>

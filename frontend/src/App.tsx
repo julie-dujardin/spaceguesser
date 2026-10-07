@@ -17,6 +17,7 @@ import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
 import { measure } from './game/measure';
 import type { Guess } from './game/scoring';
+import { openShared, sharePath, sharedCode } from './game/share';
 import { MULTIPLAYER, useLobby } from './game/useLobby';
 import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
@@ -45,6 +46,8 @@ type Door =
 
 /** Read once: the page is opened on an invite or it is not. */
 const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
+/** Or on a run someone shared. */
+const SHARED = sharedCode(location.pathname);
 
 /** Every playable stop on every body that has any. */
 async function fetchStops(): Promise<Stop[]> {
@@ -59,11 +62,16 @@ async function fetchStops(): Promise<Stop[]> {
 
 export default function App() {
 	const [run, dispatch] = useReducer(reduce, INITIAL);
-	const party = useLobby(INVITE);
+	// A shared run is come for by itself: a game left open in another tab keeps
+	// its seat there.
+	const party = useLobby(INVITE, !SHARED);
 	const [mapContainer, space, spaceError] = useSpace();
 	const [door, setDoor] = useState<Door>(INVITE ? { at: 'profile', code: INVITE } : null);
 	const [stops, setStops] = useState<Stop[] | null>(null);
 	const [stopsError, setStopsError] = useState<string | null>(null);
+	/** The shared run the page was opened on: still being read, or not there
+	 *  to read. */
+	const [link, setLink] = useState<'opening' | 'lost' | null>(SHARED ? 'opening' : null);
 	/** The round behind the home screen, which is also the run's first: what
 	 *  the reader is looking at is what they are about to guess. */
 	const [opener, setOpener] = useState<Round | null>(null);
@@ -102,6 +110,32 @@ export default function App() {
 				setStops([]);
 			});
 	}, []);
+
+	useEffect(() => {
+		if (!SHARED) return;
+		let dropped = false;
+		openShared(SHARED).then(
+			(played) => {
+				if (dropped) return;
+				setLink(null);
+				dispatch({ kind: 'visit', played });
+			},
+			() => {
+				if (dropped) return;
+				setLink('lost');
+				history.replaceState(null, '', '/');
+			}
+		);
+		return () => {
+			dropped = true;
+		};
+	}, []);
+	// A shared run keeps its address while it is looked at, so a reload lands
+	// back on it.
+	useEffect(() => {
+		if (!run.shared) return;
+		return () => history.replaceState(null, '', '/');
+	}, [run.shared]);
 
 	const ready = !!stops && (stops.length > 0 || canOrbit);
 	useEffect(() => {
@@ -250,6 +284,12 @@ export default function App() {
 	const solo = !lobby && !door;
 	// A seat kept from before is being taken back: nothing else to do yet.
 	const returning = solo && party.status === 'connecting';
+	const opening = solo && link === 'opening';
+	// A run looked at from its link is already where the link is.
+	const share = useMemo(
+		() => (run.phase === 'final' && !run.shared ? sharePath(run.played) : null),
+		[run.phase, run.shared, run.played]
+	);
 	const movement = lobby ? settingsOf(lobby.settings).movement : run.settings.movement;
 	const dimmed = lobby ? lobby.phase === 'lobby' : run.phase === 'home' || run.phase === 'setup';
 
@@ -347,6 +387,14 @@ export default function App() {
 				</div>
 			)}
 
+			{opening && (
+				<div className="scrim">
+					<div className="card glass panel" style={{ width: 320 }}>
+						<h2>Opening a shared run…</h2>
+					</div>
+				</div>
+			)}
+
 			{solo && run.phase === 'playing' && round && (
 				<div className="hud">
 					<Hud
@@ -372,13 +420,16 @@ export default function App() {
 				</div>
 			)}
 
-			{solo && !returning && run.phase === 'home' && (
+			{solo && !returning && !opening && run.phase === 'home' && (
 				<Home
 					ready={ready && !!opener}
 					onQuickPlay={() => start(QUICK_PLAY)}
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
-					notice={party.trouble === 'gone' && 'that run ended while you were away'}
+					notice={
+						(link === 'lost' && 'that shared run could not be opened') ||
+						(party.trouble === 'gone' && 'that run ended while you were away')
+					}
 				/>
 			)}
 
@@ -416,7 +467,9 @@ export default function App() {
 				<FinalScore
 					space={space}
 					played={run.played}
-					onAgain={() => start(run.settings)}
+					share={share ?? undefined}
+					shared={run.shared}
+					onAgain={run.shared ? undefined : () => start(run.settings)}
 					onHome={() => dispatch({ kind: 'home' })}
 				/>
 			)}

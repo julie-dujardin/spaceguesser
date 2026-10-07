@@ -93,6 +93,16 @@ the same side of the Sun. For a rock of the belt that is its orbit at that
 date. The map a run ends on draws every miss at the run's date, so the line of
 a miss from a panorama is not as long as it was scored.
 
+## Sharing a run
+
+A solo run ends with a link to it, `/r/<run>`, and the run is in the link:
+nothing is kept anywhere else. It holds where each round was and what was
+guessed there, and not the points, which opening it works out again with the
+code that scored the run, against the same sky. A panorama goes as a hash of its
+id, so a link lasts as long as the export has the panorama; the clock and the
+rules are left out. The layout is `frontend/src/game/share.ts`, and leads with a
+version: links stay out there, so a new layout must still read the old ones.
+
 ## Multiplayer
 
 A lobby is a code. The host picks the rules and shares the link, `/j/<code>`,

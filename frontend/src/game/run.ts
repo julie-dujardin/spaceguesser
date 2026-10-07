@@ -34,6 +34,9 @@ export type Phase = 'home' | 'setup' | 'playing' | 'result' | 'final';
 
 export interface Run {
 	phase: Phase;
+	/** Opened from a link rather than played here: a tally to look at, with no
+	 *  rules to play it again by. */
+	shared: boolean;
 	settings: RunSettings;
 	drawn: Round[];
 	round: number;
@@ -46,6 +49,8 @@ export type Action =
 	| { kind: 'home' }
 	| { kind: 'setup' }
 	| { kind: 'start'; settings: RunSettings; drawn: Round[] }
+	/** A run someone shared, as its link told it. */
+	| { kind: 'visit'; played: Played[] }
 	| { kind: 'stand'; entry: PanoramaEntry }
 	/** The round on screen cannot be played, and this one takes its turn. */
 	| { kind: 'redraw'; round: Round }
@@ -54,6 +59,7 @@ export type Action =
 
 export const INITIAL: Run = {
 	phase: 'home',
+	shared: false,
 	settings: { rounds: 0, movement: 'free', timer: 0, modes: { ground: true, orbit: true } },
 	drawn: [],
 	round: 0,
@@ -70,12 +76,15 @@ export function reduce(run: Run, action: Action): Run {
 		case 'start':
 			return {
 				phase: 'playing',
+				shared: false,
 				settings: action.settings,
 				drawn: action.drawn,
 				round: 0,
 				standing: null,
 				played: []
 			};
+		case 'visit':
+			return { ...INITIAL, phase: 'final', shared: true, played: action.played };
 		case 'stand':
 			return { ...run, standing: action.entry };
 		case 'redraw':

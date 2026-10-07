@@ -69,9 +69,10 @@ const RETRY_MS = [500, 1000, 2000, 4000];
 
 /**
  * `invite` is the code the page was opened on, if any: a seat kept from an
- * earlier game is taken back on load unless the visitor came for another one.
+ * earlier game is taken back on load unless the visitor came for another one,
+ * or, with `resume` off, for something that is not a game at all.
  */
-export function useLobby(invite: string | null) {
+export function useLobby(invite: string | null, resume = true) {
 	const [session, setSession] = useState<Session>(IDLE);
 	const socket = useRef<WebSocket | null>(null);
 	const seat = useRef<Kept | null>(null);
@@ -159,13 +160,13 @@ export function useLobby(invite: string | null) {
 
 	useEffect(() => {
 		const kept = recallSeat();
-		if (SERVER && kept && (!invite || invite === kept.code)) {
+		if (SERVER && resume && kept && (!invite || invite === kept.code)) {
 			seat.current = kept;
 			setSession({ ...IDLE, status: 'connecting' });
 			connect({ type: 'rejoin', ...kept });
 		}
 		return drop;
-	}, [invite, connect, drop]);
+	}, [invite, resume, connect, drop]);
 
 	return useMemo(() => {
 		const enter = (hello: ClientMessage, after?: ClientMessage[]) => {

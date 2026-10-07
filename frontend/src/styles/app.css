@@ -1168,6 +1168,11 @@ input.code {
 	min-height: 0;
 }
 
+/* Three buttons are more than the panel is wide. */
+.rpanel .acts {
+	flex-wrap: wrap;
+}
+
 .score {
 	display: flex;
 	align-items: baseline;
