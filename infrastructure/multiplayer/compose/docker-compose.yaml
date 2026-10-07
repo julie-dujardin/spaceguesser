@@ -29,6 +29,9 @@ services:
       - DATABASE_URL=postgres://multiplayer:${POSTGRES_PASSWORD:?}@postgres/multiplayer
       # Required: the server reads an empty list as "any origin", for development.
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?}
+    # Every player is an open file, and a container's soft limit is 1024.
+    ulimits:
+      nofile: 65536
     # No host port: the only way in is the tunnel (TLS terminates at Cloudflare).
     depends_on:
       postgres:
