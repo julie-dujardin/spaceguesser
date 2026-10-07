@@ -27,6 +27,7 @@ import { measure } from '../game/measure';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import type { LobbySession } from '../game/useLobby';
+import * as m from '../paraglide/messages.js';
 import { Avatar } from './Avatar';
 import { CustomSetup } from './CustomSetup';
 import { FinalScore } from './FinalScore';
@@ -102,13 +103,13 @@ export function Party({
 			{lobby.phase === 'lobby' &&
 				(editing && hosting ? (
 					<CustomSetup
-						title="Run settings"
+						title={m.run_settings_title()}
 						initial={settings}
 						ready
 						onBack={() => setEditing(false)}
 						actions={[
 							{
-								label: 'Save',
+								label: m.save(),
 								go: (changed) => {
 									session.send({ type: 'settings', settings: changed });
 									setEditing(false);
@@ -158,20 +159,17 @@ export function Party({
 					onHome={session.leave}
 				>
 					<Standings standings={table} you={you} />
-					{!hosting && <span className="note">the host can start another run</span>}
+					{!hosting && <span className="note">{m.host_can_restart()}</span>}
 				</FinalScore>
 			)}
 
-			{session.status === 'reconnecting' && <div className="conn pill">reconnecting…</div>}
+			{session.status === 'reconnecting' && <div className="conn pill">{m.reconnecting()}</div>}
 
 			{session.status === 'displaced' && (
 				<div className="scrim over">
 					<div className="card glass panel" style={{ width: 380 }}>
-						<h2>Playing somewhere else</h2>
-						<p className="lede">
-							This seat was opened in another tab or on another device, and a seat is played from
-							one place at a time.
-						</p>
+						<h2>{m.displaced_title()}</h2>
+						<p className="lede">{m.displaced_lede()}</p>
 						<div className="acts">
 							<button
 								type="button"
@@ -179,7 +177,7 @@ export function Party({
 								style={{ flex: 1 }}
 								onClick={session.reclaim}
 							>
-								Play here
+								{m.play_here()}
 							</button>
 							<button
 								type="button"
@@ -187,7 +185,7 @@ export function Party({
 								style={{ flex: 1 }}
 								onClick={session.leave}
 							>
-								Leave
+								{m.leave()}
 							</button>
 						</div>
 					</div>
@@ -309,11 +307,11 @@ function Round({
 				onGuess={() => void commit(guess, false)}
 				waiting={
 					measuring
-						? 'measuring how far off…'
+						? m.measuring()
 						: answered
 							? out
-								? `guess in · waiting for ${out} other${out > 1 ? 's' : ''}`
-								: 'guess in'
+								? m.guess_in_waiting({ count: out })
+								: m.guess_in()
 							: undefined
 				}
 				action={
@@ -324,7 +322,7 @@ function Round({
 							style={{ marginLeft: 'auto' }}
 							onClick={onEnd}
 						>
-							End round
+							{m.end_round()}
 						</button>
 					)
 				}
@@ -367,12 +365,12 @@ function Result({ space, lobby, round, you, onNext, children }: ResultProps) {
 		return (
 			<div className="board">
 				<div className="rpanel glass">
-					<span className="hd">round {round.index + 1}</span>
-					<span className="note">nobody reached this one</span>
+					<span className="hd">{m.round_number({ round: round.index + 1 })}</span>
+					<span className="note">{m.nobody_reached()}</span>
 					{children}
 					{onNext && (
 						<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
-							{round.index + 1 < round.total ? 'Next round' : 'See total'}
+							{round.index + 1 < round.total ? m.next_round() : m.see_total()}
 						</button>
 					)}
 				</div>

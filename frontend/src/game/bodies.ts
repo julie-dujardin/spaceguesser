@@ -1,6 +1,8 @@
 /** The bodies in play: everything the export shows well enough to guess at. */
 
+import { getLocale } from '../paraglide/runtime.js';
 import catalogue from './bodies.json';
+import localized from './names.json';
 
 export type BodyKind = 'planet' | 'moon' | 'dwarf' | 'asteroid' | 'comet';
 
@@ -40,8 +42,16 @@ export function bodyOf(id: string): BodyInfo | undefined {
 	return BY_ID.get(id);
 }
 
+/** What the reader's language calls a body, where that is not the
+ *  catalogue's English. */
+const NAMES: Record<string, Record<string, string> | undefined> = localized;
+
+function localName(id: string): string | undefined {
+	return NAMES[getLocale()]?.[id];
+}
+
 export function bodyName(id: string): string {
-	return BY_ID.get(id)?.name ?? id;
+	return localName(id) ?? BY_ID.get(id)?.name ?? id;
 }
 
 /** The system a body is scored in. A body the catalogue does not know stands
@@ -63,7 +73,7 @@ export const SYSTEMS = [...new Set(BODIES.map((body) => body.system))];
 const PRIMARY_NAMES: Record<string, string> = { 'naif-399': 'Earth' };
 
 export function systemName(system: string): string {
-	return PRIMARY_NAMES[system] ?? bodyName(system);
+	return localName(system) ?? PRIMARY_NAMES[system] ?? bodyName(system);
 }
 
 /** A screen this tall shows one texel a pixel from the altitude below, so a

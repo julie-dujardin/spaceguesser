@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
+import { baseLocale, overwriteGetLocale } from '../paraglide/runtime.js';
 import { ROOT, intoSystem, levelTitle, search, trailTo } from './picker';
+
+afterEach(() => overwriteGetLocale(() => baseLocale));
 
 describe('trailTo', () => {
 	it('goes through the system of a body that shares one', () => {
@@ -36,6 +39,14 @@ describe('levelTitle', () => {
 		expect(levelTitle({ kind: 'system', id: 'naif-699' })).toBe('Saturn system');
 		expect(levelTitle({ kind: 'system', id: 'naif-399' })).toBe('Earth system');
 	});
+
+	it("names it as the reader's language does", () => {
+		overwriteGetLocale(() => 'fr');
+		expect(levelTitle({ kind: 'system', id: 'naif-699' })).toBe('Système de Saturne');
+		expect(levelTitle({ kind: 'system', id: 'naif-799' })).toBe("Système d'Uranus");
+		expect(levelTitle({ kind: 'system', id: 'naif-399' })).toBe('Système Terre-Lune');
+		expect(levelTitle({ kind: 'body', id: 'naif-301' })).toBe('Lune');
+	});
 });
 
 describe('search', () => {
@@ -52,5 +63,12 @@ describe('search', () => {
 	it('finds nothing for nothing, and nothing out of play', () => {
 		expect(search('  ')).toEqual([]);
 		expect(search('earth')).toEqual([]);
+	});
+
+	it("finds a body by its name in the reader's language, or in English", () => {
+		overwriteGetLocale(() => 'fr');
+		expect(search('encel')[0].id).toBe('naif-602');
+		expect(search('lune')[0].id).toBe('naif-301');
+		expect(search('moon')[0].id).toBe('naif-301');
 	});
 });

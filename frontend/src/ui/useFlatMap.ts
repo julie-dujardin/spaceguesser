@@ -1,7 +1,7 @@
 /** A flat map mounted in a div, torn down with the component. */
 
 import { useEffect, useRef, useState } from 'react';
-import { TERMS } from '../game/host';
+import { HOST } from '../game/host';
 import { createFlatMap, type FlatMap, type FlatMapCreateOptions } from 'spacemap';
 import { MARS, MARS_ICON, glyph, type Profile } from '../game/players';
 
@@ -20,7 +20,7 @@ export function useFlatMap(options: Options) {
 		let made: FlatMap | null = null;
 		let dropped = false;
 		setError(null);
-		createFlatMap({ ...TERMS, container: element, ...initial.current })
+		createFlatMap({ ...HOST, container: element, ...initial.current })
 			.then((created) => {
 				if (dropped) return created.remove();
 				made = created;

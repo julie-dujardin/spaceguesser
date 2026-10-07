@@ -12,6 +12,7 @@ import type { Profile } from '../game/players';
 import type { Place, Round } from '../game/rounds';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
+import * as m from '../paraglide/messages.js';
 import { ResultMap, type Placement } from './ResultMap';
 import { MISS, OTHER_MISS, OWN_MISS, face, pin, pins } from './useFlatMap';
 
@@ -321,7 +322,7 @@ export function Recap({ space, rounds, focus }: Props) {
 					<ResultMap key={`${focus}:${one.truth.body}`} body={one.truth.body} rounds={placements} />
 				</div>
 			)}
-			{space && !flight && !error && <div className="stage-note">finding the place…</div>}
+			{space && !flight && !error && <div className="stage-note">{m.finding_the_place()}</div>}
 			{error && !mapped && <div className="stage-note">{error}</div>}
 			{flight && (
 				<label className="zoomer glass">
@@ -331,7 +332,7 @@ export function Recap({ space, rounds, focus }: Props) {
 						min={0}
 						max={1000}
 						value={Math.round(zoom * 1000)}
-						aria-label="Zoom"
+						aria-label={m.zoom()}
 						onPointerDown={land}
 						onKeyDown={land}
 						onChange={(event) => {

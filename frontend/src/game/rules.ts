@@ -2,6 +2,8 @@
 
 import type { PanoramaEntry } from 'spacemap';
 import { groundDistanceM, isViewable } from 'spacemap';
+import * as m from '../paraglide/messages.js';
+import { getLocale } from '../paraglide/runtime.js';
 import type { Modes } from './rounds';
 
 export type Movement = 'free' | 'look' | 'frozen';
@@ -22,15 +24,15 @@ export const QUICK_PLAY: RunSettings = {
 	modes: { ground: true, orbit: true }
 };
 
-export const MOVEMENT_LABELS: Record<Movement, string> = {
-	free: 'free',
-	look: 'look only',
-	frozen: 'no pan or zoom'
+export const MOVEMENT_LABELS: Record<Movement, () => string> = {
+	free: m.movement_free,
+	look: m.movement_look,
+	frozen: m.movement_frozen
 };
 
 /** A movement named where no heading says what the word is about. */
 export function movementName(movement: Movement): string {
-	return movement === 'free' ? 'free movement' : MOVEMENT_LABELS[movement];
+	return movement === 'free' ? m.movement_free_named() : MOVEMENT_LABELS[movement]();
 }
 
 /** Only a full turn of the horizon plays: a partial sweep leaves the reader
@@ -120,27 +122,40 @@ export function distanceKm(
 export function describeRun(settings: RunSettings): string[] {
 	const { ground, orbit } = settings.modes;
 	return [
-		`${settings.rounds} rounds`,
-		ground && orbit ? 'ground and orbit' : ground ? 'ground only' : 'orbit only',
+		m.rules_rounds({ count: settings.rounds }),
+		ground && orbit
+			? m.rules_ground_and_orbit()
+			: ground
+				? m.rules_ground_only()
+				: m.rules_orbit_only(),
 		movementName(settings.movement),
-		settings.timer ? `${settings.timer} s per round` : 'no timer'
+		settings.timer ? m.rules_timer({ seconds: settings.timer }) : m.rules_no_timer()
 	];
 }
 
 const AU_KM = 149_597_870.7;
 
+/** A number as the reader's language writes it, to `decimals` places when
+ *  that is said. */
+export function formatNumber(value: number, decimals?: number): string {
+	return value.toLocaleString(getLocale(), {
+		minimumFractionDigits: decimals,
+		maximumFractionDigits: decimals
+	});
+}
+
 export function formatDistance(km: number): string {
-	if (km < 1) return `${Math.round(km * 1000)} m`;
-	if (km < 100) return `${km.toFixed(1)} km`;
+	if (km < 1) return m.distance_metres({ value: Math.round(km * 1000) });
+	if (km < 100) return m.distance_kilometres({ value: formatNumber(km, 1) });
 	// Between planets a count of kilometres is a row of digits.
-	if (km > 0.05 * AU_KM) return `${(km / AU_KM).toFixed(2)} AU`;
-	return `${Math.round(km).toLocaleString('en')} km`;
+	if (km > 0.05 * AU_KM) return m.distance_au({ value: formatNumber(km / AU_KM, 2) });
+	return m.distance_kilometres({ value: formatNumber(Math.round(km)) });
 }
 
 /** An altitude is a round figure: the camera's is chosen, not measured. */
 export function formatAltitude(km: number): string {
-	if (km < 1) return `${Math.round(km * 1000)} m`;
-	return `${Number(km.toPrecision(2)).toLocaleString('en')} km`;
+	if (km < 1) return m.distance_metres({ value: Math.round(km * 1000) });
+	return m.distance_kilometres({ value: formatNumber(Number(km.toPrecision(2))) });
 }
 
 export function formatClock(seconds: number): string {

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { EMOJI, NAME_MAX, SWATCHES, recallProfile, type Profile } from '../game/players';
 import type { Trouble } from '../game/useLobby';
+import * as m from '../paraglide/messages.js';
 import { Avatar, Glyph } from './Avatar';
 
 interface Props {
@@ -12,12 +13,12 @@ interface Props {
 	onBack: () => void;
 }
 
-const TROUBLES: Partial<Record<Trouble, string>> = {
-	not_found: 'No run with that code',
-	full: 'That lobby is full',
-	in_progress: 'That run has already started — it takes new players between games',
-	busy: 'The server is full — try again in a moment',
-	unreachable: 'Could not reach the server'
+const TROUBLES: Partial<Record<Trouble, () => string>> = {
+	not_found: m.trouble_not_found,
+	full: m.trouble_full,
+	in_progress: m.trouble_in_progress,
+	busy: m.trouble_busy,
+	unreachable: m.trouble_unreachable
 };
 
 export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
@@ -36,20 +37,20 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 				}}
 			>
 				<div className="hdr">
-					<h2>{code ? 'Join run' : 'Create run'}</h2>
+					<h2>{code ? m.join_run() : m.create_run()}</h2>
 					{code && <span className="mono dim code-tag">{code}</span>}
 					<button type="button" className="btn ghost back" onClick={onBack}>
-						Back
+						{m.back()}
 					</button>
 				</div>
 				<div className="field">
 					<label className="hd" htmlFor="name">
-						username
+						{m.username()}
 					</label>
 					<input
 						id="name"
 						type="text"
-						placeholder="pick a name"
+						placeholder={m.pick_a_name()}
 						autoComplete="nickname"
 						maxLength={NAME_MAX}
 						autoFocus
@@ -58,7 +59,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 					/>
 				</div>
 				<div className="field">
-					<span className="hd">emoji</span>
+					<span className="hd">{m.emoji()}</span>
 					<div className="emoji">
 						{EMOJI.map((emoji) => (
 							<button
@@ -73,7 +74,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 					</div>
 				</div>
 				<div className="field">
-					<span className="hd">background</span>
+					<span className="hd">{m.background()}</span>
 					<div className="sw">
 						{SWATCHES.map((color) => (
 							<button
@@ -89,13 +90,13 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 				</div>
 				<div className="prev">
 					<Avatar profile={profile} />
-					<span className={named ? 'nm' : 'nm mut'}>{named ? profile.name : 'pick a name'}</span>
-					<span className="mono dim tag">how others see you</span>
+					<span className={named ? 'nm' : 'nm mut'}>{named ? profile.name : m.pick_a_name()}</span>
+					<span className="mono dim tag">{m.how_others_see_you()}</span>
 				</div>
-				{trouble && <span className="note bad">{TROUBLES[trouble] ?? trouble}</span>}
+				{trouble && <span className="note bad">{TROUBLES[trouble]?.() ?? trouble}</span>}
 				<div className="acts">
 					<button type="submit" className="btn lg" style={{ flex: 1 }} disabled={!named || busy}>
-						{busy ? 'Connecting…' : code ? 'Join lobby' : 'Create lobby'}
+						{busy ? m.connecting() : code ? m.join_lobby() : m.create_lobby()}
 					</button>
 				</div>
 			</form>

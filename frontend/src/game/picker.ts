@@ -13,6 +13,8 @@ import {
 	type BodyInfo,
 	type Zone
 } from './bodies';
+import * as m from '../paraglide/messages.js';
+import { getLocale } from '../paraglide/runtime.js';
 
 export type Level =
 	| { kind: 'root' }
@@ -22,19 +24,20 @@ export type Level =
 
 export const ROOT: Level[] = [{ kind: 'root' }];
 
-export const ZONE_NAMES: Record<Zone, string> = {
-	inner: 'Inner asteroids & comets',
-	outer: 'Outer asteroids & comets'
+/** As the system map names its two doors, which are the same places. */
+const ZONE_NAMES: Record<Zone, () => string> = {
+	inner: m.system_map_zone_inner,
+	outer: m.system_map_zone_outer
 };
 
 export function levelTitle(level: Level): string {
 	switch (level.kind) {
 		case 'root':
-			return 'Solar System';
+			return m.system_map_solar_system();
 		case 'system':
-			return `${systemName(level.id)} system`;
+			return m.system_title({ name: systemName(level.id) });
 		case 'zone':
-			return ZONE_NAMES[level.zone];
+			return ZONE_NAMES[level.zone]();
 		case 'body':
 			return bodyName(level.id);
 	}
@@ -70,21 +73,25 @@ export function intoSystem(trail: Level[], system: string): Level[] {
 /** Without case or accents: what a name is typed as. */
 const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLowerCase();
 
-/** Bodies whose name holds `query`, the ones that start with it first. */
+/** Bodies whose name holds `query`, the ones that start with it first. A name
+ *  is typed in the reader's language or as the catalogue has it. */
 export function search(query: string, limit = 8): BodyInfo[] {
 	const wanted = fold(query.trim());
 	if (!wanted) return [];
-	const rank = (body: BodyInfo) => {
-		const name = fold(body.name);
+	const rank = (text: string) => {
+		const name = fold(text);
 		// A comet is asked for by its name as often as by its number.
 		const words = name.split(/[\s/]+/);
 		if (name.startsWith(wanted)) return 0;
 		if (words.some((word) => word.startsWith(wanted))) return 1;
-		return name.includes(wanted) ? 2 : -1;
+		return name.includes(wanted) ? 2 : Infinity;
 	};
-	return BODIES.map((body) => ({ body, at: rank(body) }))
-		.filter((hit) => hit.at >= 0)
-		.sort((a, b) => a.at - b.at || a.body.name.localeCompare(b.body.name))
+	return BODIES.map((body) => {
+		const name = bodyName(body.id);
+		return { body, name, at: Math.min(rank(name), rank(body.name)) };
+	})
+		.filter((hit) => hit.at < Infinity)
+		.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name, getLocale()))
 		.slice(0, limit)
 		.map((hit) => hit.body);
 }
@@ -94,12 +101,12 @@ export function search(query: string, limit = 8): BodyInfo[] {
 export const PICKER = {
 	bodies: BODIES.map((body) => body.id),
 	names: Object.fromEntries([
-		...BODIES.map((body) => [body.id, body.name]),
+		...BODIES.map((body) => [body.id, bodyName(body.id)]),
 		...[...new Set(BODIES.map((body) => body.system))].map((id) => [id, systemName(id)])
 	]) as Record<string, string>,
-	places: BODIES.filter((body) => body.zone).map(({ id, name, aAu, tiltDeg, radiusKm }) => ({
+	places: BODIES.filter((body) => body.zone).map(({ id, aAu, tiltDeg, radiusKm }) => ({
 		id,
-		name,
+		name: bodyName(id),
 		aAu,
 		tiltDeg,
 		radiusKm

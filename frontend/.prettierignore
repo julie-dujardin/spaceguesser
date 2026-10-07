@@ -1,2 +1,5 @@
 dist
 pnpm-lock.yaml
+src/paraglide
+project.inlang/*
+!project.inlang/settings.json

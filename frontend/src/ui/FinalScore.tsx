@@ -1,10 +1,11 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
 import { roundUrl } from '../game/links';
-import { formatClock } from '../game/rules';
+import { formatClock, formatNumber } from '../game/rules';
 import type { Played } from '../game/run';
 import { MAX_POINTS } from '../game/scoring';
 import type { Space } from '../game/space';
+import * as m from '../paraglide/messages.js';
 import { Recap, type RecapGuess } from './Recap';
 import { miss } from './RoundResult';
 
@@ -62,7 +63,7 @@ export function FinalScore({
 		const url = location.origin + share;
 		// A phone has a sheet of its own for this, and nowhere to paste from.
 		if (navigator.share && matchMedia('(pointer: coarse)').matches) {
-			const text = `${total.toLocaleString('en')} of ${best.toLocaleString('en')} points on spaceguesser`;
+			const text = m.share_text({ points: formatNumber(total), best: formatNumber(best) });
 			// Closing the sheet is a rejection, and nothing went wrong.
 			void navigator.share({ text, url }).catch(() => {});
 			return;
@@ -78,11 +79,11 @@ export function FinalScore({
 			<Recap space={space} rounds={recap} focus={focus} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">{shared ? 'shared run' : 'run complete'}</span>
+					<span className="hd">{shared ? m.shared_run() : m.run_complete()}</span>
 					<div className="score">
-						<b>{total.toLocaleString('en')}</b>
+						<b>{formatNumber(total)}</b>
 						<span className="mono mut" style={{ fontSize: 12 }}>
-							of {best.toLocaleString('en')} points
+							{m.of_points({ best: formatNumber(best) })}
 						</span>
 					</div>
 				</div>
@@ -95,7 +96,7 @@ export function FinalScore({
 							role="button"
 							tabIndex={0}
 							aria-pressed={focus === index}
-							title={focus === index ? 'back to the whole run' : 'look at this round'}
+							title={focus === index ? m.focus_run() : m.focus_round()}
 							onClick={() => setFocus(focus === index ? null : index)}
 							onKeyDown={(event) => {
 								// A key on the link inside the row is the link's.
@@ -110,17 +111,17 @@ export function FinalScore({
 							<span className="mono mut miss">{miss(round)}</span>
 							{round.secondsLeft !== null && !round.timedOut && (
 								<span className="mono dim" style={{ fontSize: '11.5px' }}>
-									{formatClock(round.secondsLeft)} left
+									{m.time_left({ time: formatClock(round.secondsLeft) })}
 								</span>
 							)}
-							<span className="gain">{round.score.points.toLocaleString('en')}</span>
+							<span className="gain">{formatNumber(round.score.points)}</span>
 							<a
 								className="go"
 								href={roundUrl(round.round, round.truth)}
 								target="_blank"
 								rel="noopener noreferrer"
-								title="show in spacemap"
-								aria-label="show in spacemap"
+								title={m.show_in_spacemap()}
+								aria-label={m.show_in_spacemap()}
 								onClick={(event) => event.stopPropagation()}
 							>
 								↗
@@ -137,12 +138,12 @@ export function FinalScore({
 							style={{ flex: share ? '1 0 100%' : 1 }}
 							onClick={onAgain}
 						>
-							Play again
+							{m.play_again()}
 						</button>
 					)}
 					{share && (
 						<button type="button" className="btn lg ghost" style={{ flex: 1 }} onClick={send}>
-							{copied ? 'Link copied' : 'Share'}
+							{copied ? m.link_copied() : m.share()}
 						</button>
 					)}
 					<button
@@ -151,7 +152,7 @@ export function FinalScore({
 						style={{ flex: 1 }}
 						onClick={onHome}
 					>
-						{shared ? 'Play' : 'Home'}
+						{shared ? m.play() : m.home()}
 					</button>
 				</div>
 			</div>

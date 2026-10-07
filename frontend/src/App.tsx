@@ -19,6 +19,7 @@ import { measure } from './game/measure';
 import type { Guess } from './game/scoring';
 import { openShared, sharePath, sharedCode } from './game/share';
 import { MULTIPLAYER, useLobby } from './game/useLobby';
+import * as m from './paraglide/messages.js';
 import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
 import { Friends } from './ui/Friends';
@@ -351,11 +352,11 @@ export default function App() {
 
 			{door?.at === 'rules' && (
 				<CustomSetup
-					title="Create run"
+					title={m.create_run()}
 					ready
 					onBack={() => enter({ at: 'friends' })}
 					actions={[
-						{ label: 'Create lobby', go: (settings) => enter({ at: 'profile', settings }) }
+						{ label: m.create_lobby(), go: (settings) => enter({ at: 'profile', settings }) }
 					]}
 				/>
 			)}
@@ -377,10 +378,10 @@ export default function App() {
 			{returning && (
 				<div className="scrim">
 					<div className="card glass panel" style={{ width: 320 }}>
-						<h2>Rejoining your run…</h2>
+						<h2>{m.rejoining_run()}</h2>
 						<div className="acts">
 							<button type="button" className="btn ghost" onClick={party.leave}>
-								Cancel
+								{m.cancel()}
 							</button>
 						</div>
 					</div>
@@ -390,7 +391,7 @@ export default function App() {
 			{opening && (
 				<div className="scrim">
 					<div className="card glass panel" style={{ width: 320 }}>
-						<h2>Opening a shared run…</h2>
+						<h2>{m.opening_shared_run()}</h2>
 					</div>
 				</div>
 			)}
@@ -415,7 +416,7 @@ export default function App() {
 						onPick={setGuess}
 						onGuess={() => void commit(guess, false)}
 						placed={!!truth}
-						waiting={measuring ? 'measuring how far off…' : undefined}
+						waiting={measuring ? m.measuring() : undefined}
 					/>
 				</div>
 			)}
@@ -427,23 +428,23 @@ export default function App() {
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
 					notice={
-						(link === 'lost' && 'that shared run could not be opened') ||
-						(party.trouble === 'gone' && 'that run ended while you were away')
+						(link === 'lost' && m.notice_shared_run_lost()) ||
+						(party.trouble === 'gone' && m.notice_run_ended())
 					}
 				/>
 			)}
 
 			{solo && run.phase === 'setup' && (
 				<CustomSetup
-					title="Custom run"
+					title={m.custom_run()}
 					ready={ready && !!opener}
 					onBack={() => dispatch({ kind: 'home' })}
 					actions={[
-						{ label: 'Start solo', plays: true, go: start },
+						{ label: m.start_solo(), plays: true, go: start },
 						...(MULTIPLAYER
 							? [
 									{
-										label: 'Create lobby',
+										label: m.create_lobby(),
 										ghost: true,
 										go: (settings: RunSettings) => enter({ at: 'profile', settings })
 									}

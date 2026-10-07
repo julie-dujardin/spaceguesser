@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { MOVEMENT_LABELS, QUICK_PLAY, type Movement, type RunSettings } from '../game/rules';
+import * as m from '../paraglide/messages.js';
 
 export interface SetupAction {
 	label: string;
@@ -53,11 +54,11 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 				<div className="hdr">
 					<h2>{title}</h2>
 					<button type="button" className="btn ghost back" onClick={onBack}>
-						Back
+						{m.back()}
 					</button>
 				</div>
 				<div className="field">
-					<span className="hd">rounds</span>
+					<span className="hd">{m.setup_rounds()}</span>
 					<Seg
 						value={settings.rounds}
 						onChange={(rounds) => set({ rounds })}
@@ -65,41 +66,41 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 					/>
 				</div>
 				<div className="field">
-					<span className="hd">rounds are</span>
+					<span className="hd">{m.setup_rounds_are()}</span>
 					<Seg
 						value={settings.modes.ground ? (settings.modes.orbit ? 'both' : 'ground') : 'orbit'}
 						onChange={(kind) =>
 							set({ modes: { ground: kind !== 'orbit', orbit: kind !== 'ground' } })
 						}
 						options={[
-							{ value: 'ground', label: 'on the ground' },
-							{ value: 'orbit', label: 'from orbit' },
-							{ value: 'both', label: 'both' }
+							{ value: 'ground', label: m.setup_on_ground() },
+							{ value: 'orbit', label: m.setup_from_orbit() },
+							{ value: 'both', label: m.setup_both() }
 						]}
 					/>
 				</div>
 				<div className="field">
-					<span className="hd">movement</span>
+					<span className="hd">{m.setup_movement()}</span>
 					<Seg
 						value={settings.movement}
 						onChange={(movement) => set({ movement })}
 						options={(Object.keys(MOVEMENT_LABELS) as Movement[]).map((value) => ({
 							value,
-							label: MOVEMENT_LABELS[value]
+							label: MOVEMENT_LABELS[value]()
 						}))}
 					/>
 				</div>
 				<div className="field">
-					<span className="hd">round timer</span>
+					<span className="hd">{m.setup_timer()}</span>
 					<Seg
 						value={settings.timer}
 						onChange={(timer) => set({ timer })}
 						options={[
-							{ value: 0, label: 'off' },
-							{ value: 10, label: '10 s' },
-							{ value: 30, label: '30 s' },
-							{ value: 60, label: '60 s' },
-							{ value: 120, label: '2 min' }
+							{ value: 0, label: m.timer_off() },
+							{ value: 10, label: m.timer_seconds({ count: 10 }) },
+							{ value: 30, label: m.timer_seconds({ count: 30 }) },
+							{ value: 60, label: m.timer_seconds({ count: 60 }) },
+							{ value: 120, label: m.timer_minutes({ count: 2 }) }
 						]}
 					/>
 				</div>

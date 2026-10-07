@@ -168,6 +168,24 @@ installed one; `pnpm install` puts the published one back:
 frontend/scripts/use-local-sdk.sh ../space-map
 ```
 
+## Languages
+
+The app reads in the first of the browser's languages it has, and in English
+otherwise. Its wording is in `frontend/messages/<locale>.json`, compiled by
+[Paraglide](https://inlang.com/m/gerre34r/library-inlang-paraglideJs) into
+`src/paraglide` on `pnpm dev`, `pnpm check` and `pnpm build`. The same bundle
+carries the wording the SDK draws itself, under the SDK's own keys, and the SDK
+is told the language so the map names its bodies in it.
+
+To add a language:
+
+1. Add its code to `locales` in `frontend/project.inlang/settings.json`.
+2. Copy `frontend/messages/en.json` to `<locale>.json` and translate it. A
+   message left out falls back to English.
+3. Run `node frontend/scripts/build-names.mjs`, which rewrites
+   `frontend/src/game/names.json` with what the export calls the bodies in
+   each language.
+
 ## Deploying
 
 Pushes to `main` run the checks on GitHub, and a green run deploys to Cloudflare

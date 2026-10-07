@@ -6,7 +6,7 @@
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
 import { bodyOf, systemOf, viewDistance } from './bodies';
-import { TERMS } from './host';
+import { HOST } from './host';
 import { anywhere, spot, type OrbitRound, type Place } from './rounds';
 
 const RAD = Math.PI / 180;
@@ -82,7 +82,7 @@ export class Space {
 	/** Rejects when WebGL or the data is not there. */
 	static async open(container: HTMLElement): Promise<Space> {
 		const map = await createMap({
-			...TERMS,
+			...HOST,
 			container,
 			live: false,
 			// The game moves the camera; the reader's hands are on the game.

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
+import * as m from '../paraglide/messages.js';
 
 interface Props {
 	settings: RunSettings;
@@ -26,19 +27,19 @@ export function Hud({ settings, round, rounds, when, altitude, left, onQuit, chi
 				<span className="pill status">
 					<span className="mark">spaceguesser</span>
 					<span className="sep" />
-					<span className="mono mut">
-						round {round + 1} / {rounds}
-					</span>
+					<span className="mono mut">{m.hud_round({ round: round + 1, rounds })}</span>
 					<span className="sep" />
 					<span className="mono mut move">{movementName(settings.movement)}</span>
 					<span className="sep" />
-					<span className="mono mut when" title="the date of this round">
+					<span className="mono mut when" title={m.hud_date_title()}>
 						{when}
 					</span>
 				</span>
 				{altitude !== null && (
 					<span className="pill status">
-						<span className="mono mut">altitude {formatAltitude(altitude)}</span>
+						<span className="mono mut">
+							{m.hud_altitude({ altitude: formatAltitude(altitude) })}
+						</span>
 					</span>
 				)}
 				{left !== null && (
@@ -52,7 +53,7 @@ export function Hud({ settings, round, rounds, when, altitude, left, onQuit, chi
 				{children}
 			</div>
 			<div className="hud-topr">
-				<button type="button" className="btn glassy ico" title="Leave run" onClick={onQuit}>
+				<button type="button" className="btn glassy ico" title={m.leave_run()} onClick={onQuit}>
 					×
 				</button>
 			</div>

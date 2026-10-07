@@ -1,9 +1,10 @@
 /** The round's panorama, filling the screen behind the HUD. */
 
 import { useEffect, useRef, useState } from 'react';
-import { TERMS } from '../game/host';
+import { HOST } from '../game/host';
 import { createPanorama, type PanoramaEntry, type PanoramaView } from 'spacemap';
 import type { Movement } from '../game/rules';
+import * as m from '../paraglide/messages.js';
 
 interface Props {
 	body: string;
@@ -42,7 +43,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 		let dropped = false;
 		setError(null);
 		createPanorama({
-			...TERMS,
+			...HOST,
 			container: element,
 			body,
 			at: opening.current,
@@ -78,7 +79,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 			<div ref={container} style={{ position: 'absolute', inset: 0 }} />
 			{dimmed && <div className="stage-dim" />}
 			<div className="stage-shade" />
-			{!view && !error && <div className="stage-note">dropping in…</div>}
+			{!view && !error && <div className="stage-note">{m.dropping_in()}</div>}
 			{error && <div className="stage-note">{error}</div>}
 		</div>
 	);

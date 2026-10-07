@@ -5,10 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"dev": "vite",
-		"build": "tsc -b && vite build",
+		"build": "pnpm check && vite build",
 		"preview": "vite preview",
 		"format": "prettier --write .",
-		"check": "tsc -b",
+		"messages": "paraglide-js compile --project ./project.inlang --outdir ./src/paraglide --strategy preferredLanguage baseLocale --emit-ts-declarations --silent",
+		"check": "pnpm messages && tsc -b",
 		"test": "vitest run",
 		"deploy": "pnpm build && wrangler deploy --config ../infrastructure/deploy/wrangler.jsonc"
 	},
@@ -20,6 +21,7 @@
 		"uqr": "^0.1.3"
 	},
 	"devDependencies": {
+		"@inlang/paraglide-js": "^2.26.0",
 		"@types/react": "^19.2.0",
 		"@types/react-dom": "^19.2.0",
 		"@types/three": "^0.183.1",

@@ -1,0 +1,33 @@
+{
+	"fr": {
+		"naif-199": "Mercure",
+		"naif-299": "Vénus",
+		"naif-301": "Lune",
+		"naif-402": "Déimos",
+		"naif-502": "Europe",
+		"naif-503": "Ganymède",
+		"naif-505": "Amalthée",
+		"naif-514": "Thébé",
+		"naif-602": "Encelade",
+		"naif-603": "Téthys",
+		"naif-604": "Dioné",
+		"naif-605": "Rhéa",
+		"naif-607": "Hypérion",
+		"naif-608": "Japet",
+		"naif-609": "Phœbé",
+		"naif-611": "Épiméthée",
+		"naif-612": "Hélène",
+		"naif-613": "Télesto",
+		"naif-616": "Prométhée",
+		"naif-617": "Pandore",
+		"naif-699": "Saturne",
+		"naif-808": "Protée",
+		"naif-903": "Hydre",
+		"naif-999": "Pluton",
+		"naif-2000001": "Cérès",
+		"spkid-20000016": "Psyché",
+		"spkid-20000021": "Lutèce",
+		"spkid-20000433": "Éros",
+		"naif-399": "Terre"
+	}
+}

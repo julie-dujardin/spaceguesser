@@ -1,4 +1,5 @@
 import type { Standing } from '../game/lobby';
+import { formatNumber } from '../game/rules';
 import { Avatar } from './Avatar';
 
 interface Props {
@@ -17,9 +18,9 @@ export function Standings({ standings, you, gains }: Props) {
 					<Avatar profile={profile} />
 					<span className={`nm${seat.connected ? '' : ' dim'}`}>{profile.name}</span>
 					{gains && (
-						<span className="up">{last ? `+${last.score.points.toLocaleString('en')}` : '—'}</span>
+						<span className="up">{last ? `+${formatNumber(last.score.points)}` : '—'}</span>
 					)}
-					<span className="tot">{total.toLocaleString('en')}</span>
+					<span className="tot">{formatNumber(total)}</span>
 				</div>
 			))}
 		</div>

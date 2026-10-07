@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { CODE_LENGTH } from '../game/lobby';
+import * as m from '../paraglide/messages.js';
 
 interface Props {
 	onCreate: () => void;
@@ -14,14 +15,14 @@ export function Friends({ onCreate, onJoin, onBack }: Props) {
 		<div className="scrim">
 			<div className="card glass panel" style={{ width: 420 }}>
 				<div className="hdr">
-					<h2>Play with friends</h2>
+					<h2>{m.play_with_friends()}</h2>
 					<button type="button" className="btn ghost back" onClick={onBack}>
-						Back
+						{m.back()}
 					</button>
 				</div>
 				<button type="button" className="mode framed" onClick={onCreate}>
-					<span className="t">Create a run</span>
-					<span className="d">set the rules, then invite by link or QR</span>
+					<span className="t">{m.create_a_run()}</span>
+					<span className="d">{m.create_a_run_hint()}</span>
 				</button>
 				<form
 					className="field"
@@ -31,7 +32,7 @@ export function Friends({ onCreate, onJoin, onBack }: Props) {
 					}}
 				>
 					<label className="hd" htmlFor="code">
-						or join with a code
+						{m.join_with_code()}
 					</label>
 					<div className="row">
 						<input
@@ -47,7 +48,7 @@ export function Friends({ onCreate, onJoin, onBack }: Props) {
 							onChange={(event) => setCode(event.target.value.trim().toUpperCase())}
 						/>
 						<button type="submit" className="btn tall" disabled={code.length !== CODE_LENGTH}>
-							Join
+							{m.join()}
 						</button>
 					</div>
 				</form>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { invitePath, settingsOf, type Lobby } from '../game/lobby';
 import { profileOf } from '../game/players';
 import { describeRun } from '../game/rules';
+import * as m from '../paraglide/messages.js';
 import { Avatar } from './Avatar';
 import { Qr } from './Qr';
 
@@ -33,36 +34,36 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 			<div className="card glass lobby">
 				<div className="panel">
 					<div className="hdr">
-						<h2>Lobby</h2>
+						<h2>{m.lobby()}</h2>
 						<button type="button" className="btn ghost back" onClick={onLeave}>
-							Leave
+							{m.leave()}
 						</button>
 					</div>
 					<div className="field">
-						<span className="hd">invite link</span>
+						<span className="hd">{m.invite_link()}</span>
 						<div className="share">
 							<Qr text={url} />
-							<span className="or">or</span>
+							<span className="or">{m.or()}</span>
 							<div className="col" style={{ gap: 8, flex: 1, minWidth: 0 }}>
 								<div className="link">
 									<span>{url.replace(/^https?:\/\//, '')}</span>
 									<button type="button" className="btn ghost" onClick={copy}>
-										{copied ? 'Copied' : 'Copy'}
+										{copied ? m.copied() : m.copy()}
 									</button>
 								</div>
-								<span className="note">Anyone with the link can join until the host starts</span>
+								<span className="note">{m.invite_note()}</span>
 							</div>
 						</div>
 					</div>
 					<div className="field">
-						<span className="hd">run settings</span>
+						<span className="hd">{m.run_settings()}</span>
 						<div className="rules">
 							{describeRun(settingsOf(lobby.settings)).map((rule) => (
 								<span key={rule}>{rule}</span>
 							))}
 							{hosting && (
 								<button type="button" onClick={onEdit}>
-									change
+									{m.change()}
 								</button>
 							)}
 						</div>
@@ -70,18 +71,20 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 					<div className="acts">
 						{hosting ? (
 							<button type="button" className="btn lg" disabled={!ready} onClick={onStart}>
-								Start run
+								{m.start_run()}
 							</button>
 						) : (
 							<span className="note">
-								waiting for {host ? profileOf(host.name).name : 'the host'} to start
+								{host
+									? m.waiting_for_player({ name: profileOf(host.name).name })
+									: m.waiting_for_host()}
 							</span>
 						)}
 					</div>
 				</div>
 				<div className="roster">
 					<span className="hd">
-						players <span className="mut">{lobby.players.length}</span>
+						{m.players()} <span className="mut">{lobby.players.length}</span>
 					</span>
 					{lobby.players.map((seat) => {
 						const profile = profileOf(seat.name);
@@ -91,9 +94,9 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 								<span className="nm">{profile.name}</span>
 								<span className="tag">
 									{[
-										seat.id === you && 'you',
-										seat.id === lobby.host && 'host',
-										!seat.connected && 'away'
+										seat.id === you && m.tag_you(),
+										seat.id === lobby.host && m.tag_host(),
+										!seat.connected && m.tag_away()
 									]
 										.filter(Boolean)
 										.join(' · ')}
@@ -102,7 +105,7 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 						);
 					})}
 					<span className="note" style={{ marginTop: 'auto' }}>
-						host starts the game
+						{m.host_starts()}
 					</span>
 				</div>
 			</div>

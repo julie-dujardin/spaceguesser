@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { encode } from 'uqr';
+import * as m from '../paraglide/messages.js';
 
 /** Drawn here rather than fetched: an invite is not a third party's to see. */
 export function Qr({ text }: { text: string }) {
@@ -17,7 +18,7 @@ export function Qr({ text }: { text: string }) {
 			viewBox={`0 0 ${size} ${size}`}
 			shapeRendering="crispEdges"
 			role="img"
-			aria-label={`QR code for ${text}`}
+			aria-label={m.qr_label({ text })}
 		>
 			<path d={path} fill="#000" />
 		</svg>

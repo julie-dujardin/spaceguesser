@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { OrbitRound, Place } from '../game/rounds';
 import type { Movement } from '../game/rules';
 import { DOWN, type Gaze, type Space } from '../game/space';
+import * as m from '../paraglide/messages.js';
 
 interface Props {
 	/** Null while the map is still coming up. */
@@ -109,7 +110,7 @@ export function Orbit({
 		>
 			{dimmed && <div className="stage-dim" />}
 			<div className="stage-shade" />
-			{!place && !error && !unavailable && <div className="stage-note">dropping in…</div>}
+			{!place && !error && !unavailable && <div className="stage-note">{m.dropping_in()}</div>}
 			{(error ?? unavailable) && <div className="stage-note">{error ?? unavailable}</div>}
 		</div>
 	);

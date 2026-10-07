@@ -4,10 +4,11 @@ import { bodyName, bodyOf } from '../game/bodies';
 import type { Space } from '../game/space';
 import { roundUrl } from '../game/links';
 import type { Round } from '../game/rounds';
-import { formatClock, formatDistance, formatWhen } from '../game/rules';
+import { formatClock, formatDistance, formatNumber, formatWhen } from '../game/rules';
 import type { Played } from '../game/run';
 import type { Guess } from '../game/scoring';
 import type { Profile } from '../game/players';
+import * as m from '../paraglide/messages.js';
 import { Recap, type RecapGuess } from './Recap';
 
 interface Props {
@@ -25,18 +26,18 @@ interface Props {
 }
 
 export function coordinates(at: LonLat): string {
-	const ns = at.lat >= 0 ? 'N' : 'S';
-	const ew = at.lon >= 0 ? 'E' : 'W';
-	return `${Math.abs(at.lat).toFixed(3)}° ${ns}  ${Math.abs(at.lon).toFixed(3)}° ${ew}`;
+	const ns = at.lat >= 0 ? m.compass_north() : m.compass_south();
+	const ew = at.lon >= 0 ? m.compass_east() : m.compass_west();
+	return `${formatNumber(Math.abs(at.lat), 3)}° ${ns}  ${formatNumber(Math.abs(at.lon), 3)}° ${ew}`;
 }
 
 /** What is known about where a round was, in the order a reader wants it. */
 export function describe(round: Round): string {
-	if (round.mode === 'orbit') return `from orbit · ${formatWhen(round.time)}`;
+	if (round.mode === 'orbit') return `${m.from_orbit()} · ${formatWhen(round.time)}`;
 	const { entry } = round;
 	const parts: string[] = [];
 	if (entry.mission) parts.push(entry.mission[0].toUpperCase() + entry.mission.slice(1));
-	if (entry.sol !== undefined) parts.push(`sol ${entry.sol}`);
+	if (entry.sol !== undefined) parts.push(m.sol({ sol: entry.sol }));
 	// Read as text: the export's dates are UTC, and not all of them say so.
 	const day = /^\d{4}-\d\d-\d\d/.exec(entry.time)?.[0];
 	if (day) parts.push(day);
@@ -45,10 +46,10 @@ export function describe(round: Round): string {
 
 /** How far off a guess was, in the words its kind of miss takes. */
 export function miss({ guess, score }: Played): string {
-	if (!guess) return 'no guess';
-	if (score.groundKm !== null) return `${formatDistance(score.groundKm)} off`;
+	if (!guess) return m.no_guess();
+	if (score.groundKm !== null) return m.miss_off({ distance: formatDistance(score.groundKm) });
 	if (score.spaceKm !== null)
-		return `${bodyName(guess.body)} · ${formatDistance(score.spaceKm)} away`;
+		return m.miss_away({ body: bodyName(guess.body), distance: formatDistance(score.spaceKm) });
 	return bodyName(guess.body);
 }
 
@@ -77,7 +78,7 @@ export function RoundResult({
 			<Recap space={space} rounds={recap} focus={0} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">actual location</span>
+					<span className="hd">{m.actual_location()}</span>
 					<span style={{ fontSize: '13.5px' }}>{bodyName(truth.body)}</span>
 					<span className="mono mut" style={{ fontSize: '11.5px' }}>
 						{describe(played.round)}
@@ -93,29 +94,27 @@ export function RoundResult({
 						target="_blank"
 						rel="noopener noreferrer"
 					>
-						show in spacemap
+						{m.show_in_spacemap()}
 					</a>
 				</div>
 				<div className="score">
-					<b>+{score.points.toLocaleString('en')}</b>
+					<b>+{formatNumber(score.points)}</b>
 					<span className="mono mut" style={{ fontSize: 12 }}>
 						{miss(played)}
-						{!timedOut && secondsLeft !== null && ` · ${formatClock(secondsLeft)} left`}
+						{!timedOut &&
+							secondsLeft !== null &&
+							` · ${m.time_left({ time: formatClock(secondsLeft) })}`}
 					</span>
 				</div>
-				{timedOut && (
-					<span className="note">
-						{guess ? 'time ran out — the last point you picked stood' : 'time ran out'}
-					</span>
-				)}
+				{timedOut && <span className="note">{guess ? m.timed_out_stood() : m.timed_out()}</span>}
 				{children}
 				<span className="note">
-					round {round} of {rounds}
-					{!onNext && ' · the host moves on'}
+					{m.round_of({ round, rounds })}
+					{!onNext && ` · ${m.host_moves_on()}`}
 				</span>
 				{onNext && (
 					<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
-						{round < rounds ? 'Next round' : 'See total'}
+						{round < rounds ? m.next_round() : m.see_total()}
 					</button>
 				)}
 			</div>

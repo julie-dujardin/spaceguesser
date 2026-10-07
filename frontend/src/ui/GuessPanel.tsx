@@ -13,10 +13,11 @@ import {
 	type SystemMapTarget,
 	type SystemMapView
 } from 'spacemap';
-import { bodyOf } from '../game/bodies';
-import { TERMS } from '../game/host';
+import { bodyName, bodyOf } from '../game/bodies';
+import { HOST } from '../game/host';
 import { PICKER, ROOT, intoSystem, levelTitle, search, trailTo, type Level } from '../game/picker';
 import type { Guess } from '../game/scoring';
+import * as m from '../paraglide/messages.js';
 import { pin, useFlatMap } from './useFlatMap';
 
 interface Props {
@@ -62,7 +63,7 @@ function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTa
 		let made: SystemMap | null = null;
 		let dropped = false;
 		createSystemMap({
-			...TERMS,
+			...HOST,
 			container: element,
 			view: viewOf(opening.current),
 			...PICKER,
@@ -163,7 +164,7 @@ function Surface({
 	return (
 		<>
 			<div className="flat" ref={container} />
-			{error && <div className="whole">no map — pick another body</div>}
+			{error && <div className="whole">{m.guess_no_map()}</div>}
 		</>
 	);
 }
@@ -215,9 +216,9 @@ export function GuessPanel({
 			? ''
 			: info?.surface
 				? guess?.at
-					? `heading ${String(Math.round(headingDeg) % 360).padStart(3, '0')}°`
-					: 'now pick the place'
-				: 'no map of this one: the body is the guess';
+					? m.guess_heading({ degrees: String(Math.round(headingDeg) % 360).padStart(3, '0') })
+					: m.guess_pick_place()
+				: m.guess_whole_body();
 
 	return (
 		<div
@@ -235,8 +236,8 @@ export function GuessPanel({
 					<button
 						type="button"
 						className="btn ghost ico"
-						title="Back"
-						aria-label="Back"
+						title={m.back()}
+						aria-label={m.back()}
 						disabled={locked}
 						onClick={() => go(trail.slice(0, -1))}
 					>
@@ -248,8 +249,8 @@ export function GuessPanel({
 					<input
 						type="search"
 						value={query}
-						placeholder="search"
-						aria-label="Search a body"
+						placeholder={m.search()}
+						aria-label={m.search_a_body()}
 						disabled={locked}
 						onChange={(event) => setQuery(event.target.value)}
 						onKeyDown={(event) => {
@@ -261,11 +262,11 @@ export function GuessPanel({
 						<div className="hits glass">
 							{hits.map((hit) => (
 								<button type="button" key={hit.id} onClick={() => go(trailTo(hit.id))}>
-									{hit.name}
+									{bodyName(hit.id)}
 									<span className="mono dim">{levelTitle(trailTo(hit.id).at(-2) ?? ROOT[0])}</span>
 								</button>
 							))}
-							{hits.length === 0 && <span className="note">nothing by that name is in play</span>}
+							{hits.length === 0 && <span className="note">{m.search_no_hits()}</span>}
 						</div>
 					)}
 				</div>
@@ -299,7 +300,7 @@ export function GuessPanel({
 						disabled={!placed || !complete}
 						onClick={onGuess}
 					>
-						Guess
+						{m.guess()}
 					</button>
 				) : (
 					action
