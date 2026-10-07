@@ -27,4 +27,38 @@ player count is what a connection costs.
 
 ## Results
 
-Not run yet.
+On a desktop (Ryzen 9 9900X3D), over loopback, with no errors in any run.
+
+`play`: messages in per second, and the p95 from a round's last guess to its
+results.
+
+| players | 1 core | 2 cores | 4 cores |
+| --- | --- | --- | --- |
+| 2,000 | 4,800 · 2 ms | 4,800 · 2 ms | 4,700 · 2 ms |
+| 4,000 | 8,100 · 123 ms | 9,200 · 12 ms | 9,300 · 9 ms |
+| 8,000 | 8,100 · 830 ms | 14,000 · 260 ms | 14,600 · 196 ms |
+
+Roughly a core per 4,000 messages a second between the server and Postgres,
+two thirds of it Postgres's. Four cores carry no more than two: by then the
+server's CPU is not what limits the sweep.
+
+`hold`, on one core:
+
+| players | memory | server CPU | Postgres CPU |
+| --- | --- | --- | --- |
+| 1,000 | 23 MiB | 1% | 2% |
+| 4,000 | 82 MiB | 2% | 4% |
+| 10,000 | 198 MiB | 4% | 8% |
+| 20,000 | 384 MiB | 7% | 13% |
+
+20 KiB an open socket, near 30 at a run's fullest. The server gives none back:
+its memory stays where its busiest hour left it.
+
+**Sizing:** 20,000 players at once, each guessing every 20 s, take 600 MiB, a
+fifth of a core and 1,100 commits a second, every message being one. The VPS
+has 4 cores, 7.7 GB of which search wants about 1, and a disk that syncs 7,900
+times a second (`pg_test_fsync` there: the sweep's Postgres is in memory, so
+the sweep says nothing of it). None of the three is what limits it. The
+server's own caps are: 65,536 open files in its compose file, and 20,000
+lobbies. Nothing past 20,000 players was run. Loopback numbers on a fast
+core — add real network RTT.
