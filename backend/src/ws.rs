@@ -20,6 +20,9 @@ use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
 
 /// Room for a `start` carrying every round.
 const MAX_MESSAGE_BYTES: usize = 256 * 1024;
+/// Held by every open socket, and the default 128 KiB is most of what a player
+/// costs in memory. Messages are small; a larger one grows it.
+const READ_BUFFER_BYTES: usize = 4 * 1024;
 const HELLO_TIMEOUT: Duration = Duration::from_secs(10);
 const CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
 /// Under the proxy's idle cutoff, which drops a socket that says nothing for 100 s.
@@ -40,6 +43,7 @@ pub async fn upgrade(State(app): State<Arc<App>>, headers: HeaderMap, upgrade: W
 	}
 	upgrade
 		.max_message_size(MAX_MESSAGE_BYTES)
+		.read_buffer_size(READ_BUFFER_BYTES)
 		.on_upgrade(move |socket| serve(app, socket))
 }
 
