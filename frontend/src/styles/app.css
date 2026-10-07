@@ -1302,6 +1302,221 @@ a.rk:hover,
 	font-variant-numeric: tabular-nums;
 }
 
+/* --- history ------------------------------------------------------------- */
+
+/* The way to the history from the home card: who is playing, and how much
+   they have played. It keeps to the foot of the column, apart from the ways
+   to play. */
+.who {
+	margin-top: auto;
+	padding-top: 10px;
+	display: flex;
+	flex-direction: column;
+}
+
+.who .rule {
+	height: 1px;
+	margin-bottom: 8px;
+	background: var(--gborder);
+}
+
+.who .mode {
+	flex-direction: row;
+	align-items: center;
+	gap: 9px;
+	padding: 8px 10px;
+}
+
+.who .av {
+	width: 22px;
+	height: 22px;
+	font-size: 12px;
+}
+
+.who .tag {
+	margin-left: auto;
+	font-size: 11px;
+	white-space: nowrap;
+}
+
+.prev .btn {
+	height: 26px;
+	padding: 0 10px;
+	font-size: 12px;
+}
+
+/* A line with something at each end of it. Where the two do not fit, the
+   second goes under, whole, and keeps its end. */
+.ends {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	justify-content: space-between;
+	gap: 6px 12px;
+}
+
+.ends > * {
+	white-space: nowrap;
+}
+
+.ends > :nth-child(2) {
+	margin-left: auto;
+}
+
+/* An action in a line of small print, no louder than the line. */
+.quiet {
+	padding: 0;
+	border: 0;
+	background: none;
+	font: inherit;
+	color: var(--mut);
+	text-decoration: underline;
+	text-decoration-color: rgb(255 255 255 / 0.25);
+	text-underline-offset: 3px;
+	cursor: pointer;
+	transition: color 150ms;
+}
+
+.quiet:hover {
+	color: var(--fg);
+	text-decoration-color: currentColor;
+}
+
+/* A day is as full as the runs that ended on it, in the player's own colour. */
+.day {
+	display: block;
+	flex: none;
+	width: 14px;
+	height: 14px;
+	padding: 0;
+	border: 0;
+	border-radius: 3.5px;
+	background: rgb(255 255 255 / 0.07);
+}
+
+button.day {
+	cursor: pointer;
+}
+
+.day[data-level='1'] {
+	background: color-mix(in srgb, var(--face) 34%, transparent);
+}
+
+.day[data-level='2'] {
+	background: color-mix(in srgb, var(--face) 56%, transparent);
+}
+
+.day[data-level='3'] {
+	background: color-mix(in srgb, var(--face) 78%, transparent);
+}
+
+.day[data-level='4'] {
+	background: var(--face);
+}
+
+.day[aria-pressed='true'] {
+	box-shadow:
+		0 0 0 2px rgb(10 10 10),
+		0 0 0 3.5px var(--fg);
+}
+
+/* Holds its place in the week, so the days before it stay on their rows. */
+.day.ahead {
+	visibility: hidden;
+}
+
+.scale {
+	display: flex;
+	align-items: center;
+	gap: 4px;
+	font-size: 10.5px;
+}
+
+.scale .day {
+	width: 10px;
+	height: 10px;
+	border-radius: 3px;
+}
+
+.heat {
+	display: flex;
+	gap: 6px;
+}
+
+.heat .weekdays,
+.heat .month {
+	font-family: var(--font-mono);
+	font-size: 9.5px;
+	color: var(--dim);
+}
+
+.heat .weekdays {
+	/* Leaves half a year of weeks exactly the width the card has for them. */
+	flex: none;
+	width: 29px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+	/* The months' line, which the weeks beside it start under. */
+	padding-top: 16px;
+	line-height: 14px;
+}
+
+.heat .weekdays span {
+	height: 14px;
+}
+
+/* Measured, to draw only the weeks there is room for. */
+.heat .weeks {
+	flex: 1;
+	min-width: 0;
+	display: flex;
+	gap: 3px;
+}
+
+.heat .week {
+	flex: none;
+	width: 14px;
+	display: flex;
+	flex-direction: column;
+	gap: 3px;
+}
+
+.heat .month {
+	height: 13px;
+	line-height: 13px;
+	white-space: nowrap;
+}
+
+/* Six rows, however many there are: the card keeps its height as a day is
+   picked. The margin lets a row's highlight reach past the text it lines up. */
+.runs {
+	height: 194px;
+	margin: 0 -8px;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+}
+
+.runs .rk {
+	flex: none;
+}
+
+button.rk {
+	border: 0;
+	background: none;
+	font-family: inherit;
+	text-align: left;
+}
+
+.rk .when {
+	flex: none;
+	width: 52px;
+	white-space: nowrap;
+	color: var(--dim);
+	font-size: 11px;
+	font-family: var(--font-mono);
+}
+
 /* --- small screens ------------------------------------------------------- */
 
 /* Two columns need the room: under it the side column goes below. */
@@ -1346,6 +1561,25 @@ a.rk:hover,
 	.or::after {
 		width: auto;
 		height: 1px;
+	}
+
+	/* The history says more about the face than there is room for beside the
+	   name: it goes under. */
+	.history .prev {
+		flex-wrap: wrap;
+	}
+
+	.history .prev .tag {
+		order: 1;
+		flex-basis: 100%;
+		margin-left: 0;
+	}
+
+	/* Takes what the button leaves, so a long name is cut short rather than
+	   pushing the button to a line of its own. */
+	.history .prev .nm {
+		flex: 1;
+		min-width: 0;
 	}
 }
 

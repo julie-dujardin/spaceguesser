@@ -7,6 +7,8 @@ import { Avatar, Glyph } from './Avatar';
 interface Props {
 	/** The run being joined; absent when this player is opening one. */
 	code?: string;
+	/** Changing the face with no run to take it to. */
+	edit?: boolean;
 	busy: boolean;
 	trouble: Trouble | null;
 	onGo: (profile: Profile) => void;
@@ -21,7 +23,7 @@ const TROUBLES: Partial<Record<Trouble, () => string>> = {
 	unreachable: m.trouble_unreachable
 };
 
-export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
+export function ProfileSetup({ code, edit, busy, trouble, onGo, onBack }: Props) {
 	const [profile, setProfile] = useState(recallProfile);
 	const set = (patch: Partial<Profile>) => setProfile((old) => ({ ...old, ...patch }));
 	const named = profile.name.trim().length > 0;
@@ -37,7 +39,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 				}}
 			>
 				<div className="hdr">
-					<h2>{code ? m.join_run() : m.create_run()}</h2>
+					<h2>{edit ? m.profile() : code ? m.join_run() : m.create_run()}</h2>
 					{code && <span className="mono dim code-tag">{code}</span>}
 					<button type="button" className="btn ghost back" onClick={onBack}>
 						{m.back()}
@@ -96,7 +98,7 @@ export function ProfileSetup({ code, busy, trouble, onGo, onBack }: Props) {
 				{trouble && <span className="note bad">{TROUBLES[trouble]?.() ?? trouble}</span>}
 				<div className="acts">
 					<button type="submit" className="btn lg" style={{ flex: 1 }} disabled={!named || busy}>
-						{busy ? m.connecting() : code ? m.join_lobby() : m.create_lobby()}
+						{busy ? m.connecting() : edit ? m.save() : code ? m.join_lobby() : m.create_lobby()}
 					</button>
 				</div>
 			</form>

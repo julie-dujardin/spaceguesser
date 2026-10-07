@@ -1,11 +1,13 @@
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
+import { KIND_LABELS, describePast, formatDay, kindOf, type PastRun } from '../game/history';
 import { roundUrl } from '../game/links';
 import { formatClock, formatNumber } from '../game/rules';
 import type { Played } from '../game/run';
 import { MAX_POINTS } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
+import { getLocale } from '../paraglide/runtime.js';
 import { Recap, type RecapGuess } from './Recap';
 import { miss } from './RoundResult';
 
@@ -21,6 +23,8 @@ interface Props {
 	share?: string;
 	/** Someone's run, looked at from its link. */
 	shared?: boolean;
+	/** The reader's own run, looked at from the history. */
+	past?: PastRun;
 	/** Absent for a player who is not the one starting the next game. */
 	onAgain?: () => void;
 	onHome: () => void;
@@ -35,12 +39,21 @@ export function FinalScore({
 	avatar,
 	share,
 	shared,
+	past,
 	onAgain,
 	onHome,
 	children
 }: Props) {
 	const total = played.reduce((sum, round) => sum + round.score.points, 0);
 	const best = played.length * MAX_POINTS;
+	// A run among friends also says where it left the reader.
+	const then =
+		past &&
+		[
+			formatDay(past.at, true),
+			KIND_LABELS[kindOf(past)]().toLocaleLowerCase(getLocale()),
+			...(past.of === undefined ? [] : [describePast(past)])
+		].join(' · ');
 	const [copied, setCopied] = useState(false);
 	/** The round looked at by itself; null for the whole run on one map. */
 	const [focus, setFocus] = useState<number | null>(null);
@@ -79,7 +92,7 @@ export function FinalScore({
 			<Recap space={space} rounds={recap} focus={focus} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">{shared ? m.shared_run() : m.run_complete()}</span>
+					<span className="hd">{shared ? m.shared_run() : (then ?? m.run_complete())}</span>
 					<div className="score">
 						<b>{formatNumber(total)}</b>
 						<span className="mono mut" style={{ fontSize: 12 }}>
@@ -152,7 +165,7 @@ export function FinalScore({
 						style={{ flex: 1 }}
 						onClick={onHome}
 					>
-						{shared ? m.play() : m.home()}
+						{shared ? m.play() : past ? m.history() : m.home()}
 					</button>
 				</div>
 			</div>

@@ -146,6 +146,30 @@
 	"play": "Play",
 	"home": "Home",
 	"host_can_restart": "the host can start another run",
+	"history": "History",
+	"past_runs": "past runs",
+	"runs": "runs",
+	"runs_count": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} run",
+				"countPlural=other": "{count} runs"
+			}
+		}
+	],
+	"runs_on_day": [
+		{
+			"declarations": ["input count", "input day", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} run on {day}",
+				"countPlural=other": "{count} runs on {day}"
+			}
+		}
+	],
+	"no_runs_on_day": "no runs on {day}",
 	"with_friends": "With friends",
 	"place_of": [
 		{
@@ -163,6 +187,30 @@
 			}
 		}
 	],
+	"profile": "Profile",
+	"edit": "Edit",
+	"how_others_see_you_multiplayer": "how others see you (multiplayer)",
+	"activity": "activity",
+	"activity_less": "less",
+	"activity_more": "more",
+	"show_all": "show all",
+	"run_has_no_link": "this run has no link to open it by",
+	"history_empty": "nothing played yet · a finished run lands here",
+	"stored_locally": "stored locally on this browser",
+	"clear_history": "clear history",
+	"clear_runs_for_good": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "clear {count} run for good",
+				"countPlural=other": "clear {count} runs for good"
+			}
+		}
+	],
+	"keep": "keep",
+	"opening_past_run": "Opening that run…",
+	"notice_past_run_lost": "that run could not be opened",
 	"reconnecting": "reconnecting…",
 	"displaced_title": "Playing somewhere else",
 	"displaced_lede": "This seat was opened in another tab or on another device, and a seat is played from one place at a time.",

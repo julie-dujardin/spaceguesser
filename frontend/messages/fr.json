@@ -156,6 +156,30 @@
 	"play": "Jouer",
 	"home": "Accueil",
 	"host_can_restart": "l'hôte peut lancer une autre partie",
+	"history": "Historique",
+	"past_runs": "parties passées",
+	"runs": "parties",
+	"runs_count": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} partie",
+				"countPlural=other": "{count} parties"
+			}
+		}
+	],
+	"runs_on_day": [
+		{
+			"declarations": ["input count", "input day", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} partie le {day}",
+				"countPlural=other": "{count} parties le {day}"
+			}
+		}
+	],
+	"no_runs_on_day": "aucune partie le {day}",
 	"with_friends": "Entre amis",
 	"place_of": [
 		{
@@ -171,6 +195,30 @@
 			}
 		}
 	],
+	"profile": "Profil",
+	"edit": "Modifier",
+	"how_others_see_you_multiplayer": "vu par les autres (multijoueur)",
+	"activity": "activité",
+	"activity_less": "moins",
+	"activity_more": "plus",
+	"show_all": "tout afficher",
+	"run_has_no_link": "cette partie n'a pas de lien pour la rouvrir",
+	"history_empty": "rien de joué pour l'instant · une partie terminée arrive ici",
+	"stored_locally": "stocké localement dans ce navigateur",
+	"clear_history": "effacer l'historique",
+	"clear_runs_for_good": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "effacer définitivement {count} partie",
+				"countPlural=other": "effacer définitivement {count} parties"
+			}
+		}
+	],
+	"keep": "garder",
+	"opening_past_run": "Ouverture de cette partie…",
+	"notice_past_run_lost": "cette partie n'a pas pu être ouverte",
 	"reconnecting": "reconnexion…",
 	"displaced_title": "Partie ouverte ailleurs",
 	"displaced_lede": "Cette place a été ouverte dans un autre onglet ou sur un autre appareil, et une place ne se joue que d'un endroit à la fois.",

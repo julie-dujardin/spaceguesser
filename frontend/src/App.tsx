@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
-import { inviteCode, invitePath, settingsOf } from './game/lobby';
+import { clearHistory, keepRun, pastRun, recallHistory, type PastRun } from './game/history';
+import { inviteCode, invitePath, playedBy, settingsOf, standings } from './game/lobby';
 import { keepProfile } from './game/players';
 import {
 	altitudeKm,
@@ -24,6 +25,7 @@ import { CustomSetup } from './ui/CustomSetup';
 import { FinalScore } from './ui/FinalScore';
 import { Friends } from './ui/Friends';
 import { GuessPanel } from './ui/GuessPanel';
+import { History } from './ui/History';
 import { Home } from './ui/Home';
 import { Hud } from './ui/Hud';
 import { Orbit } from './ui/Orbit';
@@ -36,13 +38,17 @@ import { useSpace } from './ui/useSpace';
 /** Earth has panoramas of its own in the export, and is not in play. */
 const NO_GROUND = new Set(['naif-399']);
 
-/** The way into a multiplayer game, a card at a time. Null is the home screen. */
+/** A card over the home screen, one at a time: the way into a multiplayer game,
+ *  or the reader's own history. Null is the home screen. */
 type Door =
 	| { at: 'friends' }
 	| { at: 'rules' }
 	/** Picking a face, to open a run with these rules or to join the one at `code`. */
 	| { at: 'profile'; settings: RunSettings; code?: undefined }
 	| { at: 'profile'; code: string }
+	| { at: 'history' }
+	/** Changing the face, from the history. */
+	| { at: 'face' }
 	| null;
 
 /** Read once: the page is opened on an invite or it is not. */
@@ -73,6 +79,10 @@ export default function App() {
 	/** The shared run the page was opened on: still being read, or not there
 	 *  to read. */
 	const [link, setLink] = useState<'opening' | 'lost' | null>(SHARED ? 'opening' : null);
+	/** The runs finished in this browser. */
+	const [kept, setKept] = useState(recallHistory);
+	/** One of them asked for again: still being read, or not there to read. */
+	const [again, setAgain] = useState<'opening' | 'lost' | null>(null);
 	/** The round behind the home screen, which is also the run's first: what
 	 *  the reader is looking at is what they are about to guess. */
 	const [opener, setOpener] = useState<Round | null>(null);
@@ -167,6 +177,26 @@ export default function App() {
 	);
 
 	const { lobby } = party;
+
+	// A run played here to its end goes in the history: not one come for from a
+	// link, nor one the history is showing again.
+	useEffect(() => {
+		if (run.phase !== 'final' || run.shared || run.past) return;
+		setKept(keepRun(pastRun(run.played, run.settings)));
+	}, [run.phase, run.shared, run.past, run.played, run.settings]);
+	// And so does a game with friends, once: each snapshot of its final screen
+	// is a new lobby.
+	const finished = lobby?.phase === 'final';
+	useEffect(() => {
+		const { you } = party;
+		if (!lobby || !finished || !you) return;
+		const played = playedBy(lobby, you);
+		if (!played.length) return;
+		const table = standings(lobby);
+		const place = table.findIndex(({ seat }) => seat.id === you) + 1;
+		setKept(keepRun(pastRun(played, settingsOf(lobby.settings), { place, of: table.length })));
+	}, [finished, party.you]);
+
 	const last = run.played[run.played.length - 1];
 	const round = run.drawn[run.round];
 	// The home and setup screens sit over the opener, and so does a lobby; the
@@ -278,14 +308,33 @@ export default function App() {
 
 	const enter = (next: Door) => {
 		party.forget();
+		setAgain(null);
 		if (!next && !code) history.replaceState(null, '', '/');
 		setDoor(next);
+	};
+
+	// A run from the history is read from its link, as a shared one is, and
+	// comes back to the history when it will not read.
+	const reopen = (past: PastRun) => {
+		if (past.code === null) return;
+		setDoor(null);
+		setAgain('opening');
+		openShared(past.code).then(
+			(played) => {
+				setAgain(null);
+				dispatch({ kind: 'visit', played, past });
+			},
+			() => {
+				setAgain('lost');
+				setDoor({ at: 'history' });
+			}
+		);
 	};
 
 	const solo = !lobby && !door;
 	// A seat kept from before is being taken back: nothing else to do yet.
 	const returning = solo && party.status === 'connecting';
-	const opening = solo && link === 'opening';
+	const opening = solo && (link === 'opening' || again === 'opening');
 	// A run looked at from its link is already where the link is.
 	const share = useMemo(
 		() => (run.phase === 'final' && !run.shared ? sharePath(run.played) : null),
@@ -375,6 +424,34 @@ export default function App() {
 				/>
 			)}
 
+			{door?.at === 'history' && (
+				<History
+					runs={kept}
+					notice={again === 'lost' && m.notice_past_run_lost()}
+					onOpen={reopen}
+					onEdit={() => enter({ at: 'face' })}
+					onClear={() => {
+						clearHistory();
+						setKept([]);
+						setAgain(null);
+					}}
+					onBack={() => enter(null)}
+				/>
+			)}
+
+			{door?.at === 'face' && (
+				<ProfileSetup
+					edit
+					busy={false}
+					trouble={null}
+					onBack={() => enter({ at: 'history' })}
+					onGo={(profile) => {
+						keepProfile(profile);
+						enter({ at: 'history' });
+					}}
+				/>
+			)}
+
 			{returning && (
 				<div className="scrim">
 					<div className="card glass panel" style={{ width: 320 }}>
@@ -391,7 +468,7 @@ export default function App() {
 			{opening && (
 				<div className="scrim">
 					<div className="card glass panel" style={{ width: 320 }}>
-						<h2>{m.opening_shared_run()}</h2>
+						<h2>{again ? m.opening_past_run() : m.opening_shared_run()}</h2>
 					</div>
 				</div>
 			)}
@@ -427,6 +504,8 @@ export default function App() {
 					onQuickPlay={() => start(QUICK_PLAY)}
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
+					runs={kept.length}
+					onHistory={() => enter({ at: 'history' })}
 					notice={
 						(link === 'lost' && m.notice_shared_run_lost()) ||
 						(party.trouble === 'gone' && m.notice_run_ended())
@@ -470,8 +549,13 @@ export default function App() {
 					played={run.played}
 					share={share ?? undefined}
 					shared={run.shared}
+					past={run.past ?? undefined}
 					onAgain={run.shared ? undefined : () => start(run.settings)}
-					onHome={() => dispatch({ kind: 'home' })}
+					onHome={() => {
+						// A run come for from the history goes back to it.
+						if (run.past) enter({ at: 'history' });
+						dispatch({ kind: 'home' });
+					}}
 				/>
 			)}
 
