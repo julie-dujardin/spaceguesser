@@ -13,6 +13,7 @@ import type { Place, Round } from '../game/rounds';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
+import { Legal } from './Legal';
 import { ResultMap, type Placement } from './ResultMap';
 import { MISS, OTHER_MISS, OWN_MISS, face, pin, pins } from './useFlatMap';
 
@@ -320,6 +321,7 @@ export function Recap({ space, rounds, focus }: Props) {
 					style={{ opacity: flat, pointerEvents: flat > 0.6 ? 'auto' : 'none' }}
 				>
 					<ResultMap key={`${focus}:${one.truth.body}`} body={one.truth.body} rounds={placements} />
+					<Legal />
 				</div>
 			)}
 			{space && !flight && !error && <div className="stage-note">{m.finding_the_place()}</div>}

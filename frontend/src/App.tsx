@@ -28,6 +28,7 @@ import { GuessPanel } from './ui/GuessPanel';
 import { History } from './ui/History';
 import { Home } from './ui/Home';
 import { Hud } from './ui/Hud';
+import { Legal } from './ui/Legal';
 import { Orbit } from './ui/Orbit';
 import { Panorama } from './ui/Panorama';
 import { Party } from './ui/Party';
@@ -564,6 +565,8 @@ export default function App() {
 					{stopsError ?? spaceError}
 				</div>
 			)}
+
+			<Legal />
 		</>
 	);
 }

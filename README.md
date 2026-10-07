@@ -186,6 +186,23 @@ To add a language:
    `frontend/src/game/names.json` with what the export calls the bodies in
    each language.
 
+## Privacy and terms
+
+`/about/privacy` and `/about/terms` are plain pages beside the game, read in
+the browser's language like the rest of it. The way to them is a line in the
+corner across from the SDK's credit line, drawn as that one is, and one line up
+where the screen is too narrow for the two side by side. Their wording is in
+the message files, under `privacy_` and `terms_`; who hosts the game, where a
+question goes and the date both pages end on are in
+`frontend/src/game/about.ts`.
+
+The privacy page says what the code does, so it changes when the code does:
+what a lobby stores and for how long (`EMPTY_TTL_MS` in
+`backend/src/lobby.rs`), what the browser keeps (`spaceguesser.profile`,
+`spaceguesser.history`, `spaceguesser.seat`), and that nothing is loaded from a
+third party, which is why the fonts are bundled from `@fontsource-variable`
+rather than fetched from Google.
+
 ## Deploying
 
 Pushes to `main` run the checks on GitHub, and a green run deploys to Cloudflare
