@@ -211,7 +211,9 @@ what a lobby stores and for how long (`EMPTY_TTL_MS` in
 `backend/src/lobby.rs`), what the browser keeps (`spaceguesser.profile`,
 `spaceguesser.history`, `spaceguesser.seat`), and that nothing is loaded from a
 third party, which is why the fonts are bundled from `@fontsource-variable`
-rather than fetched from Google.
+rather than fetched from Google. The one exception is Turnstile, and only in a
+build with `VITE_TURNSTILE_SITEKEY`: that build's page gains a paragraph on the
+check, and a build without it says nothing of one.
 
 ## Deploying
 

@@ -3,8 +3,10 @@ import { ABOUT, CONTACT, HOSTS, UPDATED, aboutPath, type AboutPage } from '../ga
 import { REPO } from '../game/links';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
+import { TURNSTILE } from './useProof';
 
 const CREDITS = 'https://spacemap.co/credits';
+const TURNSTILE_TERMS = 'https://www.cloudflare.com/turnstile-privacy-policy/';
 
 export function aboutLabel(page: AboutPage): string {
 	return page === 'privacy' ? m.about_privacy() : m.about_terms();
@@ -33,6 +35,11 @@ function Privacy() {
 
 			<h2>{m.privacy_friends_title()}</h2>
 			<p>{m.privacy_friends_sent()}</p>
+			{TURNSTILE && (
+				<p>
+					{m.privacy_friends_check()} <Out href={TURNSTILE_TERMS} />
+				</p>
+			)}
 			<p>{m.privacy_friends_kept()}</p>
 			<p>{m.privacy_friends_name()}</p>
 
@@ -42,7 +49,7 @@ function Privacy() {
 			<h2>{m.privacy_traffic_title()}</h2>
 			<p>{m.privacy_traffic_cloudflare()}</p>
 			<p>{m.privacy_traffic_server()}</p>
-			<p>{m.privacy_traffic_else()}</p>
+			<p>{TURNSTILE ? m.privacy_traffic_else_check() : m.privacy_traffic_else()}</p>
 
 			<h2>{m.privacy_rights_title()}</h2>
 			<p>{m.privacy_rights()}</p>
