@@ -53,6 +53,8 @@ pub enum Error {
 	AlreadyGuessed,
 	/// The server is at its lobby cap.
 	Busy,
+	/// Proof of a person at the page was needed, and none came that holds.
+	Unverified,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -153,7 +155,8 @@ fn scored(results: &[HashMap<String, Value>], id: &str) -> bool {
 	results.iter().any(|round| round.contains_key(id))
 }
 
-fn seat(name: &str) -> Result<Player, Error> {
+/// The name as a seat shows it, or `BadRequest` for one that leaves nothing to show.
+pub fn clean_name(name: &str) -> Result<String, Error> {
 	let name: String = name
 		.trim()
 		.chars()
@@ -163,10 +166,14 @@ fn seat(name: &str) -> Result<Player, Error> {
 	if name.is_empty() {
 		return Err(Error::BadRequest);
 	}
+	Ok(name)
+}
+
+fn seat(name: &str) -> Result<Player, Error> {
 	Ok(Player {
 		id: random_hex(4),
 		token: random_hex(16),
-		name,
+		name: clean_name(name)?,
 		left: false,
 		connected: false,
 		gone_since: None,

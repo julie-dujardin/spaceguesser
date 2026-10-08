@@ -10,6 +10,10 @@ RUN --mount=type=cache,target=/usr/local/cargo/registry \
 	&& cp target/release/spaceguesser-backend /spaceguesser-backend
 
 FROM debian:trixie-slim
+# The roots Cloudflare's certificate is checked against when a proof is.
+RUN apt-get update \
+	&& apt-get install -y --no-install-recommends ca-certificates \
+	&& rm -rf /var/lib/apt/lists/*
 COPY --from=build /spaceguesser-backend /usr/local/bin/spaceguesser-backend
 USER nobody
 ENV BIND=0.0.0.0:8787

@@ -14,9 +14,10 @@ use tokio::sync::{Notify, mpsc, oneshot};
 use tokio::time::{Instant, interval, timeout};
 
 use crate::App;
-use crate::lobby::Error;
+use crate::lobby::{Error, clean_name};
 use crate::protocol::{ClientMsg, ServerMsg};
 use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
+use crate::turnstile::Action;
 
 /// Room for a `start` carrying every round.
 const MAX_MESSAGE_BYTES: usize = 256 * 1024;
@@ -127,14 +128,27 @@ async fn next_msg(
 }
 
 async fn enter(app: &App, hello: ClientMsg, conn: Conn) -> Result<(Handle, String), Error> {
+	// A token is good once: what can be refused without asking Cloudflare is,
+	// before one is spent on it.
+	if let ClientMsg::Create { name, .. } | ClientMsg::Join { name, .. } = &hello {
+		clean_name(name)?;
+	}
 	let (lobby, entry) = match hello {
 		// The host's seat is made with the lobby, so a lobby is never without
 		// one; the socket then takes it like any reconnect.
-		ClientMsg::Create { name } => {
+		ClientMsg::Create { name, proof } => {
+			if app.registry.full() {
+				return Err(Error::Busy);
+			}
+			admit(app, Action::Create, proof).await?;
 			let (lobby, token) = app.registry.create(&name)?;
 			(lobby, Entry::Rejoin { token })
 		}
-		ClientMsg::Join { code, name } => (find(app, &code)?, Entry::Join { name }),
+		ClientMsg::Join { code, name, proof } => {
+			// Ahead of the lookup, so codes cannot be tried without proof.
+			admit(app, Action::Join, proof).await?;
+			(find(app, &code)?, Entry::Join { name })
+		}
 		ClientMsg::Rejoin { code, token } => (find(app, &code)?, Entry::Rejoin { token }),
 		_ => return Err(Error::BadRequest),
 	};
@@ -146,6 +160,13 @@ async fn enter(app: &App, hello: ClientMsg, conn: Conn) -> Result<(Handle, Strin
 		.map_err(|_| Error::NotFound)?;
 	let player = entered.await.map_err(|_| Error::NotFound)??;
 	Ok((lobby, player))
+}
+
+async fn admit(app: &App, action: Action, proof: Option<String>) -> Result<(), Error> {
+	match &app.turnstile {
+		Some(turnstile) => turnstile.admit(action, proof).await,
+		None => Ok(()),
+	}
 }
 
 fn find(app: &App, code: &str) -> Result<Handle, Error> {

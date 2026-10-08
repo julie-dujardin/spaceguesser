@@ -71,6 +71,10 @@ impl Registry {
 		})
 	}
 
+	pub fn full(&self) -> bool {
+		self.lobbies.lock().unwrap().len() >= MAX_LOBBIES
+	}
+
 	/// Opens a lobby hosted by `name`, and returns the token that takes the
 	/// host's seat.
 	pub fn create(self: &Arc<Self>, name: &str) -> Result<(Handle, String), Error> {

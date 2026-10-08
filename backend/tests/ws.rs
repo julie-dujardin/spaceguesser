@@ -2,9 +2,11 @@
 
 use std::time::Duration;
 
+use axum::routing::post;
+use axum::{Json, Router};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
-use spaceguesser_backend::{Config, app};
+use spaceguesser_backend::{Action, Config, Turnstile, app};
 use sqlx::PgPool;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
@@ -19,12 +21,16 @@ struct Server {
 }
 
 async fn serve(database_url: Option<String>, allowed_origins: Vec<String>) -> Server {
-	let router = app(Config {
+	serve_with(Config {
 		database_url,
 		allowed_origins,
+		turnstile: None,
 	})
 	.await
-	.unwrap();
+}
+
+async fn serve_with(config: Config) -> Server {
+	let router = app(config).await.unwrap();
 	let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
 	let url = format!("ws://{}/ws", listener.local_addr().unwrap());
 	let task = tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
@@ -262,6 +268,147 @@ async fn only_listed_origins_get_a_socket() {
 	assert!(connect_async(request("https://play.example")).await.is_ok());
 	assert!(connect_async(request("https://elsewhere.example")).await.is_err());
 	assert!(connect_async(&server.url).await.is_err());
+}
+
+/// Cloudflare's part, played here. It knows one secret, and vouches for three
+/// tokens: `human`, `joiner`, which it says was made for joining, and `slow`,
+/// which it takes longer over than the server waits.
+async fn siteverify() -> String {
+	async fn verify(Json(claim): Json<Value>) -> Json<Value> {
+		if claim["secret"] != "secret" {
+			return Json(json!({ "success": false, "error-codes": ["invalid-input-secret"] }));
+		}
+		match claim["response"].as_str() {
+			Some("human") => Json(json!({ "success": true, "error-codes": [] })),
+			Some("joiner") => Json(json!({ "success": true, "error-codes": [], "action": "join" })),
+			Some("slow") => {
+				tokio::time::sleep(Duration::from_secs(30)).await;
+				Json(json!({ "success": true, "error-codes": [] }))
+			}
+			_ => Json(json!({ "success": false, "error-codes": ["invalid-input-response"] })),
+		}
+	}
+	let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+	let url = format!("http://{}/siteverify", listener.local_addr().unwrap());
+	let router = Router::new().route("/siteverify", post(verify));
+	tokio::spawn(async move { axum::serve(listener, router).await.unwrap() });
+	url
+}
+
+async fn guarded(secret: &str, verify_url: String, require: Vec<Action>) -> Server {
+	serve_with(Config {
+		database_url: None,
+		allowed_origins: vec![],
+		turnstile: Some(Turnstile {
+			secret: secret.into(),
+			verify_url,
+			require,
+		}),
+	})
+	.await
+}
+
+#[tokio::test]
+async fn a_lobby_takes_proof_to_open_where_that_is_required() {
+	let server = guarded("secret", siteverify().await, vec![Action::Create]).await;
+
+	let mut bare = Client::open(&server, json!({ "type": "create", "name": "Bot" })).await;
+	assert_eq!(bare.error().await, "unverified");
+	assert!(bare.recv().await.is_none());
+	let forged = json!({ "type": "create", "name": "Bot", "proof": "made up" });
+	assert_eq!(Client::open(&server, forged).await.error().await, "unverified");
+
+	// One made for joining opens no lobby.
+	let misused = json!({ "type": "create", "name": "Bot", "proof": "joiner" });
+	assert_eq!(Client::open(&server, misused).await.error().await, "unverified");
+	// What is wrong with the opening itself is said first, and costs no token.
+	let mut blank = Client::open(&server, json!({ "type": "create", "name": " " })).await;
+	assert_eq!(blank.error().await, "bad_request");
+
+	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	let (_, token) = ann.joined().await;
+	let code = ann.lobby(|_| true).await["code"].clone();
+
+	// Joining is not what was required, and a proof that fails there is only noted.
+	let mut bob = Client::open(&server, json!({ "type": "join", "code": code, "name": "Bob" })).await;
+	bob.joined().await;
+	let forged = json!({ "type": "join", "code": code, "name": "Cat", "proof": "made up" });
+	Client::open(&server, forged).await.joined().await;
+
+	// A seat's own token is all it takes to come back.
+	let mut back = Client::open(&server, json!({ "type": "rejoin", "code": code, "token": token })).await;
+	back.joined().await;
+}
+
+#[tokio::test]
+async fn a_seat_takes_proof_too_where_that_is_required() {
+	let server = guarded("secret", siteverify().await, vec![Action::Create, Action::Join]).await;
+	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	ann.joined().await;
+	let code = ann.lobby(|_| true).await["code"].clone();
+
+	let mut bot = Client::open(&server, json!({ "type": "join", "code": code, "name": "Bot" })).await;
+	assert_eq!(bot.error().await, "unverified");
+	// Without proof a wrong code reads the same as a right one.
+	let mut probe = Client::open(&server, json!({ "type": "join", "code": "NOPE42", "name": "Bot" })).await;
+	assert_eq!(probe.error().await, "unverified");
+
+	let mut bob = Client::open(
+		&server,
+		json!({ "type": "join", "code": code, "name": "Bob", "proof": "joiner" }),
+	)
+	.await;
+	let (bob_id, token) = bob.joined().await;
+	let mut back = Client::open(&server, json!({ "type": "rejoin", "code": code, "token": token })).await;
+	assert_eq!(back.joined().await.0, bob_id);
+}
+
+#[tokio::test]
+async fn a_proof_nobody_can_check_gets_in() {
+	// A port nothing listens on: its listener is dropped at once.
+	let nowhere = TcpListener::bind("127.0.0.1:0").await.unwrap().local_addr().unwrap();
+	let down = guarded("secret", format!("http://{nowhere}/siteverify"), vec![Action::Create]).await;
+	let mut ann = Client::open(&down, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	ann.joined().await;
+	// No proof at all is still none: there was nothing to check.
+	let mut bare = Client::open(&down, json!({ "type": "create", "name": "Bot" })).await;
+	assert_eq!(bare.error().await, "unverified");
+}
+
+#[tokio::test]
+async fn a_secret_cloudflare_does_not_know_stops_the_server_starting() {
+	let misconfigured = Config {
+		database_url: None,
+		allowed_origins: vec![],
+		turnstile: Some(Turnstile {
+			secret: "stale".into(),
+			verify_url: siteverify().await,
+			require: vec![],
+		}),
+	};
+	assert!(app(misconfigured).await.is_err());
+}
+
+#[tokio::test]
+async fn more_proofs_than_can_be_checked_are_turned_away_not_let_in() {
+	let server = guarded("secret", siteverify().await, vec![Action::Create]).await;
+	// As many as are checked at once, each holding its turn until it times out.
+	let mut flood = Vec::new();
+	for _ in 0..32 {
+		flood.push(Client::open(&server, json!({ "type": "create", "name": "Bot", "proof": "slow" })).await);
+	}
+	tokio::time::sleep(Duration::from_millis(300)).await;
+	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	assert_eq!(ann.error().await, "busy");
+
+	// A join nothing is required of waits on none of it.
+	let quiet = guarded("secret", siteverify().await, vec![]).await;
+	let mut host = Client::open(&quiet, json!({ "type": "create", "name": "Host" })).await;
+	host.joined().await;
+	let code = host.lobby(|_| true).await["code"].clone();
+	let slow = json!({ "type": "join", "code": code, "name": "Bob", "proof": "slow" });
+	let mut bob = Client::open(&quiet, slow).await;
+	timeout(Duration::from_secs(1), bob.joined()).await.unwrap();
 }
 
 /// A database of the test's own, so it neither restores nor rewrites the

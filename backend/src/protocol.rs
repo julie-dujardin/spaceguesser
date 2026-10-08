@@ -15,16 +15,39 @@ pub const SEAT_TAKEN: u16 = 4000;
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMsg {
 	// A socket opens with one of these three, and takes none of them after.
-	Create { name: String },
-	Join { code: String, name: String },
-	Rejoin { code: String, token: String },
+	// `proof` is a Turnstile token. A seat's own token is proof enough to rejoin.
+	Create {
+		name: String,
+		proof: Option<String>,
+	},
+	Join {
+		code: String,
+		name: String,
+		proof: Option<String>,
+	},
+	Rejoin {
+		code: String,
+		token: String,
+	},
 
-	Settings { settings: Value },
-	Start { settings: Value, rounds: Vec<Value> },
+	Settings {
+		settings: Value,
+	},
+	Start {
+		settings: Value,
+		rounds: Vec<Value>,
+	},
 	// These name the round they are about, so a stale one does nothing.
-	Guess { round: usize, result: Value },
-	CloseRound { round: usize },
-	Next { round: usize },
+	Guess {
+		round: usize,
+		result: Value,
+	},
+	CloseRound {
+		round: usize,
+	},
+	Next {
+		round: usize,
+	},
 	Leave,
 }
 

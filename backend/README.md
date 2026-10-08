@@ -15,7 +15,8 @@ Those tests each make a database of their own on the server `DATABASE_URL`
 names and drop it after, so it is safe to point at the development one.
 
 `BIND` (default `127.0.0.1:8787`), `DATABASE_URL` (unset: lobbies live in
-memory only) and `ALLOWED_ORIGINS` (comma-separated; unset: any) configure it.
+memory only) and `ALLOWED_ORIGINS` (comma-separated; unset: any) configure it,
+with `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE` for [proof of a person](#proof-of-a-person).
 
 ## Protocol
 
@@ -24,9 +25,11 @@ socket sends picks its lobby:
 
 | message | |
 | --- | --- |
-| `create {name}` | opens a lobby and hosts it |
-| `join {code, name}` | takes a seat, while no game is running |
+| `create {name, proof?}` | opens a lobby and hosts it |
+| `join {code, name, proof?}` | takes a seat, while no game is running |
 | `rejoin {code, token}` | takes a seat back after a dropped socket or a redeploy |
+
+`proof` is a Turnstile token, [where the server wants one](#proof-of-a-person).
 
 Then, in the lobby:
 
@@ -66,7 +69,43 @@ The server sends three things:
   closes. `ends_at` and `now` are epoch milliseconds on the server's clock.
 
 - `error {code}`: `not_found`, `full`, `in_progress`, `not_host`, `bad_phase`,
-  `bad_request`, `already_guessed`, `busy`.
+  `bad_request`, `already_guessed`, `busy`, `unverified`.
+
+## Proof of a person
+
+With `TURNSTILE_SECRET` set, the server checks the `proof` of a `create` or a
+`join` with Cloudflare, and `TURNSTILE_REQUIRE` says which of the two is
+refused, `unverified`, without one that holds:
+
+| `TURNSTILE_REQUIRE` | `create` | `join` |
+| --- | --- | --- |
+| unset | checked and logged | checked and logged |
+| `create` | required | checked and logged |
+| `create,join` | required | required |
+
+- A token is good once, for five minutes, and for the opening it was made
+  for: every lobby opened and every seat taken costs a challenge.
+- `rejoin` takes none. The seat's token was handed to whoever got in.
+- What the server can refuse by itself it refuses first, so a name it will not
+  take or a server at its lobby cap costs nobody a token.
+- A required `join` is refused before its code is looked up, so codes cannot
+  be tried without proof.
+- A proof that cannot be checked gets in: Cloudflare not answering in three
+  seconds is logged as an error and costs the check, not the game. No proof at
+  all is never that.
+- A secret Cloudflare does not know is not that either. The server asks at
+  startup and does not start on one: it would let every made-up token in.
+- 32 proofs are checked at once. A required one with no turn inside two
+  seconds is refused, `busy`: a flood of tokens is turned away, not let in.
+- A proof nothing requires is checked behind the opening it came with, which
+  does not wait for the answer.
+- Every `create` and `join` without a proof that held is logged, `no proof of
+  a person`, with why and whether it was refused: what to read before
+  requiring more.
+
+Cloudflare's [test keys](https://developers.cloudflare.com/turnstile/troubleshooting/testing/)
+work on localhost: `1x0000000000000000000000000000000AA` as the secret passes
+every token, `2x0000000000000000000000000000000AA` none.
 
 A socket whose seat's token opened another one is closed with status 4000,
 and must not take the seat straight back: the two would trade it forever. Any
