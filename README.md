@@ -237,7 +237,17 @@ there, and `pnpm dev` serves the same file from `frontend/.env`. There are two:
 `PUBLIC_MULTIPLAYER_URL`, `wss://<the tunnel's hostname>/ws`, and
 `PUBLIC_TURNSTILE_SITEKEY`, the Turnstile widget's. Opening a page does not run
 the Worker. Its script does, once a page load, and so does whatever asks for a
-page of the app without being a browser opening one.
+page of the app without being a browser opening one: a crawler, a link preview.
+Those it also tells which addresses are pages (`frontend/src/game/routes.ts`):
+any other gets the app with a 404.
+
+What the site says of itself is in `frontend/public`: `_headers`, the response
+headers Cloudflare sets on the files; `robots.txt`; and `og.jpg`, the picture a
+link to the game is previewed with, under the title and description in
+`index.html`. The picture is a screenshot: the home card's name and first
+sentence, drawn larger, over the panorama `curiosity-pia20840` at heading 188°,
+pitch −9° and a 46° field of view. The build adds `/.well-known/security.txt`,
+dated to go stale eleven months after it.
 
 The multiplayer server runs on a VPS behind a Cloudflare tunnel:
 [infrastructure/multiplayer/compose](infrastructure/multiplayer/compose/README.md).
