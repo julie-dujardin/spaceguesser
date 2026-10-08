@@ -8,11 +8,11 @@ Fine among friends; a competitive mode would move both in here.
 
 ```sh
 docker compose up --build     # from the repo root: server on :8787, Postgres on :5432
-cargo test                    # with DATABASE_URL set, also the restart test
+cargo test                    # with DATABASE_URL set, also the tests that need Postgres
 ```
 
-The restart test makes a database of its own on the server `DATABASE_URL`
-names and drops it after, so it is safe to point at the development one.
+Those tests each make a database of their own on the server `DATABASE_URL`
+names and drop it after, so it is safe to point at the development one.
 
 `BIND` (default `127.0.0.1:8787`), `DATABASE_URL` (unset: lobbies live in
 memory only) and `ALLOWED_ORIGINS` (comma-separated; unset: any) configure it.
@@ -84,4 +84,5 @@ The server sends three things:
 - Every change is written to Postgres before it is broadcast, so a restart
   picks every game up where it was. A database that stops answering holds a
   move up for two seconds, then writes are skipped for fifteen: it costs that
-  safety, not the game.
+  safety, not the game. A lobby that closes meanwhile leaves its row, and rows
+  without a lobby are cleared every minute.

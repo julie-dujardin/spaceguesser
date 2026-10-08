@@ -32,6 +32,7 @@ pub async fn app(config: Config) -> Result<Router, Box<dyn std::error::Error + S
 	let registry = Registry::new(store);
 	let restored = registry.restore().await?;
 	info!(restored, "lobbies restored");
+	tokio::spawn(registry.clone().reconcile());
 
 	let app = Arc::new(App {
 		registry,

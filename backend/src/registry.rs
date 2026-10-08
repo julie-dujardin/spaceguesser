@@ -6,7 +6,7 @@ use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
 use axum::extract::ws::Message;
 use tokio::sync::{Notify, mpsc, oneshot};
-use tokio::time::{MissedTickBehavior, interval};
+use tokio::time::{MissedTickBehavior, interval, sleep};
 
 use crate::lobby::{Error, Lobby, random_code};
 use crate::protocol::{ClientMsg, ServerMsg};
@@ -16,6 +16,8 @@ use crate::store::Store;
 const MAX_LOBBIES: usize = 20_000;
 /// A client this far behind is gone or stuck, and is dropped rather than buffered for.
 pub const OUTBOX: usize = 32;
+/// How often the store is cleared of lobbies that are gone.
+const RECONCILE_EVERY: Duration = Duration::from_secs(60);
 
 pub type Handle = mpsc::Sender<Command>;
 
@@ -99,6 +101,16 @@ impl Registry {
 			self.spawn(&mut lobbies, lobby, false);
 		}
 		Ok(count)
+	}
+
+	/// Runs for as long as the server: a lobby's own delete does not always
+	/// reach the store.
+	pub async fn reconcile(self: Arc<Self>) {
+		loop {
+			sleep(RECONCILE_EVERY).await;
+			let live: Vec<String> = self.lobbies.lock().unwrap().keys().cloned().collect();
+			self.store.retain(&live).await;
+		}
 	}
 
 	/// `fresh` is a lobby the store has not seen yet.

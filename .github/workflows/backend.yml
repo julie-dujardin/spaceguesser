@@ -31,7 +31,7 @@ jobs:
           --health-interval 2s
           --health-retries 15
     env:
-      # Set, so the test that restarts the server mid-game runs.
+      # Set, so the tests that need Postgres run.
       DATABASE_URL: postgres://postgres:ci@localhost/postgres
     steps:
       - uses: actions/checkout@v5
