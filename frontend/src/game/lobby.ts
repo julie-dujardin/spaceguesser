@@ -69,6 +69,10 @@ export type ServerMessage =
 
 export const CODE_LENGTH = 6;
 
+/** The status the server closes a socket with when its seat was opened on
+ *  another one. */
+export const SEAT_TAKEN = 4000;
+
 /** The code an invite link carries, if `path` is one. */
 export function inviteCode(path: string): string | null {
 	return /^\/j\/([a-z0-9]{6})\/?$/i.exec(path)?.[1].toUpperCase() ?? null;

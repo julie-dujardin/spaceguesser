@@ -1,7 +1,13 @@
 /** The socket to the multiplayer server, and the seat held through it. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import type { ClientMessage, Lobby, LobbyError, ServerMessage } from './lobby';
+import {
+	SEAT_TAKEN,
+	type ClientMessage,
+	type Lobby,
+	type LobbyError,
+	type ServerMessage
+} from './lobby';
 import { seatName, type Profile } from './players';
 import type { RunSettings } from './rules';
 
@@ -136,10 +142,8 @@ export function useLobby(invite: string | null, resume = true) {
 						// A stale seat found on load is not news; one lost mid-game is.
 						trouble: returning ? (old.lobby ? 'gone' : null) : refused
 					}));
-				} else if (token && event.wasClean && (event.code === 1000 || event.code === 1005)) {
-					// The server hung up on purpose, which it does when the seat's token
-					// opens a second socket. Taking it straight back would have the two
-					// tabs trade it forever.
+				} else if (event.code === SEAT_TAKEN) {
+					// Taking it straight back would have the two tabs trade it forever.
 					setSession((old) => ({ ...old, status: 'displaced' }));
 				} else if (token || returning) {
 					const again = seat.current;

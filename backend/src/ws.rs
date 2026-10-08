@@ -153,25 +153,34 @@ fn find(app: &App, code: &str) -> Result<Handle, Error> {
 
 async fn write(mut sink: SplitSink<WebSocket, Message>, mut rx: mpsc::Receiver<Message>) {
 	let mut ping = interval(PING_EVERY);
+	// A close with a status, which a browser otherwise reports as abnormal. When
+	// the client closed first the send is refused, and closing the sink answers
+	// it: either way the socket ends cleanly, not on a bare EOF.
+	let mut goodbye = CloseFrame {
+		code: close_code::NORMAL,
+		reason: Default::default(),
+	};
 	loop {
 		let msg = tokio::select! {
 			msg = rx.recv() => msg,
 			_ = ping.tick() => Some(Message::Ping(Default::default())),
 		};
-		let Some(msg) = msg else { break };
-		if sink.send(msg).await.is_err() {
-			return;
+		match msg {
+			None => break,
+			// The lobby's own goodbye, which says why.
+			Some(Message::Close(Some(frame))) => {
+				goodbye = frame;
+				break;
+			}
+			Some(msg) => {
+				if sink.send(msg).await.is_err() {
+					return;
+				}
+			}
 		}
 	}
-	// A close with a status, which a browser otherwise reports as abnormal. When
-	// the client closed first the send is refused, and closing the sink answers
-	// it: either way the socket ends cleanly, not on a bare EOF.
-	let normal = CloseFrame {
-		code: close_code::NORMAL,
-		reason: Default::default(),
-	};
 	let _ = timeout(CLOSE_TIMEOUT, async {
-		let _ = sink.send(Message::Close(Some(normal))).await;
+		let _ = sink.send(Message::Close(Some(goodbye))).await;
 		let _ = sink.close().await;
 	})
 	.await;

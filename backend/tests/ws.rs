@@ -45,6 +45,21 @@ impl Client {
 		self.0.send(Message::Text(msg.to_string().into())).await.unwrap();
 	}
 
+	/// The status the server closes the socket with, past anything sent first.
+	async fn closed(&mut self) -> Option<u16> {
+		loop {
+			let frame = timeout(Duration::from_secs(5), self.0.next())
+				.await
+				.expect("server went quiet");
+			match frame {
+				Some(Ok(Message::Close(frame))) => return frame.map(|frame| frame.code.into()),
+				None => return None,
+				Some(Err(error)) => panic!("socket ended uncleanly: {error}"),
+				Some(Ok(_)) => {}
+			}
+		}
+	}
+
 	/// The next JSON message, or `None` once the server has closed the socket.
 	async fn recv(&mut self) -> Option<Value> {
 		loop {
@@ -182,7 +197,7 @@ async fn a_lobby_everyone_left_is_gone_and_a_nameless_one_never_was() {
 	let (_, token) = ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
 	ann.send(json!({ "type": "leave" })).await;
-	while ann.recv().await.is_some() {}
+	assert_eq!(ann.closed().await, Some(1000));
 
 	let mut back = Client::open(&server, json!({ "type": "rejoin", "code": code, "token": token })).await;
 	assert_eq!(back.error().await, "not_found");
@@ -213,7 +228,8 @@ async fn a_reconnect_takes_the_seat_back_from_the_old_socket() {
 	assert_eq!(players(&lobby), 1);
 	assert_eq!(lobby["players"][0]["connected"], json!(true));
 
-	while first.recv().await.is_some() {}
+	// Told apart from every other close: the old socket must not come back.
+	assert_eq!(first.closed().await, Some(4000));
 
 	// The old socket closing must not read as the player going away.
 	second

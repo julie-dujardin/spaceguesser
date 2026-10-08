@@ -6,6 +6,11 @@ use serde_json::Value;
 
 use crate::lobby::{Error, Snapshot};
 
+/// The status a socket is closed with when its seat was opened on another one.
+/// A client that came straight back from it would have the two trade the seat
+/// forever; from any other close it does come back.
+pub const SEAT_TAKEN: u16 = 4000;
+
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMsg {

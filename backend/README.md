@@ -68,6 +68,10 @@ The server sends three things:
 - `error {code}`: `not_found`, `full`, `in_progress`, `not_host`, `bad_phase`,
   `bad_request`, `already_guessed`, `busy`.
 
+A socket whose seat's token opened another one is closed with status 4000,
+and must not take the seat straight back: the two would trade it forever. Any
+other close, 1000 included, is one to `rejoin` after.
+
 ## Rules
 
 - A round closes when everyone has guessed, when its timer runs out (plus two

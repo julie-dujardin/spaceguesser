@@ -4,12 +4,12 @@ use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
 use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
-use axum::extract::ws::Message;
+use axum::extract::ws::{CloseFrame, Message};
 use tokio::sync::{Notify, mpsc, oneshot};
 use tokio::time::{MissedTickBehavior, interval, sleep};
 
 use crate::lobby::{Error, Lobby, random_code};
-use crate::protocol::{ClientMsg, ServerMsg};
+use crate::protocol::{ClientMsg, SEAT_TAKEN, ServerMsg};
 use crate::store::Store;
 
 /// Bounds memory if someone opens lobbies in a loop.
@@ -188,6 +188,11 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, command: Command
 				.try_send(Message::Text(ServerMsg::Joined { you: &player, token }.encode()));
 			// One socket per seat: a second tab or a reconnect takes it over.
 			if let Some(old) = conns.insert(player.clone(), conn) {
+				let taken = CloseFrame {
+					code: SEAT_TAKEN,
+					reason: Default::default(),
+				};
+				let _ = old.tx.try_send(Message::Close(Some(taken)));
 				old.hang_up.notify_one();
 			}
 			let _ = reply.send(Ok(player));
