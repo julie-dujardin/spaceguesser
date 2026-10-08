@@ -41,15 +41,27 @@ export interface Lobby {
 	history: Record<string, Played>[];
 }
 
+/** What the server refuses a page of its own build with. */
+const REFUSALS = [
+	'not_found',
+	'full',
+	'not_host',
+	'bad_phase',
+	'already_guessed',
+	'busy',
+	'unverified'
+] as const;
+
 export type LobbyError =
-	| 'not_found'
-	| 'full'
-	| 'not_host'
-	| 'bad_phase'
-	| 'bad_request'
-	| 'already_guessed'
-	| 'busy'
-	| 'unverified';
+	| (typeof REFUSALS)[number]
+	/** The server could not read the message. */
+	| 'bad_request';
+
+/** A refusal that puts the page and the server builds apart: a message the
+ *  server could not read, or a code the page does not know. */
+export function outdated(code: string): boolean {
+	return !(REFUSALS as readonly string[]).includes(code);
+}
 
 export type ClientMessage =
 	// `identity` is the browser's name for itself, which finds the seat its

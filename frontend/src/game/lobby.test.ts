@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { lobbyOf, playedBy, slim, standings, type Lobby } from './lobby';
+import { lobbyOf, outdated, playedBy, slim, standings, type Lobby } from './lobby';
 import type { Round } from './rounds';
 import { play, type Played } from './run';
 import { NO_SKY } from './scoring';
@@ -93,5 +93,17 @@ describe('lobbyOf', () => {
 			]);
 			expect(playedBy(read, 'bob')).toHaveLength(1);
 		}
+	});
+});
+
+describe('outdated', () => {
+	it("takes a refusal a page of the server's build can get as said", () => {
+		for (const code of ['not_found', 'full', 'bad_phase', 'busy', 'unverified'])
+			expect(outdated(code)).toBe(false);
+	});
+
+	it('reads a message the server could not read, or a code it does not know, as builds apart', () => {
+		expect(outdated('bad_request')).toBe(true);
+		expect(outdated('too_late')).toBe(true);
 	});
 });

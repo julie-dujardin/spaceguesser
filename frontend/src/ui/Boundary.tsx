@@ -20,7 +20,7 @@ export class Boundary extends Component<{ children: ReactNode }, { broken: boole
 					<p className="lede">{m.broken_lede()}</p>
 					{/* The way back in: a seat in a lobby is kept in the browser. */}
 					<button type="button" className="start" onClick={() => location.reload()}>
-						<span className="t">{m.broken_reload()}</span>
+						<span className="t">{m.reload_page()}</span>
 					</button>
 				</div>
 			</div>

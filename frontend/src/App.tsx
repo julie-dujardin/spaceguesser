@@ -361,6 +361,12 @@ export default function App() {
 		);
 	};
 
+	const reload = () => {
+		// A run being joined goes in the address, so the reload lands back on its card.
+		if (door?.at === 'profile' && door.code) history.replaceState(null, '', invitePath(door.code));
+		location.reload();
+	};
+
 	const solo = !lobby && !door;
 	// A seat kept from before is being taken back: nothing else to do yet.
 	const returning = solo && party.status === 'connecting';
@@ -594,6 +600,21 @@ export default function App() {
 			{(stopsError || spaceError) && solo && run.phase === 'home' && (
 				<div className="stage-note" style={{ alignItems: 'end', paddingBottom: 24 }}>
 					{stopsError ?? spaceError}
+				</div>
+			)}
+
+			{party.stale && (
+				<div className="scrim over">
+					<div className="card glass panel" style={{ width: 380 }}>
+						<h2>{m.stale_title()}</h2>
+						<p className="lede">{m.stale_lede()}</p>
+						<div className="acts">
+							{/* The only way on, and one a page on a home screen has no button for. */}
+							<button type="button" className="btn lg" style={{ flex: 1 }} onClick={reload}>
+								{m.reload_page()}
+							</button>
+						</div>
+					</div>
 				</div>
 			)}
 

@@ -134,6 +134,11 @@ it. A browser also names itself to the lobbies it enters, with a random id made
 the first time: someone who left, or lost the seat, and comes in by the link
 again is the player they were, with their score, and not one more.
 
+A page left open across an update of the game may send the server a message it
+no longer reads. The server's `bad_request`, or an error code the page does not
+know, is taken as that: the page says it looks out of date and offers a reload,
+which lands back in the game as any other does.
+
 The server seats a player under a name and nothing else, so the emoji and its
 colour travel in front of the name (`frontend/src/game/players.ts`).
 

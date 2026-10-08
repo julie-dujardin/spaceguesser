@@ -5,6 +5,7 @@ import { ENV } from './env';
 import {
 	SEAT_TAKEN,
 	lobbyOf,
+	outdated,
 	type ClientMessage,
 	type Lobby,
 	type LobbyError,
@@ -89,6 +90,8 @@ export function useLobby(invite: string | null, resume = true) {
 	const [session, setSession] = useState<Session>(() =>
 		resumable(invite, resume) ? { ...IDLE, status: 'connecting' } : IDLE
 	);
+	/** Set for good: a page does not get newer without a reload. */
+	const [stale, setStale] = useState(false);
 	const socket = useRef<WebSocket | null>(null);
 	const seat = useRef<Kept | null>(null);
 	const retry = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -133,10 +136,11 @@ export function useLobby(invite: string | null, resume = true) {
 						skew: message.now - Date.now(),
 						trouble: null
 					}));
-				} else if (!token) {
+				} else if (message.type === 'error') {
+					if (outdated(message.code)) setStale(true);
 					// Past the door an error is a race lost to another message, and the
 					// next snapshot already says who won.
-					refused = message.code;
+					if (!token) refused = message.code;
 				}
 			};
 
@@ -146,10 +150,12 @@ export function useLobby(invite: string | null, resume = true) {
 				if (refused) {
 					// Only a seat that is gone is refused on the way back in.
 					if (returning) keepSeat((seat.current = null));
+					// `stale` raises a warning that says more than the server's word for it.
+					const told = outdated(refused) ? null : refused;
 					setSession((old) => ({
 						...IDLE,
 						// A stale seat found on load is not news; one lost mid-game is.
-						trouble: returning ? (old.lobby ? 'gone' : null) : refused
+						trouble: returning ? (old.lobby ? 'gone' : null) : told
 					}));
 				} else if (event.code === SEAT_TAKEN) {
 					// Taking it straight back would have the two tabs trade it forever.
@@ -188,6 +194,8 @@ export function useLobby(invite: string | null, resume = true) {
 		};
 		return {
 			...session,
+			/** The server and this page are builds apart, as far as a refusal can tell. */
+			stale,
 			create: (profile: Profile, settings: RunSettings, proof: string | null) =>
 				enter(
 					{
@@ -225,7 +233,7 @@ export function useLobby(invite: string | null, resume = true) {
 			},
 			forget: () => setSession((old) => ({ ...old, trouble: null }))
 		};
-	}, [session, connect, drop]);
+	}, [session, stale, connect, drop]);
 }
 
 export type LobbySession = ReturnType<typeof useLobby>;
