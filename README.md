@@ -130,7 +130,9 @@ once the game is over is seated for the next one its host starts.
 The seat is kept in the browser, so a reload, a dropped connection or a
 redeploy of the server lands back in the game. Opening the same seat in a
 second tab moves it there, and the first tab says so rather than fighting for
-it.
+it. A browser also names itself to the lobbies it enters, with a random id made
+the first time: someone who left, or lost the seat, and comes in by the link
+again is the player they were, with their score, and not one more.
 
 The server seats a player under a name and nothing else, so the emoji and its
 colour travel in front of the name (`frontend/src/game/players.ts`).
@@ -214,7 +216,7 @@ question goes and the date both pages end on are in
 The privacy page says what the code does, so it changes when the code does:
 what a lobby stores and for how long (`EMPTY_TTL_MS` in
 `backend/src/lobby.rs`), what the browser keeps (`spaceguesser.profile`,
-`spaceguesser.history`, `spaceguesser.seat`), and that nothing is loaded from a
+`spaceguesser.history`, `spaceguesser.seat`, `spaceguesser.identity`), and that nothing is loaded from a
 third party, which is why the fonts are bundled from `@fontsource-variable`
 rather than fetched from Google. The one exception is Turnstile, and only in a
 build with `VITE_TURNSTILE_SITEKEY`: that build's page gains a paragraph on the

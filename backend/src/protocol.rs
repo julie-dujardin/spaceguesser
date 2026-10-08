@@ -15,14 +15,18 @@ pub const SEAT_TAKEN: u16 = 4000;
 #[serde(tag = "type", rename_all = "snake_case")]
 pub enum ClientMsg {
 	// A socket opens with one of these three, and takes none of them after.
-	// `proof` is a Turnstile token. A seat's own token is proof enough to rejoin.
+	// `identity` is what the browser names itself, by which a join finds the
+	// seat its player already has. `proof` is a Turnstile token. A seat's own
+	// token is proof enough to rejoin.
 	Create {
 		name: String,
+		identity: String,
 		proof: Option<String>,
 	},
 	Join {
 		code: String,
 		name: String,
+		identity: String,
 		proof: Option<String>,
 	},
 	Rejoin {

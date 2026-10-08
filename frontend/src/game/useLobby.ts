@@ -9,7 +9,7 @@ import {
 	type LobbyError,
 	type ServerMessage
 } from './lobby';
-import { seatName, type Profile } from './players';
+import { identity, seatName, type Profile } from './players';
 import type { RunSettings } from './rules';
 
 /** `wss://…/ws`. With no server named there is no multiplayer to offer, and the
@@ -188,11 +188,23 @@ export function useLobby(invite: string | null, resume = true) {
 		return {
 			...session,
 			create: (profile: Profile, settings: RunSettings, proof: string | null) =>
-				enter({ type: 'create', name: seatName(profile), proof: proof ?? undefined }, [
-					{ type: 'settings', settings }
-				]),
+				enter(
+					{
+						type: 'create',
+						name: seatName(profile),
+						identity: identity(),
+						proof: proof ?? undefined
+					},
+					[{ type: 'settings', settings }]
+				),
 			join: (code: string, profile: Profile, proof: string | null) =>
-				enter({ type: 'join', code, name: seatName(profile), proof: proof ?? undefined }),
+				enter({
+					type: 'join',
+					code,
+					name: seatName(profile),
+					identity: identity(),
+					proof: proof ?? undefined
+				}),
 			/** False when the line is down and the message went nowhere. */
 			send: (message: ClientMessage): boolean => {
 				if (socket.current?.readyState !== WebSocket.OPEN) return false;

@@ -30,7 +30,7 @@ pub struct Conn {
 }
 
 pub enum Entry {
-	Join { name: String },
+	Join { name: String, identity: String },
 	Rejoin { token: String },
 }
 
@@ -77,7 +77,7 @@ impl Registry {
 
 	/// Opens a lobby hosted by `name`, and returns the token that takes the
 	/// host's seat.
-	pub fn create(self: &Arc<Self>, name: &str) -> Result<(Handle, String), Error> {
+	pub fn create(self: &Arc<Self>, name: &str, identity: &str) -> Result<(Handle, String), Error> {
 		let mut lobbies = self.lobbies.lock().unwrap();
 		if lobbies.len() >= MAX_LOBBIES {
 			return Err(Error::Busy);
@@ -88,7 +88,7 @@ impl Registry {
 				break code;
 			}
 		};
-		let (lobby, token) = Lobby::hosted(code, name, now_ms())?;
+		let (lobby, token) = Lobby::hosted(code, name, identity, now_ms())?;
 		Ok((self.spawn(&mut lobbies, lobby, true), token))
 	}
 
@@ -179,7 +179,7 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, command: Command
 	match command {
 		Command::Enter { entry, conn, reply } => {
 			let (entered, change) = match &entry {
-				Entry::Join { name } => (lobby.join(name, now), Change::Stored),
+				Entry::Join { name, identity } => (lobby.join(name, identity, now), Change::Stored),
 				Entry::Rejoin { token } => (lobby.rejoin(token), Change::Presence),
 			};
 			let Ok(player) = entered else {

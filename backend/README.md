@@ -25,11 +25,15 @@ socket sends picks its lobby:
 
 | message | |
 | --- | --- |
-| `create {name, proof?}` | opens a lobby and hosts it |
-| `join {code, name, proof?}` | takes a seat: in the game under way, or for the next |
+| `create {name, identity, proof?}` | opens a lobby and hosts it |
+| `join {code, name, identity, proof?}` | takes a seat: the player's own, or a new one in the game under way or for the next |
 | `rejoin {code, token}` | takes a seat back after a dropped socket or a redeploy |
 
-`proof` is a Turnstile token, [where the server wants one](#proof-of-a-person).
+`identity` is what the browser names itself: 16 to 64 letters, digits and
+hyphens, random and kept by it. A `join` that brings one already seated takes
+that seat back, in any phase and however it was left, under the name it now
+gives. It is stored with the seat and sent to nobody. `proof` is a Turnstile
+token, [where the server wants one](#proof-of-a-person).
 
 Then, in the lobby:
 

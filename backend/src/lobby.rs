@@ -16,6 +16,9 @@ pub const MAX_PLAYERS: usize = 12;
 const MAX_SEATS: usize = 4 * MAX_PLAYERS;
 pub const MAX_ROUNDS: usize = 30;
 const MAX_NAME_CHARS: usize = 24;
+/// What a browser may name itself with: long enough not to be guessed, and
+/// short enough to store with every seat.
+const IDENTITY_CHARS: std::ops::RangeInclusive<usize> = 16..=64;
 const MAX_TIMER_S: f64 = 3600.0;
 
 // Every guess rides in every later snapshot, so these bound a broadcast.
@@ -73,12 +76,15 @@ struct Player {
 	id: String,
 	/// The seat's secret: whoever holds it is this player after a reconnect.
 	token: String,
+	/// What its player's browser names itself, in every lobby it enters: a
+	/// join that brings it takes this seat back. Kept from the other players.
+	identity: String,
 	name: String,
 	/// In the game being played, or the one just over: its name stays on that
 	/// game's scoreboard, here or not, until the next start. A seat only
 	/// waiting for a game holds nothing to be kept for.
 	in_game: bool,
-	/// Left the game it was in.
+	/// Left the game it was in, until its player's return.
 	left: bool,
 	#[serde(skip)]
 	connected: bool,
@@ -169,10 +175,22 @@ pub fn clean_name(name: &str) -> Result<String, Error> {
 	Ok(name)
 }
 
-fn seat(name: &str) -> Result<Player, Error> {
+/// `BadRequest` for what no browser of the game names itself.
+pub fn check_identity(identity: &str) -> Result<(), Error> {
+	let plain = identity.bytes().all(|b| b.is_ascii_alphanumeric() || b == b'-');
+	if plain && IDENTITY_CHARS.contains(&identity.len()) {
+		Ok(())
+	} else {
+		Err(Error::BadRequest)
+	}
+}
+
+fn seat(name: &str, identity: &str) -> Result<Player, Error> {
+	check_identity(identity)?;
 	Ok(Player {
 		id: random_hex(4),
 		token: random_hex(16),
+		identity: identity.to_owned(),
 		name: clean_name(name)?,
 		in_game: false,
 		left: false,
@@ -184,8 +202,8 @@ fn seat(name: &str) -> Result<Player, Error> {
 impl Lobby {
 	/// A lobby with its host seated but not yet connected, and the token their
 	/// socket takes the seat with. A lobby never exists without a seat.
-	pub fn hosted(code: String, name: &str, now: u64) -> Result<(Self, String), Error> {
-		let mut host = seat(name)?;
+	pub fn hosted(code: String, name: &str, identity: &str, now: u64) -> Result<(Self, String), Error> {
+		let mut host = seat(name, identity)?;
 		host.gone_since = Some(now);
 		let token = host.token.clone();
 		let lobby = Self {
@@ -203,11 +221,20 @@ impl Lobby {
 		Ok((lobby, token))
 	}
 
-	/// Seats a new player, connected, and returns their id. A game under way
-	/// takes them from the round it is on; one that is over seats them for
-	/// the next.
-	pub fn join(&mut self, name: &str, now: u64) -> Result<String, Error> {
-		let mut player = seat(name)?;
+	/// Seats a player, connected, and returns their id. One who has a seat
+	/// here already, by their identity, takes it back whatever the phase and
+	/// however they left it. Someone new is taken by a game under way from the
+	/// round it is on, and seated for the next by one that is over.
+	pub fn join(&mut self, name: &str, identity: &str, now: u64) -> Result<String, Error> {
+		let mut player = seat(name, identity)?;
+		if let Some(back) = self.players.iter_mut().find(|p| p.identity == identity) {
+			back.name = player.name;
+			back.left = false;
+			back.connected = true;
+			back.gone_since = None;
+			self.empty_since = None;
+			return Ok(back.id.clone());
+		}
 		let awaited = self.players.iter().filter(|p| p.awaited(now)).count();
 		if awaited >= MAX_PLAYERS || self.players.len() >= MAX_SEATS {
 			return Err(Error::Full);
@@ -465,11 +492,16 @@ mod tests {
 
 	use super::*;
 
+	/// What the browser of the player of that name calls itself.
+	fn who(name: &str) -> String {
+		format!("{name:-<16}")
+	}
+
 	/// A lobby of connected players, the first of them hosting.
 	fn lobby_of(names: &[&str]) -> (Lobby, Vec<String>) {
-		let (mut lobby, token) = Lobby::hosted("ABCDEF".into(), names[0], 0).unwrap();
+		let (mut lobby, token) = Lobby::hosted("ABCDEF".into(), names[0], &who(names[0]), 0).unwrap();
 		let mut ids = vec![lobby.rejoin(&token).unwrap()];
-		ids.extend(names[1..].iter().map(|name| lobby.join(name, 0).unwrap()));
+		ids.extend(names[1..].iter().map(|name| lobby.join(name, &who(name), 0).unwrap()));
 		(lobby, ids)
 	}
 
@@ -499,10 +531,15 @@ mod tests {
 
 	#[test]
 	fn names_are_cleaned_and_required() {
-		assert_eq!(Lobby::hosted("ABCDEF".into(), "   ", 0).err(), Some(Error::BadRequest));
+		assert_eq!(
+			Lobby::hosted("ABCDEF".into(), "   ", &who("ann"), 0).err(),
+			Some(Error::BadRequest)
+		);
 		let (mut lobby, _) = lobby_of(&["ann"]);
-		assert_eq!(lobby.join(" \u{0} ", 0), Err(Error::BadRequest));
-		lobby.join(&format!("  b\u{0}{}  ", "x".repeat(40)), 0).unwrap();
+		assert_eq!(lobby.join(" \u{0} ", &who("nul"), 0), Err(Error::BadRequest));
+		lobby
+			.join(&format!("  b\u{0}{}  ", "x".repeat(40)), &who("b"), 0)
+			.unwrap();
 		let name = format!("b{}", "x".repeat(MAX_NAME_CHARS - 1));
 		assert_eq!(view(&lobby)["players"][1]["name"], json!(name));
 	}
@@ -512,7 +549,7 @@ mod tests {
 		let names: Vec<String> = (0..MAX_PLAYERS).map(|i| format!("p{i}")).collect();
 		let names: Vec<&str> = names.iter().map(String::as_str).collect();
 		let (mut lobby, _) = lobby_of(&names);
-		assert_eq!(lobby.join("late", 0), Err(Error::Full));
+		assert_eq!(lobby.join("late", &who("late"), 0), Err(Error::Full));
 	}
 
 	#[test]
@@ -523,10 +560,10 @@ mod tests {
 		lobby.next(&ids[0], 0, 0).unwrap();
 
 		// Looking in and leaving by the door, or by dropping off.
-		let late = lobby.join("late", 0).unwrap();
+		let late = lobby.join("late", &who("late"), 0).unwrap();
 		lobby.leave(&late, 0);
 		assert_eq!(seats(&lobby), 2);
-		let ghost = lobby.join("ghost", 0).unwrap();
+		let ghost = lobby.join("ghost", &who("ghost"), 0).unwrap();
 		lobby.disconnect(&ghost, 1_000);
 		assert!(!lobby.tick(1_000 + AWAY_GRACE_MS - 1));
 		assert_eq!(seats(&lobby), 3);
@@ -535,7 +572,7 @@ mod tests {
 
 		// Who played stays on the scoreboard; who waits is in the next game.
 		lobby.leave(&ids[1], 0);
-		let cat = lobby.join("cat", 0).unwrap();
+		let cat = lobby.join("cat", &who("cat"), 0).unwrap();
 		lobby.tick(1_000 + AWAY_GRACE_MS);
 		assert_eq!(seats(&lobby), 3);
 		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
@@ -550,7 +587,7 @@ mod tests {
 	#[test]
 	fn a_game_under_way_takes_a_player_from_the_round_it_is_on() {
 		let (mut lobby, ids) = started(&["ann"], 0, 2);
-		let late = lobby.join("late", 0).unwrap();
+		let late = lobby.join("late", &who("late"), 0).unwrap();
 
 		// The round waits for them as for anyone.
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
@@ -568,11 +605,12 @@ mod tests {
 		let (mut lobby, _) = started(&["ann"], 0, 1);
 		// Each one who goes for good frees a place among those the game waits on.
 		for i in 1..MAX_SEATS {
-			let id = lobby.join(&format!("p{i}"), 0).unwrap();
+			let name = format!("p{i}");
+			let id = lobby.join(&name, &who(&name), 0).unwrap();
 			lobby.leave(&id, 0);
 		}
 		assert_eq!(seats(&lobby), MAX_SEATS);
-		assert_eq!(lobby.join("late", 0), Err(Error::Full));
+		assert_eq!(lobby.join("late", &who("late"), 0), Err(Error::Full));
 	}
 
 	#[test]
@@ -581,8 +619,11 @@ mod tests {
 		let names: Vec<&str> = names.iter().map(String::as_str).collect();
 		let (mut lobby, ids) = lobby_of(&names);
 		lobby.disconnect(&ids[3], 1_000);
-		assert_eq!(lobby.join("late", 1_000 + AWAY_GRACE_MS - 1), Err(Error::Full));
-		lobby.join("late", 1_000 + AWAY_GRACE_MS).unwrap();
+		assert_eq!(
+			lobby.join("late", &who("late"), 1_000 + AWAY_GRACE_MS - 1),
+			Err(Error::Full)
+		);
+		lobby.join("late", &who("late"), 1_000 + AWAY_GRACE_MS).unwrap();
 
 		assert!(lobby.tick(1_000 + AWAY_GRACE_MS));
 		assert_eq!(seats(&lobby), MAX_PLAYERS);
@@ -777,6 +818,51 @@ mod tests {
 
 		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
 		assert_eq!(seats(&lobby), 1);
+	}
+
+	#[test]
+	fn a_player_who_comes_in_again_takes_their_own_seat() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
+		lobby.guess(&ids[1], 0, json!(7), 0).unwrap();
+		lobby.leave(&ids[1], 0);
+
+		// By the invite once more, under another name: the seat they had.
+		assert_eq!(lobby.join("bobby", &who("bob"), 0), Ok(ids[1].clone()));
+		assert_eq!(seats(&lobby), 2);
+		let back = &view(&lobby)["players"][1];
+		assert_eq!((&back["name"], &back["connected"]), (&json!("bobby"), &json!(true)));
+
+		// Their guess still stands, and the next round waits for them again.
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		assert_eq!(view(&lobby)["history"][0][&ids[1]], json!(7));
+		lobby.next(&ids[0], 0, 0).unwrap();
+		lobby.guess(&ids[0], 1, json!(1), 0).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("playing"));
+		lobby.guess(&ids[1], 1, json!(1), 0).unwrap();
+		lobby.next(&ids[0], 1, 0).unwrap();
+
+		// A game that is over gives them their place on its scoreboard back.
+		lobby.leave(&ids[1], 0);
+		assert_eq!(lobby.join("bob", &who("bob"), 0), Ok(ids[1].clone()));
+		assert_eq!(seats(&lobby), 2);
+	}
+
+	#[test]
+	fn an_identity_is_kept_from_the_other_players_and_what_is_not_one_is_refused() {
+		let (lobby, _) = lobby_of(&["ann", "bob"]);
+		assert!(!view(&lobby).to_string().contains(&who("ann")));
+
+		let long = "x".repeat(65);
+		for identity in [
+			"",
+			"short",
+			long.as_str(),
+			"with a space in it",
+			"nul\u{0}in-the-middle",
+		] {
+			let hosted = Lobby::hosted("ABCDEF".into(), "ann", identity, 0);
+			assert_eq!(hosted.err(), Some(Error::BadRequest), "{identity:?}");
+		}
 	}
 
 	#[test]

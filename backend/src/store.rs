@@ -157,7 +157,9 @@ mod tests {
 		let pool = store.pool.as_ref().unwrap();
 
 		for code in ["LIVE", "GONE", "NEW"] {
-			store.save(&Lobby::hosted(code.into(), "Ann", 0).unwrap().0).await;
+			store
+				.save(&Lobby::hosted(code.into(), "Ann", "a-browser-of-its-own", 0).unwrap().0)
+				.await;
 		}
 		sqlx::query("update lobbies set updated_at = now() - interval '1 hour' where code <> 'NEW'")
 			.execute(pool)

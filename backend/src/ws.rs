@@ -14,7 +14,7 @@ use tokio::sync::{Notify, mpsc, oneshot};
 use tokio::time::{Instant, interval, timeout};
 
 use crate::App;
-use crate::lobby::{Error, clean_name};
+use crate::lobby::{Error, check_identity, clean_name};
 use crate::protocol::{ClientMsg, ServerMsg};
 use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
 use crate::turnstile::Action;
@@ -130,24 +130,30 @@ async fn next_msg(
 async fn enter(app: &App, hello: ClientMsg, conn: Conn) -> Result<(Handle, String), Error> {
 	// A token is good once: what can be refused without asking Cloudflare is,
 	// before one is spent on it.
-	if let ClientMsg::Create { name, .. } | ClientMsg::Join { name, .. } = &hello {
+	if let ClientMsg::Create { name, identity, .. } | ClientMsg::Join { name, identity, .. } = &hello {
 		clean_name(name)?;
+		check_identity(identity)?;
 	}
 	let (lobby, entry) = match hello {
 		// The host's seat is made with the lobby, so a lobby is never without
 		// one; the socket then takes it like any reconnect.
-		ClientMsg::Create { name, proof } => {
+		ClientMsg::Create { name, identity, proof } => {
 			if app.registry.full() {
 				return Err(Error::Busy);
 			}
 			admit(app, Action::Create, proof).await?;
-			let (lobby, token) = app.registry.create(&name)?;
+			let (lobby, token) = app.registry.create(&name, &identity)?;
 			(lobby, Entry::Rejoin { token })
 		}
-		ClientMsg::Join { code, name, proof } => {
+		ClientMsg::Join {
+			code,
+			name,
+			identity,
+			proof,
+		} => {
 			// Ahead of the lookup, so codes cannot be tried without proof.
 			admit(app, Action::Join, proof).await?;
-			(find(app, &code)?, Entry::Join { name })
+			(find(app, &code)?, Entry::Join { name, identity })
 		}
 		ClientMsg::Rejoin { code, token } => (find(app, &code)?, Entry::Rejoin { token }),
 		_ => return Err(Error::BadRequest),

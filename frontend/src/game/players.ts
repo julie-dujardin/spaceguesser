@@ -100,3 +100,32 @@ export function keepProfile(profile: Profile) {
 		// Not remembered, then.
 	}
 }
+
+const IDENTITY_KEY = 'spaceguesser.identity';
+
+/** Where the browser keeps nothing, the page is the same player until it is
+ *  closed. */
+let unkept: string | null = null;
+
+/**
+ * What this browser names itself to a lobby, made the first time it enters
+ * one: whoever brings it back gets the seat it had, in place of a new one. It
+ * is random and says nothing of the player.
+ */
+export function identity(): string {
+	try {
+		const kept = localStorage.getItem(IDENTITY_KEY);
+		if (kept && /^[0-9a-f]{32}$/.test(kept)) return kept;
+	} catch {
+		// Storage that is blocked: the page's own, below.
+	}
+	unkept ??= Array.from(crypto.getRandomValues(new Uint8Array(16)), (byte) =>
+		byte.toString(16).padStart(2, '0')
+	).join('');
+	try {
+		localStorage.setItem(IDENTITY_KEY, unkept);
+	} catch {
+		// Someone new on the next visit, then.
+	}
+	return unkept;
+}

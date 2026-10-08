@@ -113,6 +113,11 @@ impl Client {
 	}
 }
 
+/// What the browser of the player of that name calls itself.
+fn who(name: &str) -> String {
+	format!("{name:-<16}")
+}
+
 fn players(lobby: &Value) -> usize {
 	lobby["players"].as_array().unwrap().len()
 }
@@ -121,7 +126,11 @@ fn players(lobby: &Value) -> usize {
 async fn two_players_play_a_game_through() {
 	let server = serve(None, vec![]).await;
 
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	let (ann_id, _) = ann.joined().await;
 	let lobby = ann.lobby(|_| true).await;
 	assert_eq!(lobby["host"], json!(ann_id));
@@ -129,7 +138,11 @@ async fn two_players_play_a_game_through() {
 
 	// A code typed in lower case, with a stray space, is the same code.
 	let typed = format!(" {} ", code.to_lowercase());
-	let mut bob = Client::open(&server, json!({ "type": "join", "code": typed, "name": "Bob" })).await;
+	let mut bob = Client::open(
+		&server,
+		json!({ "type": "join", "code": typed, "name": "Bob", "identity": who("Bob") }),
+	)
+	.await;
 	let (bob_id, _) = bob.joined().await;
 	ann.lobby(|l| players(l) == 2).await;
 
@@ -181,10 +194,18 @@ async fn two_players_play_a_game_through() {
 #[tokio::test]
 async fn the_host_closes_a_round_nobody_is_finishing() {
 	let server = serve(None, vec![]).await;
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
-	let mut bob = Client::open(&server, json!({ "type": "join", "code": code, "name": "Bob" })).await;
+	let mut bob = Client::open(
+		&server,
+		json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob") }),
+	)
+	.await;
 	bob.joined().await;
 
 	ann.send(json!({ "type": "start", "settings": {}, "rounds": [1, 2] }))
@@ -199,7 +220,11 @@ async fn the_host_closes_a_round_nobody_is_finishing() {
 #[tokio::test]
 async fn a_lobby_everyone_left_is_gone_and_a_nameless_one_never_was() {
 	let server = serve(None, vec![]).await;
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	let (_, token) = ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
 	ann.send(json!({ "type": "leave" })).await;
@@ -208,7 +233,11 @@ async fn a_lobby_everyone_left_is_gone_and_a_nameless_one_never_was() {
 	let mut back = Client::open(&server, json!({ "type": "rejoin", "code": code, "token": token })).await;
 	assert_eq!(back.error().await, "not_found");
 
-	let mut blank = Client::open(&server, json!({ "type": "create", "name": "  " })).await;
+	let mut blank = Client::open(
+		&server,
+		json!({ "type": "create", "name": "  ", "identity": who("blank") }),
+	)
+	.await;
 	assert_eq!(blank.error().await, "bad_request");
 	assert!(blank.recv().await.is_none());
 }
@@ -216,7 +245,11 @@ async fn a_lobby_everyone_left_is_gone_and_a_nameless_one_never_was() {
 #[tokio::test]
 async fn a_wrong_code_is_an_error_and_a_closed_socket() {
 	let server = serve(None, vec![]).await;
-	let mut lost = Client::open(&server, json!({ "type": "join", "code": "NOPE42", "name": "Lost" })).await;
+	let mut lost = Client::open(
+		&server,
+		json!({ "type": "join", "code": "NOPE42", "name": "Lost", "identity": who("Lost") }),
+	)
+	.await;
 	assert_eq!(lost.error().await, "not_found");
 	assert!(lost.recv().await.is_none());
 }
@@ -224,7 +257,11 @@ async fn a_wrong_code_is_an_error_and_a_closed_socket() {
 #[tokio::test]
 async fn a_reconnect_takes_the_seat_back_from_the_old_socket() {
 	let server = serve(None, vec![]).await;
-	let mut first = Client::open(&server, json!({ "type": "create", "name": "Ann" })).await;
+	let mut first = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	let (id, token) = first.joined().await;
 	let code = first.lobby(|_| true).await["code"].clone();
 
@@ -249,9 +286,60 @@ async fn a_reconnect_takes_the_seat_back_from_the_old_socket() {
 }
 
 #[tokio::test]
+async fn a_player_comes_back_as_themselves_whatever_the_game_is_doing() {
+	let server = serve(None, vec![]).await;
+	let hello = |name: &str, code: &Value| json!({ "type": "join", "code": code, "name": name, "identity": who(name) });
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
+	ann.joined().await;
+	let code = ann.lobby(|_| true).await["code"].clone();
+	let mut bob = Client::open(&server, hello("Bob", &code)).await;
+	let (bob_id, _) = bob.joined().await;
+
+	ann.send(json!({ "type": "start", "settings": {}, "rounds": [1] }))
+		.await;
+	bob.send(json!({ "type": "guess", "round": 0, "result": 7 })).await;
+	bob.send(json!({ "type": "leave" })).await;
+	while bob.recv().await.is_some() {}
+
+	// A game under way takes someone new, and gives Bob the seat he left.
+	let mut cat = Client::open(&server, hello("Cat", &code)).await;
+	cat.joined().await;
+	let mut bob = Client::open(&server, hello("Bob", &code)).await;
+	assert_eq!(bob.joined().await.0, bob_id);
+	assert_eq!(players(&bob.lobby(|_| true).await), 3);
+
+	ann.send(json!({ "type": "guess", "round": 0, "result": 1 })).await;
+	cat.send(json!({ "type": "guess", "round": 0, "result": 2 })).await;
+	let closed = ann.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(closed["history"][0][&bob_id], json!(7));
+	ann.send(json!({ "type": "next", "round": 0 })).await;
+	ann.lobby(|l| l["phase"] == "final").await;
+
+	// Over, it seats someone new for the next, and still knows its own.
+	let mut dan = Client::open(&server, hello("Dan", &code)).await;
+	dan.joined().await;
+	bob.send(json!({ "type": "leave" })).await;
+	while bob.recv().await.is_some() {}
+	let mut bob = Client::open(&server, hello("Bob", &code)).await;
+	assert_eq!(bob.joined().await.0, bob_id);
+	assert_eq!(players(&bob.lobby(|_| true).await), 4);
+
+	let mut nameless = Client::open(&server, json!({ "type": "join", "code": code, "name": "Eve" })).await;
+	assert_eq!(nameless.error().await, "bad_request");
+}
+
+#[tokio::test]
 async fn a_client_that_closes_gets_a_close_back() {
 	let server = serve(None, vec![]).await;
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	ann.joined().await;
 	ann.0.close(None).await.unwrap();
 	while ann.recv().await.is_some() {}
@@ -312,27 +400,43 @@ async fn guarded(secret: &str, verify_url: String, require: Vec<Action>) -> Serv
 async fn a_lobby_takes_proof_to_open_where_that_is_required() {
 	let server = guarded("secret", siteverify().await, vec![Action::Create]).await;
 
-	let mut bare = Client::open(&server, json!({ "type": "create", "name": "Bot" })).await;
+	let mut bare = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Bot", "identity": who("Bot") }),
+	)
+	.await;
 	assert_eq!(bare.error().await, "unverified");
 	assert!(bare.recv().await.is_none());
-	let forged = json!({ "type": "create", "name": "Bot", "proof": "made up" });
+	let forged = json!({ "type": "create", "name": "Bot", "identity": who("Bot"), "proof": "made up" });
 	assert_eq!(Client::open(&server, forged).await.error().await, "unverified");
 
 	// One made for joining opens no lobby.
-	let misused = json!({ "type": "create", "name": "Bot", "proof": "joiner" });
+	let misused = json!({ "type": "create", "name": "Bot", "identity": who("Bot"), "proof": "joiner" });
 	assert_eq!(Client::open(&server, misused).await.error().await, "unverified");
 	// What is wrong with the opening itself is said first, and costs no token.
-	let mut blank = Client::open(&server, json!({ "type": "create", "name": " " })).await;
+	let mut blank = Client::open(
+		&server,
+		json!({ "type": "create", "name": " ", "identity": who("blank") }),
+	)
+	.await;
 	assert_eq!(blank.error().await, "bad_request");
 
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "proof": "human" }),
+	)
+	.await;
 	let (_, token) = ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
 
 	// Joining is not what was required, and a proof that fails there is only noted.
-	let mut bob = Client::open(&server, json!({ "type": "join", "code": code, "name": "Bob" })).await;
+	let mut bob = Client::open(
+		&server,
+		json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob") }),
+	)
+	.await;
 	bob.joined().await;
-	let forged = json!({ "type": "join", "code": code, "name": "Cat", "proof": "made up" });
+	let forged = json!({ "type": "join", "code": code, "name": "Cat", "identity": who("Cat"), "proof": "made up" });
 	Client::open(&server, forged).await.joined().await;
 
 	// A seat's own token is all it takes to come back.
@@ -343,19 +447,31 @@ async fn a_lobby_takes_proof_to_open_where_that_is_required() {
 #[tokio::test]
 async fn a_seat_takes_proof_too_where_that_is_required() {
 	let server = guarded("secret", siteverify().await, vec![Action::Create, Action::Join]).await;
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "proof": "human" }),
+	)
+	.await;
 	ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
 
-	let mut bot = Client::open(&server, json!({ "type": "join", "code": code, "name": "Bot" })).await;
+	let mut bot = Client::open(
+		&server,
+		json!({ "type": "join", "code": code, "name": "Bot", "identity": who("Bot") }),
+	)
+	.await;
 	assert_eq!(bot.error().await, "unverified");
 	// Without proof a wrong code reads the same as a right one.
-	let mut probe = Client::open(&server, json!({ "type": "join", "code": "NOPE42", "name": "Bot" })).await;
+	let mut probe = Client::open(
+		&server,
+		json!({ "type": "join", "code": "NOPE42", "name": "Bot", "identity": who("Bot") }),
+	)
+	.await;
 	assert_eq!(probe.error().await, "unverified");
 
 	let mut bob = Client::open(
 		&server,
-		json!({ "type": "join", "code": code, "name": "Bob", "proof": "joiner" }),
+		json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob"), "proof": "joiner" }),
 	)
 	.await;
 	let (bob_id, token) = bob.joined().await;
@@ -368,10 +484,18 @@ async fn a_proof_nobody_can_check_gets_in() {
 	// A port nothing listens on: its listener is dropped at once.
 	let nowhere = TcpListener::bind("127.0.0.1:0").await.unwrap().local_addr().unwrap();
 	let down = guarded("secret", format!("http://{nowhere}/siteverify"), vec![Action::Create]).await;
-	let mut ann = Client::open(&down, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	let mut ann = Client::open(
+		&down,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "proof": "human" }),
+	)
+	.await;
 	ann.joined().await;
 	// No proof at all is still none: there was nothing to check.
-	let mut bare = Client::open(&down, json!({ "type": "create", "name": "Bot" })).await;
+	let mut bare = Client::open(
+		&down,
+		json!({ "type": "create", "name": "Bot", "identity": who("Bot") }),
+	)
+	.await;
 	assert_eq!(bare.error().await, "unverified");
 }
 
@@ -395,18 +519,32 @@ async fn more_proofs_than_can_be_checked_are_turned_away_not_let_in() {
 	// As many as are checked at once, each holding its turn until it times out.
 	let mut flood = Vec::new();
 	for _ in 0..32 {
-		flood.push(Client::open(&server, json!({ "type": "create", "name": "Bot", "proof": "slow" })).await);
+		flood.push(
+			Client::open(
+				&server,
+				json!({ "type": "create", "name": "Bot", "identity": who("Bot"), "proof": "slow" }),
+			)
+			.await,
+		);
 	}
 	tokio::time::sleep(Duration::from_millis(300)).await;
-	let mut ann = Client::open(&server, json!({ "type": "create", "name": "Ann", "proof": "human" })).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "proof": "human" }),
+	)
+	.await;
 	assert_eq!(ann.error().await, "busy");
 
 	// A join nothing is required of waits on none of it.
 	let quiet = guarded("secret", siteverify().await, vec![]).await;
-	let mut host = Client::open(&quiet, json!({ "type": "create", "name": "Host" })).await;
+	let mut host = Client::open(
+		&quiet,
+		json!({ "type": "create", "name": "Host", "identity": who("Host") }),
+	)
+	.await;
 	host.joined().await;
 	let code = host.lobby(|_| true).await["code"].clone();
-	let slow = json!({ "type": "join", "code": code, "name": "Bob", "proof": "slow" });
+	let slow = json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob"), "proof": "slow" });
 	let mut bob = Client::open(&quiet, slow).await;
 	timeout(Duration::from_secs(1), bob.joined()).await.unwrap();
 }
@@ -452,10 +590,18 @@ async fn a_game_outlives_the_process_that_started_it() {
 	let scratch = Scratch::create(&base_url).await;
 
 	let before = serve(Some(scratch.url.clone()), vec![]).await;
-	let mut ann = Client::open(&before, json!({ "type": "create", "name": "Ann" })).await;
+	let mut ann = Client::open(
+		&before,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
 	let (ann_id, ann_token) = ann.joined().await;
 	let code = ann.lobby(|_| true).await["code"].clone();
-	let mut bob = Client::open(&before, json!({ "type": "join", "code": code, "name": "Bob" })).await;
+	let mut bob = Client::open(
+		&before,
+		json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob") }),
+	)
+	.await;
 	let (bob_id, bob_token) = bob.joined().await;
 
 	let rounds = json!([{ "id": "a" }, { "id": "b" }]);
@@ -466,7 +612,11 @@ async fn a_game_outlives_the_process_that_started_it() {
 	let open = bob.lobby(|l| l["round"]["guessed"] == json!([ann_id])).await;
 
 	// A host still waiting alone, whose lobby nothing has changed since it opened.
-	let mut cat = Client::open(&before, json!({ "type": "create", "name": "Cat" })).await;
+	let mut cat = Client::open(
+		&before,
+		json!({ "type": "create", "name": "Cat", "identity": who("Cat") }),
+	)
+	.await;
 	let (cat_id, cat_token) = cat.joined().await;
 	let cat_code = cat.lobby(|_| true).await["code"].clone();
 

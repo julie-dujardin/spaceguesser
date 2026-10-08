@@ -51,9 +51,11 @@ export type LobbyError =
 	| 'unverified';
 
 export type ClientMessage =
-	// `proof` is a Turnstile token, which a server may want before it opens either.
-	| { type: 'create'; name: string; proof?: string }
-	| { type: 'join'; code: string; name: string; proof?: string }
+	// `identity` is the browser's name for itself, which finds the seat its
+	// player already has. `proof` is a Turnstile token, which a server may want
+	// before it opens either.
+	| { type: 'create'; name: string; identity: string; proof?: string }
+	| { type: 'join'; code: string; name: string; identity: string; proof?: string }
 	| { type: 'rejoin'; code: string; token: string }
 	| { type: 'settings'; settings: RunSettings }
 	| { type: 'start'; settings: RunSettings; rounds: Round[] }
