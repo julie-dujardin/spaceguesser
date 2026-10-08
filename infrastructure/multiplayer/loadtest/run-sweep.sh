@@ -6,7 +6,7 @@
 #
 # Usage: ./run-sweep.sh [MODE] [CONTAINER]     MODE: play|hold
 #   play  short think time: message throughput, which is what CPU limits
-#   hold  long think time, many lobbies: open sockets, which is what RAM limits
+#   hold  long think time, ten players a lobby: open sockets, which is what RAM limits
 # Env: WS_URL, CPUS, LOBBYLIST, PLAYERS, ROUNDS, DURATION
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -18,16 +18,18 @@ POSTGRES="${CONTAINER/multiplayer/postgres}"
 export WS_URL="${WS_URL:-ws://127.0.0.1:8788/ws}"
 HEALTH="http${WS_URL#ws}"
 HEALTH="${HEALTH%/ws}/healthz"
-export PLAYERS="${PLAYERS:-4}"
 export ROUNDS="${ROUNDS:-5}"
 DURATION="${DURATION:-30}"
 
 CPUS="${CPUS:-1 2 4}"
 if [ "$MODE" = "hold" ]; then
 	export THINK_MS=20000
-	LOBBYLIST="${LOBBYLIST:-250 500 1000 2500 5000}"
+	# Sockets are what is counted, and the server opens 5,000 lobbies at most.
+	export PLAYERS="${PLAYERS:-10}"
+	LOBBYLIST="${LOBBYLIST:-100 400 1000 2000}"
 else
 	export THINK_MS=500
+	export PLAYERS="${PLAYERS:-4}"
 	LOBBYLIST="${LOBBYLIST:-50 100 250 500 1000 2000}"
 fi
 

@@ -20,8 +20,9 @@ use crate::protocol::{ClientMsg, ServerMsg};
 use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
 use crate::turnstile::Action;
 
-/// Room for a `start` carrying every round.
-const MAX_MESSAGE_BYTES: usize = 256 * 1024;
+/// Room for a `start` carrying every round, and little more: a socket's read
+/// buffer stays as large as the largest message it has taken.
+const MAX_MESSAGE_BYTES: usize = 48 * 1024;
 /// Held by every open socket, and the default 128 KiB is most of what a player
 /// costs in memory. Messages are small; a larger one grows it.
 const READ_BUFFER_BYTES: usize = 4 * 1024;

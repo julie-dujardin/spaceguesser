@@ -3,6 +3,7 @@
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use futures_util::TryStreamExt;
 use sqlx::PgPool;
 use sqlx::postgres::{PgPoolOptions, PgQueryResult};
 use sqlx::types::Json;
@@ -119,11 +120,11 @@ impl Store {
 	/// and is dropped: a game in progress is not worth a compatibility path.
 	pub async fn load_all(&self) -> Result<Vec<Lobby>, sqlx::Error> {
 		let Some(pool) = &self.pool else { return Ok(Vec::new()) };
-		let rows: Vec<(String, serde_json::Value)> = sqlx::query_as("select code, state from lobbies")
-			.fetch_all(pool)
-			.await?;
+		// A row at a time: parsed to be read, a row takes several times the
+		// memory the lobby then keeps of it.
+		let mut rows = sqlx::query_as::<_, (String, serde_json::Value)>("select code, state from lobbies").fetch(pool);
 		let mut lobbies = Vec::new();
-		for (code, state) in rows {
+		while let Some((code, state)) = rows.try_next().await? {
 			match serde_json::from_value(state) {
 				Ok(lobby) => lobbies.push(lobby),
 				Err(error) => {

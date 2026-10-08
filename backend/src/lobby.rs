@@ -9,21 +9,25 @@ use std::collections::HashMap;
 use rand::Rng;
 use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
+use serde_json::value::{RawValue, to_raw_value};
 
 pub const MAX_PLAYERS: usize = 12;
 /// Everyone seated rides in every snapshot, there or not, so a game that
 /// keeps taking players in place of the ones who went does not do so for ever.
 const MAX_SEATS: usize = 4 * MAX_PLAYERS;
-pub const MAX_ROUNDS: usize = 30;
+/// The longest game the page offers.
+pub const MAX_ROUNDS: usize = 20;
 const MAX_NAME_CHARS: usize = 24;
 /// What a browser may name itself with: long enough not to be guessed, and
 /// short enough to store with every seat.
 const IDENTITY_CHARS: std::ops::RangeInclusive<usize> = 16..=64;
 const MAX_TIMER_S: f64 = 3600.0;
 
-// Every guess rides in every later snapshot, so these bound a broadcast.
-const MAX_SETTINGS_BYTES: usize = 2 * 1024;
-const MAX_ROUND_BYTES: usize = 8 * 1024;
+// Every guess rides in every later snapshot, so these bound a broadcast, and
+// with the lobby cap what the server holds. Each leaves room over the largest
+// the page sends.
+const MAX_SETTINGS_BYTES: usize = 512;
+const MAX_ROUND_BYTES: usize = 2 * 1024;
 const MAX_GUESS_BYTES: usize = 1024;
 
 /// A guess sent as the clock runs out still has to cross the network.
@@ -144,12 +148,14 @@ pub struct Lobby {
 	players: Vec<Player>,
 	phase: Phase,
 	settings: Value,
-	rounds: Vec<Value>,
+	/// Text, like the guesses: the server reads neither, and parsed JSON takes
+	/// up to sixteen times the memory of its text.
+	rounds: Vec<Box<RawValue>>,
 	round: usize,
 	/// Epoch milliseconds, so a deadline survives a restart.
 	ends_at: Option<u64>,
 	/// Guesses by player id, one map per round begun.
-	results: Vec<HashMap<String, Value>>,
+	results: Vec<HashMap<String, Box<RawValue>>>,
 	#[serde(skip)]
 	empty_since: Option<u64>,
 }
@@ -163,7 +169,7 @@ pub struct Snapshot<'a> {
 	settings: &'a Value,
 	round: Option<RoundView<'a>>,
 	/// Finished rounds only: a round's guesses stay hidden until it closes.
-	history: &'a [HashMap<String, Value>],
+	history: &'a [HashMap<String, Box<RawValue>>],
 }
 
 #[derive(Serialize)]
@@ -177,15 +183,18 @@ struct PlayerView<'a> {
 struct RoundView<'a> {
 	index: usize,
 	total: usize,
-	entry: &'a Value,
+	entry: &'a RawValue,
 	ends_at: Option<u64>,
 	guessed: Vec<&'a str>,
 }
 
-/// Small enough to relay, and storable: Postgres's jsonb refuses a NUL, and one
-/// refused write would leave the stored lobby stale for the rest of the game.
-fn acceptable(value: &Value, max_bytes: usize) -> bool {
-	serde_json::to_string(value).is_ok_and(|json| json.len() <= max_bytes && !json.contains("\\u0000"))
+/// The client's JSON as it is kept, if it is small enough to relay, and
+/// storable: Postgres's jsonb refuses a NUL, and one refused write would leave
+/// the stored lobby stale for the rest of the game.
+fn kept(value: &Value, max_bytes: usize) -> Option<Box<RawValue>> {
+	let json = to_raw_value(value).ok()?;
+	let fits = json.get().len() <= max_bytes && !json.get().contains("\\u0000");
+	fits.then_some(json)
 }
 
 fn random_hex(bytes: usize) -> String {
@@ -323,7 +332,7 @@ impl Lobby {
 		if !matches!(self.phase, Phase::Lobby | Phase::Final) {
 			return Err(Error::BadPhase);
 		}
-		if !settings.is_object() || !acceptable(&settings, MAX_SETTINGS_BYTES) {
+		if !settings.is_object() || kept(&settings, MAX_SETTINGS_BYTES).is_none() {
 			return Err(Error::BadRequest);
 		}
 		self.settings = settings;
@@ -332,10 +341,11 @@ impl Lobby {
 
 	/// Begins a game with whoever is here: seats left or long gone are cleared.
 	pub fn start(&mut self, by: &str, settings: Value, rounds: Vec<Value>, now: u64) -> Result<(), Error> {
-		let sized = !rounds.is_empty() && rounds.len() <= MAX_ROUNDS;
-		if !sized || !rounds.iter().all(|r| acceptable(r, MAX_ROUND_BYTES)) {
+		if rounds.is_empty() || rounds.len() > MAX_ROUNDS {
 			return Err(Error::BadRequest);
 		}
+		let rounds: Option<Vec<_>> = rounds.iter().map(|round| kept(round, MAX_ROUND_BYTES)).collect();
+		let rounds = rounds.ok_or(Error::BadRequest)?;
 		self.set_settings(by, settings)?;
 		self.players.retain(|p| p.awaited(now));
 		for player in &mut self.players {
@@ -353,9 +363,7 @@ impl Lobby {
 		if self.phase != Phase::Playing || round != self.round {
 			return Err(Error::BadPhase);
 		}
-		if !acceptable(&result, MAX_GUESS_BYTES) {
-			return Err(Error::BadRequest);
-		}
+		let result = kept(&result, MAX_GUESS_BYTES).ok_or(Error::BadRequest)?;
 		let guesses = &mut self.results[self.round];
 		if guesses.contains_key(by) {
 			return Err(Error::AlreadyGuessed);
@@ -913,6 +921,8 @@ mod tests {
 		let big = json!("x".repeat(MAX_ROUND_BYTES));
 		assert_eq!(lobby.start(&ids[0], json!({}), vec![big], 0), Err(Error::BadRequest));
 		assert_eq!(lobby.start(&ids[0], json!({}), vec![], 0), Err(Error::BadRequest));
+		let long = vec![json!(1); MAX_ROUNDS + 1];
+		assert_eq!(lobby.start(&ids[0], json!({}), long, 0), Err(Error::BadRequest));
 		assert_eq!(
 			lobby.start(&ids[0], json!([]), vec![json!(1)], 0),
 			Err(Error::BadRequest)

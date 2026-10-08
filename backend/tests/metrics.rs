@@ -73,7 +73,7 @@ async fn what_happens_at_the_sockets_is_counted() {
 		&counts,
 		&[
 			"spaceguesser_lobbies 0",
-			"spaceguesser_max_lobbies 20000",
+			"spaceguesser_max_lobbies 5000",
 			"spaceguesser_sockets 0",
 			r#"spaceguesser_errors_total{code="not_found"} 0"#,
 			r#"spaceguesser_proofs_total{action="create",proof="unchecked"} 0"#,

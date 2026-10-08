@@ -191,6 +191,24 @@ async fn two_players_play_a_game_through() {
 	assert_eq!(players(&done), 2);
 }
 
+/// The message cap is the socket's and the round caps are the lobby's.
+#[tokio::test]
+async fn the_longest_game_of_the_largest_rounds_fits_a_message() {
+	let server = serve(None, vec![]).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
+	ann.joined().await;
+
+	let rounds = vec![json!("x".repeat(2 * 1024 - 2)); 20];
+	ann.send(json!({ "type": "start", "settings": {}, "rounds": rounds }))
+		.await;
+	let playing = ann.lobby(|l| l["phase"] == "playing").await;
+	assert_eq!(playing["round"]["total"], json!(20));
+}
+
 #[tokio::test]
 async fn the_host_closes_a_round_nobody_is_finishing() {
 	let server = serve(None, vec![]).await;

@@ -8,7 +8,7 @@ sockets. `run-sweep.sh` restarts the server under a limit of 1/2/4 cores
 (`docker update --cpus`) and sweeps the number of lobbies, in two modes:
 
 - `play` — 500 ms think time: message throughput, which is what CPU limits.
-- `hold` — 20 s think time, many lobbies: open sockets, which is what RAM limits.
+- `hold` — 20 s think time, ten players a lobby: open sockets, which is what RAM limits.
 
 ```bash
 docker compose up -d --build        # here: this checkout's server + Postgres, on :8788
@@ -59,6 +59,6 @@ fifth of a core and 1,100 commits a second, every message being one. The VPS
 has 4 cores, 7.7 GB of which search wants about 1, and a disk that syncs 7,900
 times a second (`pg_test_fsync` there: the sweep's Postgres is in memory, so
 the sweep says nothing of it). None of the three is what limits it. The
-server's own caps are: 65,536 open files in its compose file, and 20,000
-lobbies. Nothing past 20,000 players was run. Loopback numbers on a fast
-core — add real network RTT.
+server's own caps are: 65,536 open files in its compose file, and 5,000
+lobbies of 12 players. Nothing past 20,000 players was run. Loopback numbers
+on a fast core — add real network RTT.
