@@ -38,6 +38,8 @@ jobs:
         with:
           name: dist
           path: frontend/dist
+          # .well-known is one, and is left out otherwise.
+          include-hidden-files: true
 
   deploy:
     # `needs` already holds this back until the checks pass; naming the branch
