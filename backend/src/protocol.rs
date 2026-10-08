@@ -16,8 +16,8 @@ pub enum ClientMsg {
 
 	Settings { settings: Value },
 	Start { settings: Value, rounds: Vec<Value> },
-	Guess { result: Value },
-	// Both name the round they are about, so a stale one does nothing.
+	// These name the round they are about, so a stale one does nothing.
+	Guess { round: usize, result: Value },
 	CloseRound { round: usize },
 	Next { round: usize },
 	Leave,

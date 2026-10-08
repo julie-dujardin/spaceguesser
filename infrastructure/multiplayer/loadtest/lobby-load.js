@@ -65,6 +65,7 @@ const ROUND_ENTRIES = Array.from({ length: ROUNDS }, (_, i) => ({
 function guess(playerIndex, round) {
 	return {
 		type: 'guess',
+		round,
 		result: {
 			truth: ROUND_ENTRIES[round].id,
 			guess: { lat: -4.5895 + playerIndex, lon: 137.4417 + round },

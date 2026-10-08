@@ -34,14 +34,14 @@ Then, in the lobby:
 | --- | --- | --- |
 | `settings {settings}` | host | shows the others the mode being picked |
 | `start {settings, rounds}` | host | `rounds` is one JSON value per round; `settings.timer` is seconds per round, 0 for none |
-| `guess {result}` | anyone | once per round |
+| `guess {round, result}` | anyone | once per round |
 | `close_round {round}` | host | closes the open round without waiting for the rest |
 | `next {round}` | host | moves on from that round's results, to the next round or the end |
 | `leave` | anyone | gives the seat up |
 
-`close_round` and `next` name the round they mean, and get `bad_phase` when it
-is no longer the one in play: a second click, or one that crossed the round
-closing on its own, does nothing.
+`guess`, `close_round` and `next` name the round they mean, and get `bad_phase`
+when it is no longer the one in play: a second click, a guess sent again on a
+new socket, or one that crossed the round closing on its own, does nothing.
 
 The server sends three things:
 

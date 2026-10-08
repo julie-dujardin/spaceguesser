@@ -200,7 +200,7 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, command: Command
 			let done = match msg {
 				ClientMsg::Settings { settings } => lobby.set_settings(&player, settings),
 				ClientMsg::Start { settings, rounds } => lobby.start(&player, settings, rounds, now),
-				ClientMsg::Guess { result } => lobby.guess(&player, result, now),
+				ClientMsg::Guess { round, result } => lobby.guess(&player, round, result, now),
 				ClientMsg::CloseRound { round } => lobby.close_round(&player, round),
 				ClientMsg::Next { round } => lobby.next(&player, round, now),
 				ClientMsg::Leave => {

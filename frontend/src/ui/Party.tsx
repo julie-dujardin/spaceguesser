@@ -263,12 +263,13 @@ function Round({
 	}, [left, answered, placed]);
 
 	// Again on each new socket: a guess made while the line was down still has
-	// to arrive, and one the server already has is refused harmlessly.
+	// to arrive, and one the server already has, or whose round has gone by, is
+	// refused harmlessly.
 	const post = useRef(send);
 	post.current = send;
 	useEffect(() => {
-		if (sent) post.current({ type: 'guess', result: sent });
-	}, [sent, connection]);
+		if (sent) post.current({ type: 'guess', round: round.index, result: sent });
+	}, [sent, connection, round.index]);
 
 	const out = lobby.players.filter(
 		(seat) => seat.connected && seat.id !== you && !round.guessed.includes(seat.id)

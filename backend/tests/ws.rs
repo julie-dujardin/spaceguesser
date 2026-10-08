@@ -127,11 +127,13 @@ async fn two_players_play_a_game_through() {
 	assert_eq!(playing["round"]["total"], json!(2));
 	assert_eq!(playing["settings"], settings);
 
-	ann.send(json!({ "type": "guess", "result": { "points": 4200 } })).await;
+	ann.send(json!({ "type": "guess", "round": 0, "result": { "points": 4200 } }))
+		.await;
 	let waiting = bob.lobby(|l| l["round"]["guessed"] == json!([ann_id])).await;
 	assert_eq!(waiting["history"], json!([]));
 
-	bob.send(json!({ "type": "guess", "result": { "points": 100 } })).await;
+	bob.send(json!({ "type": "guess", "round": 0, "result": { "points": 100 } }))
+		.await;
 	let result = ann.lobby(|l| l["phase"] == "result").await;
 	assert_eq!(result["history"][0][&ann_id]["points"], json!(4200));
 	assert_eq!(result["history"][0][&bob_id]["points"], json!(100));
@@ -146,7 +148,8 @@ async fn two_players_play_a_game_through() {
 	// Bob walks out; the round then only waits on Ann.
 	bob.send(json!({ "type": "leave" })).await;
 	while bob.recv().await.is_some() {}
-	ann.send(json!({ "type": "guess", "result": { "points": 1 } })).await;
+	ann.send(json!({ "type": "guess", "round": 1, "result": { "points": 1 } }))
+		.await;
 	ann.lobby(|l| l["phase"] == "result").await;
 	ann.send(json!({ "type": "next", "round": 1 })).await;
 	let done = ann.lobby(|l| l["phase"] == "final").await;
@@ -295,7 +298,8 @@ async fn a_game_outlives_the_process_that_started_it() {
 	let rounds = json!([{ "id": "a" }, { "id": "b" }]);
 	ann.send(json!({ "type": "start", "settings": { "timer": 600 }, "rounds": rounds }))
 		.await;
-	ann.send(json!({ "type": "guess", "result": { "points": 4200 } })).await;
+	ann.send(json!({ "type": "guess", "round": 0, "result": { "points": 4200 } }))
+		.await;
 	let open = bob.lobby(|l| l["round"]["guessed"] == json!([ann_id])).await;
 
 	// A host still waiting alone, whose lobby nothing has changed since it opened.
@@ -328,7 +332,8 @@ async fn a_game_outlives_the_process_that_started_it() {
 	assert_eq!(restored["round"]["ends_at"], open["round"]["ends_at"]);
 	assert_eq!(restored["round"]["guessed"], json!([ann_id]));
 
-	bob.send(json!({ "type": "guess", "result": { "points": 7 } })).await;
+	bob.send(json!({ "type": "guess", "round": 0, "result": { "points": 7 } }))
+		.await;
 	let result = ann.lobby(|l| l["phase"] == "result").await;
 	assert_eq!(result["history"][0][&ann_id]["points"], json!(4200));
 	assert_eq!(result["history"][0][&bob_id]["points"], json!(7));

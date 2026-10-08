@@ -270,8 +270,10 @@ impl Lobby {
 		Ok(())
 	}
 
-	pub fn guess(&mut self, by: &str, result: Value, now: u64) -> Result<(), Error> {
-		if self.phase != Phase::Playing {
+	/// A guess at round `round`. Naming the round keeps one that arrives late,
+	/// or is sent again on a new socket, out of the round opened since.
+	pub fn guess(&mut self, by: &str, round: usize, result: Value, now: u64) -> Result<(), Error> {
+		if self.phase != Phase::Playing || round != self.round {
 			return Err(Error::BadPhase);
 		}
 		if !acceptable(&result, MAX_GUESS_BYTES) {
@@ -516,15 +518,15 @@ mod tests {
 	#[test]
 	fn a_round_closes_when_everyone_has_guessed_and_hides_guesses_until_then() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
-		lobby.guess(&ids[0], json!({ "points": 10 }), 0).unwrap();
-		assert_eq!(lobby.guess(&ids[0], json!({}), 0), Err(Error::AlreadyGuessed));
+		lobby.guess(&ids[0], 0, json!({ "points": 10 }), 0).unwrap();
+		assert_eq!(lobby.guess(&ids[0], 0, json!({}), 0), Err(Error::AlreadyGuessed));
 
 		let open = view(&lobby);
 		assert_eq!(open["phase"], json!("playing"));
 		assert_eq!(open["round"]["guessed"], json!([ids[0]]));
 		assert_eq!(open["history"], json!([]));
 
-		lobby.guess(&ids[1], json!({ "points": 20 }), 0).unwrap();
+		lobby.guess(&ids[1], 0, json!({ "points": 20 }), 0).unwrap();
 		let closed = view(&lobby);
 		assert_eq!(closed["phase"], json!("result"));
 		assert_eq!(closed["history"][0][&ids[1]]["points"], json!(20));
@@ -533,10 +535,10 @@ mod tests {
 	#[test]
 	fn the_host_walks_the_game_to_its_end_and_can_start_another() {
 		let (mut lobby, ids) = started(&["ann"], 0, 2);
-		lobby.guess(&ids[0], json!(1), 0).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		lobby.next(&ids[0], 0, 0).unwrap();
 		assert_eq!(view(&lobby)["round"]["index"], json!(1));
-		lobby.guess(&ids[0], json!(2), 0).unwrap();
+		lobby.guess(&ids[0], 1, json!(2), 0).unwrap();
 		lobby.next(&ids[0], 1, 0).unwrap();
 
 		let done = view(&lobby);
@@ -552,8 +554,8 @@ mod tests {
 	#[test]
 	fn a_second_click_or_a_late_one_moves_nothing() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 3);
-		lobby.guess(&ids[0], json!(1), 0).unwrap();
-		lobby.guess(&ids[1], json!(1), 0).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		lobby.guess(&ids[1], 0, json!(1), 0).unwrap();
 
 		// The round closed on its own just as the host went to close it.
 		assert_eq!(lobby.close_round(&ids[0], 0), Err(Error::BadPhase));
@@ -567,9 +569,22 @@ mod tests {
 	}
 
 	#[test]
+	fn a_guess_for_a_round_gone_by_does_not_answer_the_next() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		lobby.close_round(&ids[0], 0).unwrap();
+		lobby.next(&ids[0], 0, 0).unwrap();
+
+		// Bob's guess at the first round, arriving after his socket came back.
+		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0), Err(Error::BadPhase));
+		assert_eq!(view(&lobby)["round"]["guessed"], json!([]));
+		lobby.guess(&ids[1], 1, json!(2), 0).unwrap();
+	}
+
+	#[test]
 	fn the_host_can_close_a_round_someone_is_sitting_on() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
-		lobby.guess(&ids[0], json!(1), 0).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		assert_eq!(lobby.close_round(&ids[1], 0), Err(Error::NotHost));
 		lobby.close_round(&ids[0], 0).unwrap();
 		assert_eq!(view(&lobby)["phase"], json!("result"));
@@ -580,10 +595,10 @@ mod tests {
 		let (mut lobby, ids) = started(&["ann", "bob"], 60, 1);
 		assert_eq!(view(&lobby)["round"]["ends_at"], json!(61_000));
 		assert!(!lobby.tick(61_000 + DEADLINE_GRACE_MS - 1));
-		lobby.guess(&ids[0], json!(1), 0).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		assert!(lobby.tick(61_000 + DEADLINE_GRACE_MS));
 		assert_eq!(view(&lobby)["phase"], json!("result"));
-		assert_eq!(lobby.guess(&ids[1], json!(1), 0), Err(Error::BadPhase));
+		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0), Err(Error::BadPhase));
 	}
 
 	#[test]
@@ -591,7 +606,7 @@ mod tests {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
 		let token = lobby.token(&ids[1]).unwrap().to_owned();
 		lobby.disconnect(&ids[1], 5_000);
-		lobby.guess(&ids[0], json!(1), 5_000).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 5_000).unwrap();
 		assert!(!lobby.tick(5_000 + AWAY_GRACE_MS - 1));
 		assert_eq!(view(&lobby)["phase"], json!("playing"));
 
@@ -606,10 +621,10 @@ mod tests {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
 		let token = lobby.token(&ids[1]).unwrap().to_owned();
 		lobby.disconnect(&ids[1], 5_000);
-		lobby.guess(&ids[0], json!(1), 5_000).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 5_000).unwrap();
 		lobby.rejoin(&token).unwrap();
 		assert!(!lobby.tick(5_000 + AWAY_GRACE_MS));
-		lobby.guess(&ids[1], json!(2), 5_000 + AWAY_GRACE_MS).unwrap();
+		lobby.guess(&ids[1], 0, json!(2), 5_000 + AWAY_GRACE_MS).unwrap();
 		assert_eq!(view(&lobby)["history"][0][&ids[1]], json!(2));
 	}
 
@@ -678,8 +693,8 @@ mod tests {
 		assert_eq!(seats(&lobby), 3);
 		assert_eq!(lobby.rejoin(&token), Err(Error::NotFound));
 
-		lobby.guess(&ids[0], json!(1), 0).unwrap();
-		lobby.guess(&ids[2], json!(1), 0).unwrap();
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		lobby.guess(&ids[2], 0, json!(1), 0).unwrap();
 		lobby.next(&ids[0], 0, 0).unwrap();
 		// The scoreboard is where a name matters most.
 		lobby.leave(&ids[2], 0);
@@ -706,14 +721,14 @@ mod tests {
 
 		let (mut lobby, ids) = started(&["ann"], 0, 1);
 		let big = json!("x".repeat(MAX_GUESS_BYTES));
-		assert_eq!(lobby.guess(&ids[0], big, 0), Err(Error::BadRequest));
-		assert_eq!(lobby.guess(&ids[0], json!("a\u{0}b"), 0), Err(Error::BadRequest));
+		assert_eq!(lobby.guess(&ids[0], 0, big, 0), Err(Error::BadRequest));
+		assert_eq!(lobby.guess(&ids[0], 0, json!("a\u{0}b"), 0), Err(Error::BadRequest));
 	}
 
 	#[test]
 	fn a_stored_lobby_comes_back_mid_round_and_waits_for_its_players() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 60, 3);
-		lobby.guess(&ids[0], json!({ "points": 7 }), 2_000).unwrap();
+		lobby.guess(&ids[0], 0, json!({ "points": 7 }), 2_000).unwrap();
 		let ann = lobby.token(&ids[0]).unwrap().to_owned();
 		let bob = lobby.token(&ids[1]).unwrap().to_owned();
 
@@ -731,7 +746,7 @@ mod tests {
 		assert_eq!(view(&back)["phase"], json!("playing"));
 
 		assert_eq!(back.rejoin(&bob), Ok(ids[1].clone()));
-		back.guess(&ids[1], json!({ "points": 9 }), 12_000).unwrap();
+		back.guess(&ids[1], 0, json!({ "points": 9 }), 12_000).unwrap();
 		assert_eq!(view(&back)["phase"], json!("result"));
 	}
 }

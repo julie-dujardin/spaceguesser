@@ -55,8 +55,9 @@ export type ClientMessage =
 	| { type: 'rejoin'; code: string; token: string }
 	| { type: 'settings'; settings: RunSettings }
 	| { type: 'start'; settings: RunSettings; rounds: Round[] }
-	| { type: 'guess'; result: Played }
-	// Both name the round they mean, so a second click moves nothing.
+	// These name the round they mean, so a second click or a late guess moves
+	// nothing.
+	| { type: 'guess'; round: number; result: Played }
 	| { type: 'close_round'; round: number }
 	| { type: 'next'; round: number }
 	| { type: 'leave' };
