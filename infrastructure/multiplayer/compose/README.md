@@ -21,11 +21,11 @@ connected to for five minutes, is closed and its row deleted.
 2. Create a Turnstile widget (Turnstile > Add widget) in Managed mode, for the
    hostname the game is served from, with pre-clearance left off: it sets a
    cookie, and the privacy page says there are none. The widget's sitekey is
-   the `TURNSTILE_SITEKEY` variable of the GitHub repository, which the
-   frontend is built with; its secret key goes in `.env`.
+   the `PUBLIC_TURNSTILE_SITEKEY` variable of the site's Worker, set in the
+   Cloudflare dashboard; its secret key goes in `.env`.
 3. `cp .env.example .env` and fill it in. Leave `TURNSTILE_REQUIRE` empty until
-   the site is live with the sitekey: a page built without it has no proof to
-   give, and opens no lobby on a server that requires one.
+   the site is live with the sitekey: a page without it has no proof to give,
+   and opens no lobby on a server that requires one.
 4. Bring up the stack.
 5. Add a rate limiting rule (the zone > Security > WAF > Rate limiting rules)
    on `http.host eq "<the tunnel's hostname>" and http.request.uri.path eq "/ws"`:

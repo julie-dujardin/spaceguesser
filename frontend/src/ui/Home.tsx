@@ -8,7 +8,7 @@ import { Avatar } from './Avatar';
 interface Props {
 	onQuickPlay: () => void;
 	onCustom: () => void;
-	/** Absent in a build with no multiplayer server to talk to. */
+	/** Absent with no multiplayer server to talk to. */
 	onFriends?: () => void;
 	/** How many runs the history holds, and the way to it. */
 	runs: number;

@@ -20,17 +20,17 @@ pnpm install
 pnpm dev
 ```
 
-Multiplayer is there when `VITE_MULTIPLAYER_URL` names a server, and hidden
+Multiplayer is there when `PUBLIC_MULTIPLAYER_URL` names a server, and hidden
 when it does not. For development:
 
 ```sh
 docker compose up --build   # the multiplayer server, on :8787
-echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
+echo 'PUBLIC_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 ```
 
 The server can ask for proof that a person is opening a lobby or joining one: a
 Turnstile token, made on the card that asks for a name when
-`VITE_TURNSTILE_SITEKEY` names a widget. Solo play never loads it. The
+`PUBLIC_TURNSTILE_SITEKEY` names a widget. Solo play never loads it. The
 server's [README](backend/README.md#proof-of-a-person) has what it requires and
 the keys to try it with.
 
@@ -218,16 +218,26 @@ what a lobby stores and for how long (`EMPTY_TTL_MS` in
 `backend/src/lobby.rs`), what the browser keeps (`spaceguesser.profile`,
 `spaceguesser.history`, `spaceguesser.seat`, `spaceguesser.identity`), and that nothing is loaded from a
 third party, which is why the fonts are bundled from `@fontsource-variable`
-rather than fetched from Google. The one exception is Turnstile, and only in a
-build with `VITE_TURNSTILE_SITEKEY`: that build's page gains a paragraph on the
-check, and a build without it says nothing of one.
+rather than fetched from Google. The one exception is Turnstile, and only
+where `PUBLIC_TURNSTILE_SITEKEY` is set: the page then gains a paragraph on the
+check, and says nothing of one otherwise.
 
 ## Deploying
 
 Pushes to `main` run the checks on GitHub, and a green run deploys to Cloudflare
-Workers as static assets — no Worker code, just `dist` behind an SPA fallback.
-The credentials live in the `cf-pages-deploy` environment; the token needs
-account-level Workers Scripts: Edit.
+Workers: `dist` as static assets behind an SPA fallback, and a Worker
+(`frontend/worker`) that adds one file to them, `/env.js`. The credentials live
+in the `cf-pages-deploy` environment; the token needs account-level Workers
+Scripts: Edit.
+
+The Worker is there for the settings. A setting is a variable on the Worker
+named `PUBLIC_…`, set in the Cloudflare dashboard and read by the next page
+load: no build, no deploy. `/env.js` hands the page those and nothing else set
+there, and `pnpm dev` serves the same file from `frontend/.env`. There are two:
+`PUBLIC_MULTIPLAYER_URL`, `wss://<the tunnel's hostname>/ws`, and
+`PUBLIC_TURNSTILE_SITEKEY`, the Turnstile widget's. Opening a page does not run
+the Worker. Its script does, once a page load, and so does whatever asks for a
+page of the app without being a browser opening one.
 
 The multiplayer server runs on a VPS behind a Cloudflare tunnel:
 [infrastructure/multiplayer/compose](infrastructure/multiplayer/compose/README.md).

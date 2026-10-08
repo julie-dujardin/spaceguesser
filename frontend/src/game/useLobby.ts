@@ -1,6 +1,7 @@
 /** The socket to the multiplayer server, and the seat held through it. */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { ENV } from './env';
 import {
 	SEAT_TAKEN,
 	lobbyOf,
@@ -12,9 +13,9 @@ import {
 import { identity, seatName, type Profile } from './players';
 import type { RunSettings } from './rules';
 
-/** `wss://…/ws`. With no server named there is no multiplayer to offer, and the
- *  app does not show any. */
-const SERVER: string | undefined = import.meta.env.VITE_MULTIPLAYER_URL || undefined;
+/** With no server named there is no multiplayer to offer, and the app does not
+ *  show any. */
+const SERVER: string | undefined = ENV.PUBLIC_MULTIPLAYER_URL || undefined;
 
 export const MULTIPLAYER = !!SERVER;
 

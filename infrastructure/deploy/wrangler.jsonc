@@ -2,10 +2,16 @@
 	"$schema": "../../frontend/node_modules/wrangler/config-schema.json",
 	"name": "spaceguesser",
 	"compatibility_date": "2026-09-14",
-	// No Worker code: the build is static, and the SPA fallback lets a deep
-	// link land on the app rather than on a 404.
+	// Serves the deployment's settings to the page. A browser opening a page
+	// gets the static build without it.
+	"main": "../../frontend/worker/index.ts",
+	// The settings are set on the Worker, in the dashboard, so that changing
+	// one takes no build. Without this a deploy drops them.
+	"keep_vars": true,
 	"assets": {
 		"directory": "../../frontend/dist",
+		"binding": "ASSETS",
+		// A deep link lands on the app rather than on a 404.
 		"not_found_handling": "single-page-application"
 	}
 }

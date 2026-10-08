@@ -21,7 +21,7 @@ const TROUBLES: Partial<Record<Trouble, () => string>> = {
 	not_found: m.trouble_not_found,
 	full: m.trouble_full,
 	busy: m.trouble_busy,
-	// A build with no check to run has no blocker to blame for it.
+	// A page with no check to run has no blocker to blame for it.
 	unverified: TURNSTILE ? m.trouble_unverified : m.trouble_unverified_unbuilt,
 	unreachable: m.trouble_unreachable
 };

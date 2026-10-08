@@ -20,7 +20,7 @@
 			"script": "dev",
 			"path": "frontend",
 			// Multiplayer is hidden unless a server is named.
-			"options": { "env": { "VITE_MULTIPLAYER_URL": "ws://127.0.0.1:8787/ws" } },
+			"options": { "env": { "PUBLIC_MULTIPLAYER_URL": "ws://127.0.0.1:8787/ws" } },
 			"isBackground": true,
 			"problemMatcher": {
 				"pattern": { "regexp": "." },

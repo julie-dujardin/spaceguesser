@@ -2,12 +2,13 @@
  *  token, which Cloudflare makes and the server checks with it. */
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { ENV } from '../game/env';
 import { getLocale } from '../paraglide/runtime.js';
 
 /** With no key named the server is sent no proof, and had better not want one. */
-const SITEKEY: string | undefined = import.meta.env.VITE_TURNSTILE_SITEKEY || undefined;
+const SITEKEY: string | undefined = ENV.PUBLIC_TURNSTILE_SITEKEY || undefined;
 
-/** Whether this build can make a proof at all. */
+/** Whether the page can make a proof at all. */
 export const TURNSTILE = !!SITEKEY;
 
 /** Cloudflare serves it from here alone: a copy in the bundle stops working. */
