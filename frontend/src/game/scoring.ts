@@ -1,5 +1,5 @@
 /**
- * What a guess is worth. A run now spans the Solar System, and one curve cannot
+ * What a guess is worth. A run spans the Solar System, and one curve cannot
  * tell Titan from Enceladus and Saturn from Jupiter at once, so the points are
  * split three ways: for the system, for the body in it, for the place on it.
  * Each falls off as the genre has it, against the size of what it is about.
@@ -8,13 +8,11 @@
 import type { LonLat } from 'spacemap';
 import { bodyOf, systemOf } from './bodies';
 import type { Place } from './rounds';
-import { distanceKm } from './rules';
+import { AU_KM, distanceKm } from './rules';
 
 export const MAX_POINTS = 5000;
 
 export const TIERS = { system: 1000, body: 1500, surface: 2500 } as const;
-
-const AU_KM = 149_597_870.7;
 
 /** How far apart two systems in play can be: Pluto to the far side of
  *  Neptune's orbit, near enough. */

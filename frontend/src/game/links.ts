@@ -6,12 +6,12 @@
 import { panoramaAt, type PanoramaEntry } from 'spacemap';
 import { bodyOf, viewDistance } from './bodies';
 import type { OrbitRound, Place, Round } from './rounds';
+import { AU_KM } from './rules';
 
 const SITE = 'https://spacemap.co';
 
 export const REPO = 'https://github.com/julie-dujardin/spaceguesser';
 
-const AU_KM = 149_597_870.7;
 /** The site counts a camera's distance in these to the AU. */
 const ZOOM_PER_AU = 10;
 

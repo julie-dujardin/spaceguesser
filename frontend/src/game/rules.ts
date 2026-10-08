@@ -133,7 +133,7 @@ export function describeRun(settings: RunSettings): string[] {
 	];
 }
 
-const AU_KM = 149_597_870.7;
+export const AU_KM = 149_597_870.7;
 
 /** A number as the reader's language writes it, to `decimals` places when
  *  that is said. */

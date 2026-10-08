@@ -10,6 +10,7 @@ import type { Anchor, LonLat } from 'spacemap';
 import { bodyOf, systemOf } from '../game/bodies';
 import type { Profile } from '../game/players';
 import type { Place, Round } from '../game/rounds';
+import { AU_KM } from '../game/rules';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
@@ -40,7 +41,6 @@ interface Props {
 }
 
 const SUN = 'naif-10';
-const AU_KM = 149_597_870.7;
 
 /** The whole run is looked at from over the Sun's pole, between these. */
 const RUN_FAR_KM = 110 * AU_KM;

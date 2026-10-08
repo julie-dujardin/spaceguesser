@@ -77,7 +77,7 @@ export function drawDate(now = Date.now(), random: () => number = Math.random): 
  *  terminator is half night. */
 const MIN_SUN_DEG = 40;
 
-const RAD = Math.PI / 180;
+export const RAD = Math.PI / 180;
 
 /** Where an orbit round is, given where the Sun is overhead: uniform over the
  *  cap of the body the Sun stands high enough on. */
@@ -111,10 +111,10 @@ function pickBody(spent: readonly Round[], random: () => number): BodyInfo {
 
 /**
  * `count` rounds, each a coin toss between the modes switched on. Stops are
- * drawn as they always were, spread across probes; bodies are drawn evenly and
- * not twice while there is one left. `before` is read as the rounds just before
- * these, and `date` is the run's when these go on with it. With no stops to
- * draw from, every round is from orbit.
+ * drawn spread across probes; bodies are drawn evenly and not twice while
+ * there is one left. `before` is read as the rounds just before these, and
+ * `date` is the run's when these go on with it. With no stops to draw from,
+ * every round is from orbit.
  */
 export function drawRun(
 	stops: readonly Stop[],

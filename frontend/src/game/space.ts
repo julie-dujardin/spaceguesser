@@ -7,9 +7,7 @@
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
 import { bodyOf, systemOf, viewDistance } from './bodies';
 import { HOST } from './host';
-import { spot, type OrbitRound, type Place } from './rounds';
-
-const RAD = Math.PI / 180;
+import { RAD, spot, type OrbitRound, type Place } from './rounds';
 
 /** Small bodies stream in behind the map; one that has not shown by now is
  *  not going to. */
