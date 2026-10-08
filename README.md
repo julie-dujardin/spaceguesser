@@ -49,7 +49,8 @@ taken, and a miss is measured at that date, below.
 may draw or a measured shape of, less Earth. The round happens at the run's date,
 drawn within thirty days of today when the run starts and shown in the HUD, and
 the place is somewhere the Sun stands at least 40° high at that date — the sky decides, so the round is drawn
-as two numbers and comes out the same for everyone playing it. The camera hangs
+as two numbers and comes out the same for everyone playing it. A moon with a
+shadow on it at that date, its planet's or another moon's, is left out of the draw: in full eclipse it is a black disc. The camera hangs
 as close as the body's map stays sharp: 1,000 km over Mars, the whole disc for
 Ganymede. Whatever else is in that sky at that date is there to be seen:
 Saturn and its rings from Enceladus. Names and orbits are not.
@@ -134,6 +135,9 @@ colour travel in front of the name (`frontend/src/game/players.ts`).
   round's date — `getSubsolarPoint` for where the lit side is, `distanceKm` for
   how far off a guess on another body was; and it is the recap, with every
   guess pinned by `addMarker` on the body it named.
+- `sunlight` says how much of the Sun's light reaches a moon at a run's date,
+  which is how the moons in shadow are kept out of it
+  (`frontend/src/game/eclipse.ts`).
 - `createSystemMap` is the diagram a body is picked on, told which bodies are
   in play.
 - `createFlatMap` is the map a place is picked on, with the graticule and no

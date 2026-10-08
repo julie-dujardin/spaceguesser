@@ -2,6 +2,7 @@
 
 import type { LonLat, PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance, type BodyInfo } from './bodies';
+import { eclipsed, shadedOn } from './eclipse';
 import { drawRounds, formatTaken, formatWhen, takenAt } from './rules';
 
 /** A panorama, and the body it was taken on. */
@@ -26,8 +27,8 @@ export interface GroundRound extends Asked {
 
 /**
  * Hanging over a body, somewhere on its lit side. The place is not stored: it
- * is `spot`, read off where the Sun stands at `time`, so the round is drawn
- * without knowing the sky and comes out the same for everyone playing it.
+ * is `spot`, read off where the Sun stands at `time`, so it comes out the same
+ * for everyone playing the round.
  */
 export interface OrbitRound extends Asked {
 	mode: 'orbit';
@@ -102,18 +103,23 @@ export interface Modes {
 	orbit: boolean;
 }
 
-function pickBody(spent: readonly Round[], random: () => number): BodyInfo {
+function pickBody(
+	spent: readonly Round[],
+	shaded: ReadonlySet<string>,
+	random: () => number
+): BodyInfo {
 	const used = new Set(spent.filter((round) => round.mode === 'orbit').map((round) => round.body));
-	const fresh = BODIES.filter((body) => !used.has(body.id));
-	const from = fresh.length ? fresh : BODIES;
+	const lit = BODIES.filter((body) => !shaded.has(body.id));
+	const fresh = lit.filter((body) => !used.has(body.id));
+	const from = fresh.length ? fresh : lit;
 	return from[Math.floor(random() * from.length)];
 }
 
 /**
  * `count` rounds, each a coin toss between the modes switched on. Stops are
- * drawn spread across probes; bodies are drawn evenly and not twice while
- * there is one left. `before` is read as the rounds just before these, and
- * `date` is the run's when these go on with it. With no stops to draw from,
+ * spread across probes; bodies are drawn evenly, none twice while another is
+ * left and none of `shaded`. `before` is the rounds just before these, and
+ * `date` the run's when these go on with it. With no stops to draw from,
  * every round is from orbit.
  */
 export function drawRun(
@@ -122,6 +128,7 @@ export function drawRun(
 	modes: Modes,
 	before: readonly Round[] = [],
 	date = drawDate(),
+	shaded: ReadonlySet<string> = new Set(),
 	random: () => number = Math.random
 ): Round[] {
 	const ground = modes.ground && stops.length > 0;
@@ -142,11 +149,33 @@ export function drawRun(
 		}
 		drawn.push({
 			mode: 'orbit',
-			body: pickBody(spent, random).id,
+			body: pickBody(spent, shaded, random).id,
 			time: date,
 			u: random(),
 			v: random()
 		});
 	}
 	return drawn;
+}
+
+/** A sky that has not answered by now keeps no draw waiting. */
+const SKY_TIMEOUT_MS = 5_000;
+
+/**
+ * `drawRun` once the sky of `date` is read, so over no moon in shadow then.
+ * What cannot fly does not ask, and what is not read in time shades nothing.
+ */
+export async function drawLitRun(
+	stops: readonly Stop[],
+	count: number,
+	modes: Modes,
+	before: readonly Round[] = [],
+	date = drawDate()
+): Promise<Round[]> {
+	if (modes.orbit || !modes.ground || stops.length === 0)
+		await Promise.race([
+			eclipsed(date),
+			new Promise((resolve) => setTimeout(resolve, SKY_TIMEOUT_MS))
+		]);
+	return drawRun(stops, count, modes, before, date, shadedOn(date));
 }

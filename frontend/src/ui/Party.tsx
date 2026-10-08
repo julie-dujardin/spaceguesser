@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { bodyOf } from '../game/bodies';
+import { shadedOn } from '../game/eclipse';
 import {
 	playedBy,
 	playedIn,
@@ -44,8 +45,11 @@ interface Props {
 	stops: Stop[] | null;
 	/** The modes a run can really be played in, given the ones asked for. */
 	modesFor: (asked: Modes) => Modes;
-	/** What the host has been looking at behind the lobby, and so has seen. */
+	/** What the host has been looking at behind the lobby, and so has seen. A
+	 *  run is flown on its date, whose sky is the one already read. */
 	opener: Asked | null;
+	/** A run took the opener's date: the next one is to have its own. */
+	onSpent: () => void;
 	/** Where the round on screen is, once that is known. */
 	truth: Place | null;
 	space: Space | null;
@@ -60,6 +64,7 @@ export function Party({
 	stops,
 	modesFor,
 	opener,
+	onSpent,
 	truth,
 	space,
 	heading,
@@ -73,12 +78,21 @@ export function Party({
 	const table = useMemo(() => standings(lobby), [lobby]);
 	const played = useMemo(() => playedBy(lobby, you ?? ''), [lobby, you]);
 
-	const start = () => {
-		if (!stops) return;
-		const taken = opener ? [opener] : [];
-		const rounds = drawRun(stops, settings.rounds, modesFor(settings.modes), taken);
-		session.send({ type: 'start', settings, rounds });
-	};
+	const start =
+		stops && opener
+			? () => {
+					const rounds = drawRun(
+						stops,
+						settings.rounds,
+						modesFor(settings.modes),
+						[opener],
+						opener.time,
+						shadedOn(opener.time)
+					);
+					session.send({ type: 'start', settings, rounds });
+					onSpent();
+				}
+			: undefined;
 	// Held steady across snapshots, which are new objects each time: the recap
 	// sets itself up again for whatever changes identity.
 	const told = JSON.stringify([lobby.history, lobby.players.map((seat) => seat.name)]);
@@ -121,8 +135,8 @@ export function Party({
 					<LobbyCard
 						lobby={lobby}
 						you={you}
-						ready={!!stops}
-						onStart={start}
+						ready={!!start}
+						onStart={() => start?.()}
 						onEdit={() => setEditing(true)}
 						onLeave={session.leave}
 					/>
@@ -155,7 +169,7 @@ export function Party({
 					played={played}
 					others={everyoneElse}
 					avatar={mine}
-					onAgain={hosting && stops ? start : undefined}
+					onAgain={hosting ? start : undefined}
 					onHome={session.leave}
 				>
 					<Standings standings={table} you={you} />

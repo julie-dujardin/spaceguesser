@@ -1,11 +1,13 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
+import { shadedOn } from './game/eclipse';
 import { clearHistory, keepRun, pastRun, recallHistory, type PastRun } from './game/history';
 import { inviteCode, invitePath, playedBy, settingsOf, standings } from './game/lobby';
 import { keepProfile } from './game/players';
 import {
 	altitudeKm,
+	drawLitRun,
 	drawRun,
 	shownDate,
 	type Modes,
@@ -157,8 +159,14 @@ export default function App() {
 	const ready = !!stops && (stops.length > 0 || canOrbit);
 	useEffect(() => {
 		if (!stops || !ready || opener) return;
-		setOpener(drawRun(stops, 1, modesFor(QUICK_PLAY.modes))[0] ?? null);
-	}, [stops, ready, opener, modesFor]);
+		let dropped = false;
+		void drawLitRun(stops, 1, modesFor(QUICK_PLAY.modes), run.drawn).then(([round]) => {
+			if (!dropped) setOpener(round ?? null);
+		});
+		return () => {
+			dropped = true;
+		};
+	}, [stops, ready, opener, modesFor, run.drawn]);
 	// An orbit opener with no map to show it in gives way to a stop.
 	useEffect(() => {
 		if (!canOrbit && opener?.mode === 'orbit') setOpener(null);
@@ -170,14 +178,21 @@ export default function App() {
 			setGuess(null);
 			setMapOpen(false);
 			const modes = modesFor(settings.modes);
-			// The opener is the first round only when the run plays its kind.
+			// The opener is the first round only when the run plays its kind. Its
+			// date is the run's either way: that sky is the one already read.
 			const first = modes[opener.mode] ? [opener] : [];
-			const rest = drawRun(stops, settings.rounds - first.length, modes, first, first[0]?.time);
-			const drawn = [...first, ...rest];
-			dispatch({ kind: 'start', settings, drawn });
-			// The opener is spent: draw the next one now, so leaving the run finds a
-			// place it has not already used. Moving between menus leaves it alone.
-			setOpener(drawRun(stops, 1, modesFor(QUICK_PLAY.modes), drawn)[0] ?? opener);
+			const rest = drawRun(
+				stops,
+				settings.rounds - first.length,
+				modes,
+				first,
+				opener.time,
+				shadedOn(opener.time)
+			);
+			dispatch({ kind: 'start', settings, drawn: [...first, ...rest] });
+			// The opener is spent: leaving the run must not find a place it has
+			// already used. Moving between menus leaves it alone.
+			setOpener(null);
 		},
 		[stops, opener, modesFor]
 	);
@@ -290,7 +305,14 @@ export default function App() {
 	const redraw = () => {
 		if (!stops || lobby || shown?.mode !== 'orbit') return;
 		const modes = modesFor(run.phase === 'playing' ? run.settings.modes : QUICK_PLAY.modes);
-		const [fresh] = drawRun(stops, 1, modes, [...run.drawn, shown], shown.time);
+		const [fresh] = drawRun(
+			stops,
+			1,
+			modes,
+			[...run.drawn, shown],
+			shown.time,
+			shadedOn(shown.time)
+		);
 		if (!fresh) return;
 		if (run.phase === 'playing') dispatch({ kind: 'redraw', round: fresh });
 		else setOpener(fresh);
@@ -391,6 +413,7 @@ export default function App() {
 					stops={ready ? stops : null}
 					modesFor={modesFor}
 					opener={opener}
+					onSpent={() => setOpener(null)}
 					truth={truth}
 					space={space}
 					heading={heading}
