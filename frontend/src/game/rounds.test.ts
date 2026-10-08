@@ -1,16 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance } from './bodies';
-import {
-	altitudeKm,
-	anywhere,
-	drawDate,
-	drawRun,
-	measuredAt,
-	shownDate,
-	spot,
-	type Stop
-} from './rounds';
+import { altitudeKm, drawDate, drawRun, measuredAt, shownDate, spot, type Stop } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -55,11 +46,6 @@ describe('spot', () => {
 		const noon = { lat: 12, lon: -40 };
 		expect(apart(spot({ u: 0, v: 0.3 }, noon), noon)).toBeCloseTo(0, 6);
 		expect(apart(spot({ u: 1, v: 0.3 }, noon), noon)).toBeCloseTo(50, 6);
-	});
-
-	it('covers the whole sphere when there is no noon to stay near', () => {
-		expect(anywhere({ u: 0, v: 0 })).toEqual({ lat: -90, lon: -180 });
-		expect(anywhere({ u: 0.5, v: 0.5 }).lat).toBeCloseTo(0, 9);
 	});
 });
 

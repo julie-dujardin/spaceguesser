@@ -57,15 +57,20 @@ const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
 /** Or on a run someone shared. */
 const SHARED = sharedCode(location.pathname);
 
-/** Every playable stop on every body that has any. */
+/** Every playable stop on every body that has any. A body whose list does not
+ *  come is left out, and the runs are drawn from the others. */
 async function fetchStops(): Promise<Stop[]> {
 	const bodies = (await fetchPanoramaIndex()).filter((body) => !NO_GROUND.has(body.id));
-	const lists = await Promise.all(
+	const lists = await Promise.allSettled(
 		bodies.map(async ({ id }) =>
 			(await fetchPanoramas(id)).filter(playable).map((entry) => ({ body: id, entry }))
 		)
 	);
-	return lists.flat();
+	const stops = lists.flatMap((list) => (list.status === 'fulfilled' ? list.value : []));
+	const failed = lists.find((list) => list.status === 'rejected');
+	// With none at all there is no ground to play on, and the reader is told why.
+	if (!stops.length && failed) throw failed.reason;
+	return stops;
 }
 
 export default function App() {

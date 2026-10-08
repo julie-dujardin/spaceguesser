@@ -97,12 +97,6 @@ export function spot(round: Pick<OrbitRound, 'u' | 'v'>, noon: LonLat): LonLat {
 	return { lat: lat / RAD, lon: ((((lon / RAD + 180) % 360) + 360) % 360) - 180 };
 }
 
-/** The place a body with no measured spin is stood over: it has no noon, so
- *  anywhere is as good as anywhere. */
-export function anywhere(round: Pick<OrbitRound, 'u' | 'v'>): LonLat {
-	return { lat: Math.asin(2 * round.u - 1) / RAD, lon: round.v * 360 - 180 };
-}
-
 export interface Modes {
 	ground: boolean;
 	orbit: boolean;

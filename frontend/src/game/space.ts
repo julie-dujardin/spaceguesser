@@ -7,7 +7,7 @@
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
 import { bodyOf, systemOf, viewDistance } from './bodies';
 import { HOST } from './host';
-import { anywhere, spot, type OrbitRound, type Place } from './rounds';
+import { spot, type OrbitRound, type Place } from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -19,8 +19,8 @@ const LOAD_TIMEOUT_MS = 20_000;
 const SETTLE_FRAMES = 4;
 /** A body the map will not settle on by now is one it cannot show. */
 const SETTLE_TIMEOUT_MS = 25_000;
-/** A spin the map has not fetched by now is taken as not measured. */
-const SPIN_TIMEOUT_MS = 5_000;
+/** A spin the map has not fetched by now is not coming. */
+const SPIN_TIMEOUT_MS = 20_000;
 /** A guessed body still streaming in is waited for this long, then left off. */
 const KNOWN_TIMEOUT_MS = 3_000;
 /** A flight lands in a few seconds or not at all. */
@@ -223,14 +223,17 @@ export class Space {
 		const turn = this.turn;
 		// The map answers once it knows how the body spins, which it fetches on
 		// arriving: before that the place would turn away from the Sun with it.
+		// There is no place to fall back on: everyone playing the round has to
+		// be over the same one.
 		const deadline = Date.now() + SPIN_TIMEOUT_MS;
 		let noon = this.map.getSubsolarPoint(round.body);
-		while (!noon && Date.now() < deadline) {
+		while (!noon) {
+			if (Date.now() > deadline) throw new Error(`${round.body} never said how it spins`);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			if (turn !== this.turn) throw new Error(`the map was sent elsewhere than ${round.body}`);
 			noon = this.map.getSubsolarPoint(round.body);
 		}
-		return { body: round.body, ...(noon ? spot(round, noon) : anywhere(round)) };
+		return { body: round.body, ...spot(round, noon) };
 	}
 
 	/**

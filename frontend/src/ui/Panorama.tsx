@@ -25,6 +25,9 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	// The view on screen. `view` is still the old one for a render after a
+	// rebuild removed it, and what that one has to say is no longer news.
+	const live = useRef<PanoramaView | null>(null);
 	// Where a view built now would open. Within one view a new panorama is
 	// opened on it instead, but the movement mode does rebuild the view, and it
 	// should come up in the place the reader is playing rather than the one they
@@ -57,6 +60,7 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 			.then((created) => {
 				if (dropped) return created.remove();
 				made = created;
+				live.current = created;
 				setView(created);
 			})
 			.catch((cause: unknown) => {
@@ -65,13 +69,16 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 		return () => {
 			dropped = true;
 			made?.remove();
+			live.current = null;
 			setView(null);
 		};
 	}, [body, movement]);
 
 	useEffect(() => {
-		if (!view || view.getCurrent()?.id === at) return;
-		void view.open(at).catch((cause: unknown) => setError(String(cause)));
+		if (!view || view !== live.current || view.getCurrent()?.id === at) return;
+		void view.open(at).catch((cause: unknown) => {
+			if (view === live.current) setError(String(cause));
+		});
 	}, [view, at]);
 
 	return (
