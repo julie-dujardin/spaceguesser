@@ -41,8 +41,10 @@ impl Store {
 		})
 	}
 
-	pub async fn save(&self, lobby: &Lobby) {
-		let Some(pool) = &self.pool else { return };
+	/// False for a save made while writes are off, skipped or the one that got
+	/// no answer: it is still owed.
+	pub async fn save(&self, lobby: &Lobby) -> bool {
+		let Some(pool) = &self.pool else { return true };
 		let query = sqlx::query(
 			"insert into lobbies (code, state) values ($1, $2)
 			 on conflict (code) do update set state = excluded.state, updated_at = now()",
@@ -51,6 +53,7 @@ impl Store {
 		.bind(Json(lobby));
 		self.attempt("lobby not saved", Some(&lobby.code), query.execute(pool))
 			.await;
+		!self.off()
 	}
 
 	pub async fn delete(&self, code: &str) {
@@ -78,6 +81,14 @@ impl Store {
 		}
 	}
 
+	/// Whether writes are being skipped, after one that got no answer.
+	fn off(&self) -> bool {
+		self.down_until
+			.lock()
+			.unwrap()
+			.is_some_and(|until| Instant::now() < until)
+	}
+
 	/// A failed write costs a redeploy's safety net, not the game being played.
 	async fn attempt(
 		&self,
@@ -85,12 +96,7 @@ impl Store {
 		code: Option<&str>,
 		write: impl Future<Output = sqlx::Result<PgQueryResult>>,
 	) -> Option<PgQueryResult> {
-		if self
-			.down_until
-			.lock()
-			.unwrap()
-			.is_some_and(|until| Instant::now() < until)
-		{
+		if self.off() {
 			return None;
 		}
 		match timeout(WRITE_TIMEOUT, write).await {

@@ -133,9 +133,7 @@ enum Change {
 async fn run(registry: Arc<Registry>, mut lobby: Lobby, mut rx: mpsc::Receiver<Command>, fresh: bool) {
 	// Before the host hears of it: a host waiting alone has a lobby to come
 	// back to after a restart.
-	if fresh {
-		registry.store.save(&lobby).await;
-	}
+	let mut unsaved = fresh && !registry.store.save(&lobby).await;
 	let mut conns: HashMap<String, Conn> = HashMap::new();
 	let mut clock = interval(Duration::from_secs(1));
 	clock.set_missed_tick_behavior(MissedTickBehavior::Delay);
@@ -152,8 +150,10 @@ async fn run(registry: Arc<Registry>, mut lobby: Lobby, mut rx: mpsc::Receiver<C
 			None => Change::None,
 		};
 		// Saved before anyone is told, so nobody has seen a state a restart loses.
-		if change == Change::Stored {
-			registry.store.save(&lobby).await;
+		// A save the store did not take is owed, and tried again on each pass:
+		// the row is not left behind the game for want of another change.
+		if change == Change::Stored || unsaved {
+			unsaved = !registry.store.save(&lobby).await;
 		}
 		if change != Change::None {
 			broadcast(&mut lobby, &mut conns);

@@ -85,9 +85,11 @@ other close, 1000 included, is one to `rejoin` after.
   unless a game is running that it may still come back to.
 - A lobby everyone has left closes at once; one with nobody connected for five
   minutes is closed.
-- A socket that says nothing for 75 seconds, pings unanswered, is dropped.
+- A socket that says nothing for 75 seconds, pings unanswered, is dropped, and
+  so is one that takes nothing sent to it for 30.
 - Every change is written to Postgres before it is broadcast, so a restart
   picks every game up where it was. A database that stops answering holds a
   move up for two seconds, then writes are skipped for fifteen: it costs that
-  safety, not the game. A lobby that closes meanwhile leaves its row, and rows
-  without a lobby are cleared every minute.
+  safety, not the game. A save skipped meanwhile is made up once writes are
+  back. A lobby that closes meanwhile leaves its row, and rows without a lobby
+  are cleared every minute.

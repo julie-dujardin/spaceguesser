@@ -25,6 +25,9 @@ const MAX_MESSAGE_BYTES: usize = 256 * 1024;
 const READ_BUFFER_BYTES: usize = 4 * 1024;
 const HELLO_TIMEOUT: Duration = Duration::from_secs(10);
 const CLOSE_TIMEOUT: Duration = Duration::from_secs(5);
+/// A frame not taken by now is going to a peer that has stopped reading, and
+/// would hold the socket's task and its descriptor for as long as it liked.
+const SEND_TIMEOUT: Duration = Duration::from_secs(30);
 /// Under the proxy's idle cutoff, which drops a socket that says nothing for 100 s.
 const PING_EVERY: Duration = Duration::from_secs(30);
 /// A game needs a message every few seconds; this is someone leaning on the socket.
@@ -52,8 +55,8 @@ pub async fn upgrade(State(app): State<Arc<App>>, headers: HeaderMap, upgrade: W
 async fn serve(app: Arc<App>, socket: WebSocket) {
 	let (sink, mut stream) = socket.split();
 	let (tx, rx) = mpsc::channel(OUTBOX);
-	tokio::spawn(write(sink, rx));
 	let hang_up = Arc::new(Notify::new());
+	tokio::spawn(write(sink, rx, hang_up.clone()));
 	let conn = Conn {
 		id: NEXT_CONN.fetch_add(1, Ordering::Relaxed),
 		tx: tx.clone(),
@@ -151,7 +154,9 @@ fn find(app: &App, code: &str) -> Result<Handle, Error> {
 		.ok_or(Error::NotFound)
 }
 
-async fn write(mut sink: SplitSink<WebSocket, Message>, mut rx: mpsc::Receiver<Message>) {
+/// Sends what the lobby queues until the socket's reader is done. A send that
+/// fails or hangs ends both: `hang_up` stops the reader.
+async fn write(mut sink: SplitSink<WebSocket, Message>, mut rx: mpsc::Receiver<Message>, hang_up: Arc<Notify>) {
 	let mut ping = interval(PING_EVERY);
 	// A close with a status, which a browser otherwise reports as abnormal. When
 	// the client closed first the send is refused, and closing the sink answers
@@ -173,7 +178,8 @@ async fn write(mut sink: SplitSink<WebSocket, Message>, mut rx: mpsc::Receiver<M
 				break;
 			}
 			Some(msg) => {
-				if sink.send(msg).await.is_err() {
+				if !matches!(timeout(SEND_TIMEOUT, sink.send(msg)).await, Ok(Ok(()))) {
+					hang_up.notify_one();
 					return;
 				}
 			}
