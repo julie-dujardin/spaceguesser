@@ -6,6 +6,7 @@
 import type { LonLat } from 'spacemap';
 import { profileOf, type Profile } from './players';
 import type { Round } from './rounds';
+import { INVITE_PATH } from './routes';
 import { QUICK_PLAY, type Movement, type RunSettings } from './rules';
 import { NO_SKY, score, type Guess, type Score } from './scoring';
 import type { Played } from './run';
@@ -79,7 +80,7 @@ export const SEAT_TAKEN = 4000;
 
 /** The code an invite link carries, if `path` is one. */
 export function inviteCode(path: string): string | null {
-	return /^\/j\/([a-z0-9]{6})\/?$/i.exec(path)?.[1].toUpperCase() ?? null;
+	return INVITE_PATH.exec(path)?.[1].toUpperCase() ?? null;
 }
 
 export function invitePath(code: string): string {

@@ -18,8 +18,17 @@ describe('the Worker', () => {
 		expect(ran(await response.text())).toEqual({ PUBLIC_MULTIPLAYER_URL: 'wss://play.test/ws' });
 	});
 
-	it('leaves every other path to the files', async () => {
-		const response = await worker.fetch(new Request('https://game.test/about/privacy'), { ASSETS });
+	it('leaves a page of the app to the files', async () => {
+		for (const path of ['/about/privacy', '/j/QBJMQ2', '/r/AAECAwQ']) {
+			const response = await worker.fetch(new Request(`https://game.test${path}`), { ASSETS });
+			expect(response.status, path).toBe(200);
+			expect(await response.text()).toBe('the app');
+		}
+	});
+
+	it('answers the app, not found, where there is no page', async () => {
+		const response = await worker.fetch(new Request('https://game.test/wp-login.php'), { ASSETS });
+		expect(response.status).toBe(404);
 		expect(await response.text()).toBe('the app');
 	});
 });

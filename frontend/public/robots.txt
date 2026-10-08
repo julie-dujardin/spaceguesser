@@ -1,0 +1,5 @@
+# Nothing is kept from a crawler. The links to lobbies and runs are kept out
+# of search results by a header (_headers): closing them here would also
+# close them to the previews of the links people send each other.
+User-agent: *
+Allow: /

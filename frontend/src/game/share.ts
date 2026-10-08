@@ -8,6 +8,7 @@ import { fetchPanoramas, type LonLat, type PanoramaEntry } from 'spacemap';
 import { bodyOf } from './bodies';
 import { measure } from './measure';
 import type { Mode, Place, Round } from './rounds';
+import { SHARED_PATH } from './routes';
 import { play, type Played } from './run';
 import type { Guess } from './scoring';
 
@@ -119,7 +120,7 @@ export function sharePath(played: readonly Played[]): string | null {
 
 /** The run a share link carries, still packed, if `path` is one. */
 export function sharedCode(path: string): string | null {
-	return /^\/r\/([\w-]+)\/?$/.exec(path)?.[1] ?? null;
+	return SHARED_PATH.exec(path)?.[1] ?? null;
 }
 
 /** Throws on anything `sharePath` did not write. */
