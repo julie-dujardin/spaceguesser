@@ -26,7 +26,7 @@ socket sends picks its lobby:
 | message | |
 | --- | --- |
 | `create {name, proof?}` | opens a lobby and hosts it |
-| `join {code, name, proof?}` | takes a seat, while no game is running |
+| `join {code, name, proof?}` | takes a seat: in the game under way, or for the next |
 | `rejoin {code, token}` | takes a seat back after a dropped socket or a redeploy |
 
 `proof` is a Turnstile token, [where the server wants one](#proof-of-a-person).
@@ -68,7 +68,7 @@ The server sends three things:
   finished rounds' guesses by player, so a round's guesses stay hidden until it
   closes. `ends_at` and `now` are epoch milliseconds on the server's clock.
 
-- `error {code}`: `not_found`, `full`, `in_progress`, `not_host`, `bad_phase`,
+- `error {code}`: `not_found`, `full`, `not_host`, `bad_phase`,
   `bad_request`, `already_guessed`, `busy`, `unverified`.
 
 ## Proof of a person
@@ -118,10 +118,13 @@ other close, 1000 included, is one to `rejoin` after.
 - A dropped socket keeps its seat, and for 20 seconds its round waits for it
   and its hosting stays with it. After that the round closes without it and
   the next player in hosts. A restart starts that clock afresh for everyone.
-- A seat with a guess in the game keeps its name on the scoreboard when it
-  leaves or drops, until the next `start`, which keeps only who is there. One
-  with none is cleared: at once when it leaves, and after 20 seconds dropped,
-  unless a game is running that it may still come back to.
+- A game under way takes new players, from the round it is on. One that is
+  over seats them for the next.
+- A seat that was in the game stays, left or dropped, with its name on the
+  scoreboard, until the next `start`, which keeps only who is there. A seat
+  waiting for a game, before the first or after the last, is cleared when it
+  leaves, or after 20 seconds dropped. A lobby waits on 12 players at a time,
+  and seats 48 in all.
 - A lobby everyone has left closes at once; one with nobody connected for five
   minutes is closed.
 - A socket that says nothing for 75 seconds, pings unanswered, is dropped, and

@@ -43,7 +43,6 @@ export interface Lobby {
 export type LobbyError =
 	| 'not_found'
 	| 'full'
-	| 'in_progress'
 	| 'not_host'
 	| 'bad_phase'
 	| 'bad_request'

@@ -122,6 +122,11 @@ wherever the player walked to; a multiplayer guess is scored against where the
 round opened, so that everyone is ranked on one question and the recap has one
 place to show. A round from orbit is the same question for everyone already.
 
+The link goes on working while a game is played: someone late takes a seat at
+the round it is on, with nothing for the rounds gone by, and everyone seated
+stays on the scoreboard to the end, whatever they answered. Someone who comes
+once the game is over is seated for the next one its host starts.
+
 The seat is kept in the browser, so a reload, a dropped connection or a
 redeploy of the server lands back in the game. Opening the same seat in a
 second tab moves it there, and the first tab says so rather than fighting for

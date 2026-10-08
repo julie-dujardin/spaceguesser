@@ -67,7 +67,6 @@
 	"join_lobby": "Join lobby",
 	"trouble_not_found": "No run with that code",
 	"trouble_full": "That lobby is full",
-	"trouble_in_progress": "That run has already started — it takes new players between games",
 	"trouble_busy": "The server is full — try again in a moment",
 	"trouble_unreachable": "Could not reach the server",
 	"trouble_unverified_unbuilt": "The server asked for a check this page does not have — reload the page",

@@ -67,7 +67,6 @@
 	"join_lobby": "Rejoindre le salon",
 	"trouble_not_found": "Aucune partie avec ce code",
 	"trouble_full": "Ce salon est complet",
-	"trouble_in_progress": "Cette partie a déjà commencé — de nouveaux joueurs peuvent entrer entre deux parties",
 	"trouble_busy": "Le serveur est complet — réessayez dans un instant",
 	"trouble_unreachable": "Serveur injoignable",
 	"trouble_unverified_unbuilt": "Le serveur demande une vérification que cette page n'a pas — rechargez la page",

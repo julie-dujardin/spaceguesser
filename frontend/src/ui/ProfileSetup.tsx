@@ -20,7 +20,6 @@ interface Props {
 const TROUBLES: Partial<Record<Trouble, () => string>> = {
 	not_found: m.trouble_not_found,
 	full: m.trouble_full,
-	in_progress: m.trouble_in_progress,
 	busy: m.trouble_busy,
 	// A build with no check to run has no blocker to blame for it.
 	unverified: TURNSTILE ? m.trouble_unverified : m.trouble_unverified_unbuilt,
