@@ -12,6 +12,8 @@ services:
       - POSTGRES_DB=multiplayer
     # A few hundred small rows: sized to stay out of the search index's memory.
     command: postgres -c shared_buffers=32MB -c max_connections=20
+    mem_limit: 1g
+    memswap_limit: 1g
     volumes:
       - ${PG_DATA_HOST_DIR:-/srv/spaceguesser/pg_data}:/var/lib/postgresql
     healthcheck:
@@ -35,6 +37,12 @@ services:
     # Every player is an open file, and a container's soft limit is 1024.
     ulimits:
       nofile: 65536
+    # A backstop for the search index on the same host: the server's own caps
+    # are what bound it, and only a fault or a flood gets this far. The same
+    # figure for memory and swap together leaves it no swap: Docker otherwise
+    # gives a container as much again of the host's.
+    mem_limit: 4g
+    memswap_limit: 4g
     # The game has no host port: its only way in is the tunnel (TLS terminates at
     # Cloudflare). Its counts have one, for Prometheus. Never on 0.0.0.0: Docker
     # opens a published port past the host's firewall.
