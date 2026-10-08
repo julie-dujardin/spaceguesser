@@ -20,6 +20,9 @@ services:
     build: ./backend
     environment:
       - DATABASE_URL=postgres://multiplayer:dev@postgres/multiplayer
+      # Unset, nobody is asked for proof of a person.
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET:-}
+      - TURNSTILE_REQUIRE=${TURNSTILE_REQUIRE:-}
     ports:
       - "127.0.0.1:8787:8787"
     depends_on:

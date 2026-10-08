@@ -29,6 +29,9 @@ services:
       - DATABASE_URL=postgres://multiplayer:${POSTGRES_PASSWORD:?}@postgres/multiplayer
       # Required: the server reads an empty list as "any origin", for development.
       - ALLOWED_ORIGINS=${ALLOWED_ORIGINS:?}
+      # Unset, the server asks nobody for proof of a person.
+      - TURNSTILE_SECRET=${TURNSTILE_SECRET:-}
+      - TURNSTILE_REQUIRE=${TURNSTILE_REQUIRE:-}
     # Every player is an open file, and a container's soft limit is 1024.
     ulimits:
       nofile: 65536

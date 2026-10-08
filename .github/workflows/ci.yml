@@ -36,6 +36,8 @@ jobs:
         env:
           # wss://<the tunnel's hostname>/ws. Unset, the build has no multiplayer.
           VITE_MULTIPLAYER_URL: ${{ vars.MULTIPLAYER_URL }}
+          # The Turnstile widget's. Unset, the build sends the server no proof.
+          VITE_TURNSTILE_SITEKEY: ${{ vars.TURNSTILE_SITEKEY }}
 
       - uses: actions/upload-artifact@v4
         with:
