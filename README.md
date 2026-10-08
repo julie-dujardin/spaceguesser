@@ -242,9 +242,11 @@ Those it also tells which addresses are pages (`frontend/src/game/routes.ts`):
 any other gets the app with a 404.
 
 What the site says of itself is in `frontend/public`: `_headers`, the response
-headers Cloudflare sets on the files; `robots.txt`; and `og.jpg`, the picture a
-link to the game is previewed with, under the title and description in
-`index.html`. The picture is a screenshot: the home card's name and first
+headers Cloudflare sets on the files; `robots.txt`; the icons, with the manifest
+a phone reads when the game is put on its home screen, and `favicon.ico` for
+what asks for an icon at that address and takes no SVG, made from
+`favicon.svg` at 16, 32 and 48 pixels; and `og.jpg`, the picture a link to the
+game is previewed with, under the title and description in `index.html`. The picture is a screenshot: the home card's name and first
 sentence, drawn larger, over the panorama `curiosity-pia20840` at heading 188°,
 pitch −9° and a 46° field of view. The build adds `/.well-known/security.txt`,
 dated to go stale eleven months after it.
