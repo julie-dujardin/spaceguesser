@@ -89,7 +89,8 @@ export function FinalScore({
 
 	return (
 		<div className="board">
-			<Recap space={space} rounds={recap} focus={focus} />
+			{/* A game nobody answered a round of has nowhere to fly to. */}
+			{recap.length > 0 && <Recap space={space} rounds={recap} focus={focus} />}
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">{shared ? m.shared_run() : (then ?? m.run_complete())}</span>

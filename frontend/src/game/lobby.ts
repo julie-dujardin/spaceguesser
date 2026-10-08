@@ -3,10 +3,11 @@
  * settings, rounds and guesses are this app's own JSON, and are read back here.
  */
 
+import type { LonLat } from 'spacemap';
 import { profileOf, type Profile } from './players';
 import type { Round } from './rounds';
 import { QUICK_PLAY, type Movement, type RunSettings } from './rules';
-import { NO_SKY, score } from './scoring';
+import { NO_SKY, score, type Guess, type Score } from './scoring';
 import type { Played } from './run';
 
 export type LobbyPhase = 'lobby' | 'playing' | 'result' | 'final';
@@ -106,6 +107,68 @@ export function slim(round: Round): Round {
 	if (round.mode === 'orbit') return round;
 	const { id, mission, sol, time, lat, lon } = round.entry;
 	return { ...round, entry: { id, mission, sol, time, lat, lon } };
+}
+
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+	typeof value === 'object' && value !== null;
+const isText = (value: unknown): value is string => typeof value === 'string';
+const isNumber = (value: unknown): value is number => Number.isFinite(value);
+const isPlace = (value: unknown): value is LonLat =>
+	isRecord(value) && isNumber(value.lat) && isNumber(value.lon);
+
+/** A round as a guess carries it, see `slim`. */
+function isRound(value: unknown): value is Round {
+	if (!isRecord(value) || !isText(value.body) || !isNumber(value.time)) return false;
+	if (value.mode === 'orbit') return isNumber(value.u) && isNumber(value.v);
+	const { entry } = value;
+	return (
+		value.mode === 'ground' &&
+		isRecord(entry) &&
+		isPlace(entry) &&
+		isText(entry.id) &&
+		isText(entry.time) &&
+		(entry.mission === undefined || isText(entry.mission)) &&
+		(entry.sol === undefined || isNumber(entry.sol))
+	);
+}
+
+function isGuess(value: unknown): value is Guess {
+	return isRecord(value) && isText(value.body) && (value.at === null || isPlace(value.at));
+}
+
+function isScore(value: unknown): value is Score {
+	return (
+		isRecord(value) &&
+		[value.points, value.system, value.body, value.surface].every(isNumber) &&
+		[value.groundKm, value.spaceKm].every((km) => km === null || isNumber(km))
+	);
+}
+
+function isPlayed(value: unknown): value is Played {
+	if (!isRecord(value)) return false;
+	const { round, truth, guess, score, secondsLeft, timedOut } = value;
+	return (
+		isRound(round) &&
+		isRecord(truth) &&
+		isText(truth.body) &&
+		isPlace(truth) &&
+		(guess === null || isGuess(guess)) &&
+		isScore(score) &&
+		(secondsLeft === null || isNumber(secondsLeft)) &&
+		typeof timedOut === 'boolean'
+	);
+}
+
+/**
+ * A snapshot as this build can draw it. The server relays guesses unread, so
+ * one another build of the app wrote, or none did, is dropped here rather than
+ * met in a render: its player sat the round out.
+ */
+export function lobbyOf(told: Lobby): Lobby {
+	const history = told.history.map((round) =>
+		Object.fromEntries(Object.entries(round).filter(([, played]) => isPlayed(played)))
+	);
+	return { ...told, history };
 }
 
 export interface Standing {

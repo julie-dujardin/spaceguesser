@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
 	SEAT_TAKEN,
+	lobbyOf,
 	type ClientMessage,
 	type Lobby,
 	type LobbyError,
@@ -120,7 +121,7 @@ export function useLobby(invite: string | null, resume = true) {
 					setSession((old) => ({
 						...old,
 						status: 'open',
-						lobby: message.lobby,
+						lobby: lobbyOf(message.lobby),
 						skew: message.now - Date.now(),
 						trouble: null
 					}));
