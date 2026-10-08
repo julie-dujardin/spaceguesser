@@ -27,11 +27,13 @@ connected to for five minutes, is closed and its row deleted.
    the site is live with the sitekey: a page without it has no proof to give,
    and opens no lobby on a server that requires one.
 4. Bring up the stack.
-5. Add a rate limiting rule (the zone > Security > WAF > Rate limiting rules)
-   on `http.host eq "<the tunnel's hostname>" and http.request.uri.path eq "/ws"`:
-   100 requests per 10 seconds per IP, block. A proof guards what a socket
-   may open, not the opening of sockets; this does. A player reconnecting
-   opens five in ten seconds, so it leaves room for twenty behind one address.
+5. Add a rate limiting rule (the zone > Security > Security rules > Create
+   rule > Rate limiting rules) on `http.request.uri.path eq "/ws"`: 100
+   requests per 10 seconds per IP, block for 10 seconds. A free plan's rule
+   matches on the path alone, so it counts `/ws` on every hostname of the
+   zone. A proof guards what a socket may open, not the opening of sockets;
+   this does. A player reconnecting opens five in ten seconds, so it leaves
+   room for twenty behind one address.
 
 The image is built and pushed to GHCR by the `backend` workflow on every push
 to `main` that touches `backend/`. To ship one, pull and recreate:
