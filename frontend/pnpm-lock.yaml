@@ -21,8 +21,8 @@ importers:
         specifier: ^19.2.0
         version: 19.3.0(react@19.3.0)
       spacemap:
-        specifier: ^0.1.11
-        version: 0.1.11(@types/three@0.183.1)(three@0.183.2)
+        specifier: ^0.1.12
+        version: 0.1.12(@types/three@0.183.1)(three@0.183.2)
       three:
         specifier: ^0.183.2
         version: 0.183.2
@@ -1415,8 +1415,8 @@ packages:
     resolution: {integrity: sha512-UXWMKhLOwVKb728IUtQPXxfYU+usdybtUrK/8uGE8CQMvrhOpwvzDBwj0QhSL7MQc7vIsISBG8VQ8+IDQxpfQA==}
     engines: {node: '>=0.10.0'}
 
-  spacemap@0.1.11:
-    resolution: {integrity: sha512-HioNbrXovpTrEzod+PmWPqvFDe+ffGaJRZ/vP+DptO+jaHcLS4pypKLlzsosRMFlllmb2wK36hvVuzV1eEAacQ==}
+  spacemap@0.1.12:
+    resolution: {integrity: sha512-ZWPZZzONiRvq9QC+6rC6q471dS3bvkKLoDwzpFItloyXlyTpLSPLPHF3f9jXiDribh4PN6M4DmVCANFDcIXEmQ==}
     peerDependencies:
       '@types/three': ^0.183.0
       three: ^0.183.0
@@ -2701,7 +2701,7 @@ snapshots:
 
   source-map-js@1.2.1: {}
 
-  spacemap@0.1.11(@types/three@0.183.1)(three@0.183.2):
+  spacemap@0.1.12(@types/three@0.183.1)(three@0.183.2):
     dependencies:
       three: 0.183.2
     optionalDependencies:
