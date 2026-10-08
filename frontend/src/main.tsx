@@ -5,6 +5,7 @@ import { aboutPage } from './game/about';
 import { setHost } from './game/host';
 import { getLocale, getTextDirection } from './paraglide/runtime.js';
 import { About } from './ui/About';
+import { Boundary } from './ui/Boundary';
 import './styles/app.css';
 
 setHost();
@@ -16,5 +17,7 @@ document.documentElement.dir = getTextDirection();
 const ABOUT = aboutPage(location.pathname);
 
 createRoot(document.getElementById('root')!).render(
-	<StrictMode>{ABOUT ? <About page={ABOUT} /> : <App />}</StrictMode>
+	<StrictMode>
+		<Boundary>{ABOUT ? <About page={ABOUT} /> : <App />}</Boundary>
+	</StrictMode>
 );

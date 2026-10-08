@@ -716,6 +716,15 @@ button {
 	align-self: center;
 }
 
+.broken {
+	padding: 32px 28px;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: 16px;
+	text-align: center;
+}
+
 .aside {
 	padding: 18px 12px 18px 18px;
 	border-right: 1px solid var(--gborder);

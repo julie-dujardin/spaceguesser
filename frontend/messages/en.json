@@ -18,6 +18,8 @@
 	"source_on_github": "source on github",
 	"notice_shared_run_lost": "that shared run could not be opened",
 	"notice_run_ended": "that run ended while you were away",
+	"broken_lede": "The game ran into an error and stopped.",
+	"broken_reload": "Reload the page",
 	"rejoining_run": "Rejoining your run…",
 	"opening_shared_run": "Opening a shared run…",
 	"create_run": "Create run",
