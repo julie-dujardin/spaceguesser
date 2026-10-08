@@ -444,13 +444,14 @@ export default function App() {
 			{door?.at === 'profile' && (
 				<ProfileSetup
 					code={door.code}
-					busy={party.status === 'connecting'}
+					// A seat just taken shows this card once more before it closes it.
+					busy={party.status !== 'idle'}
 					trouble={party.trouble}
 					onBack={() => enter(INVITE && door.code === INVITE ? null : { at: 'friends' })}
-					onGo={(profile) => {
+					onGo={(profile, proof) => {
 						keepProfile(profile);
-						if (door.code === undefined) party.create(profile, door.settings);
-						else party.join(door.code, profile);
+						if (door.code === undefined) party.create(profile, door.settings, proof);
+						else party.join(door.code, profile, proof);
 					}}
 				/>
 			)}

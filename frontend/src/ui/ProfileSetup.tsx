@@ -1,8 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { EMOJI, NAME_MAX, SWATCHES, recallProfile, type Profile } from '../game/players';
 import type { Trouble } from '../game/useLobby';
 import * as m from '../paraglide/messages.js';
 import { Avatar, Glyph } from './Avatar';
+import { TURNSTILE, useProof } from './useProof';
 
 interface Props {
 	/** The run being joined; absent when this player is opening one. */
@@ -11,7 +12,8 @@ interface Props {
 	edit?: boolean;
 	busy: boolean;
 	trouble: Trouble | null;
-	onGo: (profile: Profile) => void;
+	/** `proof` is for the server, and null when there is none to give it. */
+	onGo: (profile: Profile, proof: string | null) => void;
 	onBack: () => void;
 }
 
@@ -20,6 +22,8 @@ const TROUBLES: Partial<Record<Trouble, () => string>> = {
 	full: m.trouble_full,
 	in_progress: m.trouble_in_progress,
 	busy: m.trouble_busy,
+	// A build with no check to run has no blocker to blame for it.
+	unverified: TURNSTILE ? m.trouble_unverified : m.trouble_unverified_unbuilt,
 	unreachable: m.trouble_unreachable
 };
 
@@ -27,6 +31,17 @@ export function ProfileSetup({ code, edit, busy, trouble, onGo, onBack }: Props)
 	const [profile, setProfile] = useState(recallProfile);
 	const set = (patch: Partial<Profile>) => setProfile((old) => ({ ...old, ...patch }));
 	const named = profile.name.trim().length > 0;
+	// Not while a connection is under way: a seat taken back needs no proof, and
+	// an opening that is refused needs a new one, which a new widget makes.
+	const proof = useProof(edit || busy ? null : code ? 'join' : 'create');
+	/** Between the click and the token it waits for. */
+	const [checking, setChecking] = useState(false);
+	const held = busy || checking;
+	/** The card as it is when the token comes, not as it was at the click. */
+	const latest = useRef(profile);
+	useEffect(() => {
+		latest.current = profile;
+	});
 
 	return (
 		<div className="scrim">
@@ -35,7 +50,13 @@ export function ProfileSetup({ code, edit, busy, trouble, onGo, onBack }: Props)
 				style={{ width: 404 }}
 				onSubmit={(event) => {
 					event.preventDefault();
-					if (named && !busy) onGo({ ...profile, name: profile.name.trim() });
+					if (!named || held) return;
+					setChecking(true);
+					void proof.take().then((token) => {
+						setChecking(false);
+						const name = latest.current.name.trim();
+						if (token !== undefined && name) onGo({ ...latest.current, name }, token);
+					});
 				}}
 			>
 				<div className="hdr">
@@ -96,10 +117,25 @@ export function ProfileSetup({ code, edit, busy, trouble, onGo, onBack }: Props)
 					<span className="mono dim tag">{m.how_others_see_you()}</span>
 				</div>
 				{trouble && <span className="note bad">{TROUBLES[trouble]?.() ?? trouble}</span>}
-				<div className="acts">
-					<button type="submit" className="btn lg" style={{ flex: 1 }} disabled={!named || busy}>
-						{busy ? m.connecting() : edit ? m.save() : code ? m.join_lobby() : m.create_lobby()}
-					</button>
+				<div className="gate">
+					<div ref={proof.slot} className={proof.shown ? 'proof shown' : 'proof'} />
+					<div className="acts">
+						{/* While Cloudflare wants a click, the button waits on it and says what it will do. */}
+						<button
+							type="submit"
+							className="btn lg"
+							style={{ flex: 1 }}
+							disabled={!named || held || proof.asking}
+						>
+							{held && !proof.asking
+								? m.connecting()
+								: edit
+									? m.save()
+									: code
+										? m.join_lobby()
+										: m.create_lobby()}
+						</button>
+					</div>
 				</div>
 			</form>
 		</div>

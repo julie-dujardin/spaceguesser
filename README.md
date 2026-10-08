@@ -28,6 +28,12 @@ docker compose up --build   # the multiplayer server, on :8787
 echo 'VITE_MULTIPLAYER_URL=ws://127.0.0.1:8787/ws' > frontend/.env
 ```
 
+The server can ask for proof that a person is opening a lobby or joining one: a
+Turnstile token, made on the card that asks for a name when
+`VITE_TURNSTILE_SITEKEY` names a widget. Solo play never loads it. The
+server's [README](backend/README.md#proof-of-a-person) has what it requires and
+the keys to try it with.
+
 ## What a round is
 
 A round is one of two kinds, a coin toss each time unless a custom run asks for

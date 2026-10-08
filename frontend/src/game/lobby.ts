@@ -48,11 +48,13 @@ export type LobbyError =
 	| 'bad_phase'
 	| 'bad_request'
 	| 'already_guessed'
-	| 'busy';
+	| 'busy'
+	| 'unverified';
 
 export type ClientMessage =
-	| { type: 'create'; name: string }
-	| { type: 'join'; code: string; name: string }
+	// `proof` is a Turnstile token, which a server may want before it opens either.
+	| { type: 'create'; name: string; proof?: string }
+	| { type: 'join'; code: string; name: string; proof?: string }
 	| { type: 'rejoin'; code: string; token: string }
 	| { type: 'settings'; settings: RunSettings }
 	| { type: 'start'; settings: RunSettings; rounds: Round[] }

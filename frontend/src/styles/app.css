@@ -562,6 +562,9 @@ button {
 	   measured against itself and a wide card hanging off a narrow screen. */
 	grid-template-columns: minmax(0, 1fr);
 	place-items: center;
+	/* A card taller than the screen starts at its top, which centring would
+	   put out of reach of the scroll. */
+	align-items: safe center;
 	padding: 16px;
 	overflow: auto;
 	pointer-events: none;
@@ -671,6 +674,24 @@ button {
 	display: flex;
 	gap: 8px;
 	padding-top: 2px;
+}
+
+/* Turnstile's widget over the button it holds up. One item of the panel, so
+   the widget takes no room there until it shows. */
+.gate {
+	display: flex;
+	flex-direction: column;
+}
+
+/* The widget is never under 300px wide, which a small phone's card has not
+   got: `--fit` is how much smaller it is drawn there. */
+.proof > div {
+	width: max(100%, 300px);
+	zoom: var(--fit, 1);
+}
+
+.proof.shown {
+	margin-bottom: 12px;
 }
 
 /* --- home ---------------------------------------------------------------- */

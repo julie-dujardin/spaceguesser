@@ -70,6 +70,8 @@
 	"trouble_in_progress": "Cette partie a déjà commencé — de nouveaux joueurs peuvent entrer entre deux parties",
 	"trouble_busy": "Le serveur est complet — réessayez dans un instant",
 	"trouble_unreachable": "Serveur injoignable",
+	"trouble_unverified_unbuilt": "Le serveur demande une vérification que cette page n'a pas — rechargez la page",
+	"trouble_unverified": "Impossible de vérifier que vous êtes humain — réessayez, ou désactivez ce qui bloque la vérification de Cloudflare",
 	"lobby": "Salon",
 	"invite_link": "lien d'invitation",
 	"invite_note": "Quiconque a le lien peut rejoindre avant le lancement",

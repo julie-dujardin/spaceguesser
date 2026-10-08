@@ -72,15 +72,22 @@ function keepSeat(seat: Kept | null) {
 	}
 }
 
+/** The seat to take back on load: one kept from an earlier game, unless the
+ *  visitor came for another, or with `resume` off for no game at all. */
+function resumable(invite: string | null, resume: boolean): Kept | null {
+	const kept = SERVER && resume ? recallSeat() : null;
+	return kept && (!invite || invite === kept.code) ? kept : null;
+}
+
 const RETRY_MS = [500, 1000, 2000, 4000];
 
-/**
- * `invite` is the code the page was opened on, if any: a seat kept from an
- * earlier game is taken back on load unless the visitor came for another one,
- * or, with `resume` off, for something that is not a game at all.
- */
+/** `invite` is the code the page was opened on, if any. */
 export function useLobby(invite: string | null, resume = true) {
-	const [session, setSession] = useState<Session>(IDLE);
+	// Connecting from the first render: an idle one would show, and start, a
+	// card the seat taken back is about to close.
+	const [session, setSession] = useState<Session>(() =>
+		resumable(invite, resume) ? { ...IDLE, status: 'connecting' } : IDLE
+	);
 	const socket = useRef<WebSocket | null>(null);
 	const seat = useRef<Kept | null>(null);
 	const retry = useRef<ReturnType<typeof setTimeout>>(undefined);
@@ -164,8 +171,8 @@ export function useLobby(invite: string | null, resume = true) {
 	);
 
 	useEffect(() => {
-		const kept = recallSeat();
-		if (SERVER && resume && kept && (!invite || invite === kept.code)) {
+		const kept = resumable(invite, resume);
+		if (kept) {
 			seat.current = kept;
 			setSession({ ...IDLE, status: 'connecting' });
 			connect({ type: 'rejoin', ...kept });
@@ -180,10 +187,12 @@ export function useLobby(invite: string | null, resume = true) {
 		};
 		return {
 			...session,
-			create: (profile: Profile, settings: RunSettings) =>
-				enter({ type: 'create', name: seatName(profile) }, [{ type: 'settings', settings }]),
-			join: (code: string, profile: Profile) =>
-				enter({ type: 'join', code, name: seatName(profile) }),
+			create: (profile: Profile, settings: RunSettings, proof: string | null) =>
+				enter({ type: 'create', name: seatName(profile), proof: proof ?? undefined }, [
+					{ type: 'settings', settings }
+				]),
+			join: (code: string, profile: Profile, proof: string | null) =>
+				enter({ type: 'join', code, name: seatName(profile), proof: proof ?? undefined }),
 			/** False when the line is down and the message went nowhere. */
 			send: (message: ClientMessage): boolean => {
 				if (socket.current?.readyState !== WebSocket.OPEN) return false;

@@ -70,6 +70,8 @@
 	"trouble_in_progress": "That run has already started — it takes new players between games",
 	"trouble_busy": "The server is full — try again in a moment",
 	"trouble_unreachable": "Could not reach the server",
+	"trouble_unverified_unbuilt": "The server asked for a check this page does not have — reload the page",
+	"trouble_unverified": "Could not check that you are human — try again, or switch off whatever blocks Cloudflare's check",
 	"lobby": "Lobby",
 	"invite_link": "invite link",
 	"invite_note": "Anyone with the link can join until the host starts",
