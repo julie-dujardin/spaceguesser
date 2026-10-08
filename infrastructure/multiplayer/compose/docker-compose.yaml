@@ -35,7 +35,11 @@ services:
     # Every player is an open file, and a container's soft limit is 1024.
     ulimits:
       nofile: 65536
-    # No host port: the only way in is the tunnel (TLS terminates at Cloudflare).
+    # The game has no host port: its only way in is the tunnel (TLS terminates at
+    # Cloudflare). Its counts have one, for Prometheus. Never on 0.0.0.0: Docker
+    # opens a published port past the host's firewall.
+    ports:
+      - "${METRICS_HOST:-127.0.0.1}:9787:9787"
     depends_on:
       postgres:
         condition: service_healthy

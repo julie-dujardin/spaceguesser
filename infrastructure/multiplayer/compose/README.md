@@ -2,9 +2,11 @@
 
 The multiplayer server + Postgres + cloudflared, deployed via docker-compose.
 
-Nothing has a host port: the only public path is the in-stack Cloudflare tunnel
-(which also terminates TLS) → `multiplayer:8787`. The server answers `/ws` and
-`/healthz`, and refuses sockets from origins outside `ALLOWED_ORIGINS`. With
+The game has no host port: the only public path is the in-stack Cloudflare
+tunnel (which also terminates TLS) → `multiplayer:8787`. The server answers
+`/ws` and `/healthz` there, and refuses sockets from origins outside
+`ALLOWED_ORIGINS`. Its [metrics](../../../backend/README.md#metrics) are on a
+port of their own, 9787, which the tunnel must not be routed to. With
 `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE=create`, opening a lobby takes a
 Turnstile token, and with `create,join` so does joining one: the server's
 [README](../../../backend/README.md#proof-of-a-person) has the settings.
@@ -34,6 +36,14 @@ connected to for five minutes, is closed and its row deleted.
    zone. A proof guards what a socket may open, not the opening of sockets;
    this does. A player reconnecting opens five in ten seconds, so it leaves
    room for twenty behind one address.
+6. Let Prometheus read `http://<host>:9787/metrics` over the tailnet. The port
+   is published on the host's loopback, and
+   `tailscale serve --bg --tcp=9787 tcp://localhost:9787` passes it on to the
+   tailnet, after a reboot too. `METRICS_HOST` set to the host's tailnet
+   address publishes it there without that, but Docker then fails to start
+   the server on a boot where it comes up before Tailscale has the address.
+   Either way never on `0.0.0.0`: Docker opens a published port past the
+   host's firewall.
 
 The image is built and pushed to GHCR by the `backend` workflow on every push
 to `main` that touches `backend/`. To ship one, pull and recreate:
