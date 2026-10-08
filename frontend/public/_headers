@@ -1,0 +1,22 @@
+# Read by Cloudflare, which sets these on the files it serves. What the Worker
+# answers itself, /env.js, gets none of them.
+
+# Named for their content by the build, so a change is another address.
+/assets/*
+  Cache-Control: public, max-age=31536000, immutable
+
+# No frame on another site: a portal would wrap in its ads imagery that is
+# licensed for a page with none.
+/*
+  X-Content-Type-Options: nosniff
+  Referrer-Policy: strict-origin-when-cross-origin
+  Content-Security-Policy: frame-ancestors 'none'
+  X-Frame-Options: DENY
+
+# One per lobby and per run, of use to whoever was sent the link. A preview
+# has to read them, so robots.txt lets it; a search engine is told here not to
+# list them.
+/j/*
+  X-Robots-Tag: noindex
+/r/*
+  X-Robots-Tag: noindex
