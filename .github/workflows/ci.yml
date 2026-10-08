@@ -8,6 +8,8 @@ on:
 jobs:
   check:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     defaults:
       run:
         working-directory: frontend
@@ -47,6 +49,8 @@ jobs:
     needs: check
     if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
     # Holds the Cloudflare credentials.
     environment: cf-pages-deploy
     defaults:
