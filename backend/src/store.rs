@@ -10,6 +10,7 @@ use tokio::time::timeout;
 use tracing::{info, warn};
 
 use crate::lobby::Lobby;
+use crate::metrics;
 
 /// A lobby waits on its write before telling its players, so this is the
 /// longest a database that has stopped answering can hold a move up.
@@ -110,6 +111,7 @@ impl Store {
 				);
 			}
 		}
+		metrics::store_failure();
 		None
 	}
 

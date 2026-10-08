@@ -25,6 +25,7 @@ services:
       - TURNSTILE_REQUIRE=${TURNSTILE_REQUIRE:-}
     ports:
       - "127.0.0.1:8787:8787"
+      - "127.0.0.1:9787:9787"
     depends_on:
       postgres:
         condition: service_healthy

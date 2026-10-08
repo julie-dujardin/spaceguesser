@@ -10,6 +10,7 @@ use tokio::time::timeout;
 use tracing::{error, info};
 
 use crate::lobby::Error;
+use crate::metrics;
 
 pub const SITEVERIFY: &str = "https://challenges.cloudflare.com/turnstile/v0/siteverify";
 /// Cloudflare's own cap: anything longer is not one of its tokens.
@@ -40,8 +41,10 @@ pub enum Action {
 }
 
 impl Action {
+	pub const ALL: [Self; 2] = [Self::Create, Self::Join];
+
 	/// As the page names it to Cloudflare, and `TURNSTILE_REQUIRE` to the server.
-	fn name(self) -> &'static str {
+	pub fn name(self) -> &'static str {
 		match self {
 			Self::Create => "create",
 			Self::Join => "join",
@@ -53,7 +56,7 @@ impl FromStr for Action {
 	type Err = String;
 
 	fn from_str(name: &str) -> Result<Self, String> {
-		[Self::Create, Self::Join]
+		Self::ALL
 			.into_iter()
 			.find(|action| action.name() == name)
 			.ok_or_else(|| format!("{name:?} is not something to require proof for: create, join"))
@@ -61,7 +64,7 @@ impl FromStr for Action {
 }
 
 #[derive(Debug, PartialEq, Eq)]
-enum Proof {
+pub enum Proof {
 	Held,
 	Absent,
 	/// Cloudflare does not vouch for it: made up, expired, already used, or
@@ -69,6 +72,19 @@ enum Proof {
 	Refused,
 	/// Cloudflare could not be asked.
 	Unchecked,
+}
+
+impl Proof {
+	pub const ALL: [Self; 4] = [Self::Held, Self::Absent, Self::Refused, Self::Unchecked];
+
+	pub fn name(&self) -> &'static str {
+		match self {
+			Self::Held => "held",
+			Self::Absent => "absent",
+			Self::Refused => "refused",
+			Self::Unchecked => "unchecked",
+		}
+	}
 }
 
 /// What a token says before anyone is asked: `Err` when that settles it.
@@ -81,6 +97,7 @@ fn at_sight(token: Option<&str>) -> Result<&str, Proof> {
 }
 
 fn note(action: Action, proof: &Proof, refused: bool) {
+	metrics::proof(action, proof);
 	if *proof != Proof::Held {
 		info!(?action, ?proof, refused, "no proof of a person");
 	}

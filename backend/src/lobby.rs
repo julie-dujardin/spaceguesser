@@ -7,7 +7,7 @@
 use std::collections::HashMap;
 
 use rand::Rng;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 
 pub const MAX_PLAYERS: usize = 12;
@@ -45,8 +45,7 @@ pub fn random_code() -> String {
 		.collect()
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
-#[serde(rename_all = "snake_case")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum Error {
 	NotFound,
 	Full,
@@ -60,6 +59,39 @@ pub enum Error {
 	Busy,
 	/// Proof of a person at the page was needed, and none came that holds.
 	Unverified,
+}
+
+impl Error {
+	pub const ALL: [Self; 8] = [
+		Self::NotFound,
+		Self::Full,
+		Self::NotHost,
+		Self::BadPhase,
+		Self::BadRequest,
+		Self::AlreadyGuessed,
+		Self::Busy,
+		Self::Unverified,
+	];
+
+	/// What a client is sent, and what the error is counted under.
+	pub fn name(self) -> &'static str {
+		match self {
+			Self::NotFound => "not_found",
+			Self::Full => "full",
+			Self::NotHost => "not_host",
+			Self::BadPhase => "bad_phase",
+			Self::BadRequest => "bad_request",
+			Self::AlreadyGuessed => "already_guessed",
+			Self::Busy => "busy",
+			Self::Unverified => "unverified",
+		}
+	}
+}
+
+impl Serialize for Error {
+	fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+		serializer.serialize_str(self.name())
+	}
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]

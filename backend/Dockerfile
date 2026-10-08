@@ -17,5 +17,6 @@ RUN apt-get update \
 COPY --from=build /spaceguesser-backend /usr/local/bin/spaceguesser-backend
 USER nobody
 ENV BIND=0.0.0.0:8787
-EXPOSE 8787
+ENV METRICS_BIND=0.0.0.0:9787
+EXPOSE 8787 9787
 CMD ["spaceguesser-backend"]

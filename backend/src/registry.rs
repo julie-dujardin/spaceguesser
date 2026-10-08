@@ -9,11 +9,12 @@ use tokio::sync::{Notify, mpsc, oneshot};
 use tokio::time::{MissedTickBehavior, interval, sleep};
 
 use crate::lobby::{Error, Lobby, random_code};
+use crate::metrics;
 use crate::protocol::{ClientMsg, SEAT_TAKEN, ServerMsg};
 use crate::store::Store;
 
 /// Bounds memory if someone opens lobbies in a loop.
-const MAX_LOBBIES: usize = 20_000;
+pub const MAX_LOBBIES: usize = 20_000;
 /// A client this far behind is gone or stuck, and is dropped rather than buffered for.
 pub const OUTBOX: usize = 32;
 /// How often the store is cleared of lobbies that are gone.
@@ -121,6 +122,7 @@ impl Registry {
 	fn spawn(self: &Arc<Self>, lobbies: &mut HashMap<String, Handle>, lobby: Lobby, fresh: bool) -> Handle {
 		let (tx, rx) = mpsc::channel(64);
 		lobbies.insert(lobby.code.clone(), tx.clone());
+		metrics::lobbies(lobbies.len());
 		tokio::spawn(run(self.clone(), lobby, rx, fresh));
 		tx
 	}
@@ -172,7 +174,9 @@ async fn run(registry: Arc<Registry>, mut lobby: Lobby, mut rx: mpsc::Receiver<C
 	}
 	// The row goes first: the code stays taken until nothing is left under it.
 	registry.store.delete(&lobby.code).await;
-	registry.lobbies.lock().unwrap().remove(&lobby.code);
+	let mut lobbies = registry.lobbies.lock().unwrap();
+	lobbies.remove(&lobby.code);
+	metrics::lobbies(lobbies.len());
 }
 
 fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, command: Command, now: u64) -> Change {
@@ -223,6 +227,7 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, command: Command
 			match done {
 				Ok(()) => Change::Stored,
 				Err(code) => {
+					metrics::error(code);
 					let _ = current.tx.try_send(Message::Text(ServerMsg::Error { code }.encode()));
 					Change::None
 				}

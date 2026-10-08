@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 axum = { version = "0.8", features = ["ws"] }
 futures-util = "0.3"
+prometheus = { version = "0.14", default-features = false, features = ["process"] }
 rand = "0.9"
 reqwest = { version = "0.13", default-features = false, features = ["rustls", "json"] }
 serde = { version = "1", features = ["derive"] }

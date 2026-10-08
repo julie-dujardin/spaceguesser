@@ -15,6 +15,7 @@ use tokio::time::{Instant, interval, timeout};
 
 use crate::App;
 use crate::lobby::{Error, check_identity, clean_name};
+use crate::metrics;
 use crate::protocol::{ClientMsg, ServerMsg};
 use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
 use crate::turnstile::Action;
@@ -57,7 +58,7 @@ async fn serve(app: Arc<App>, socket: WebSocket) {
 	let (sink, mut stream) = socket.split();
 	let (tx, rx) = mpsc::channel(OUTBOX);
 	let hang_up = Arc::new(Notify::new());
-	tokio::spawn(write(sink, rx, hang_up.clone()));
+	tokio::spawn(write(sink, rx, hang_up.clone(), metrics::Socket::open()));
 	let conn = Conn {
 		id: NEXT_CONN.fetch_add(1, Ordering::Relaxed),
 		tx: tx.clone(),
@@ -74,6 +75,7 @@ async fn serve(app: Arc<App>, socket: WebSocket) {
 	let (lobby, player) = match entered {
 		Ok(entered) => entered,
 		Err(code) => {
+			metrics::error(code);
 			let _ = tx.send(Message::Text(ServerMsg::Error { code }.encode())).await;
 			return;
 		}
@@ -97,6 +99,7 @@ async fn serve(app: Arc<App>, socket: WebSocket) {
 		}
 		let Ok(msg) = msg else {
 			let code = Error::BadRequest;
+			metrics::error(code);
 			let _ = tx.try_send(Message::Text(ServerMsg::Error { code }.encode()));
 			continue;
 		};
@@ -182,8 +185,14 @@ fn find(app: &App, code: &str) -> Result<Handle, Error> {
 }
 
 /// Sends what the lobby queues until the socket's reader is done. A send that
-/// fails or hangs ends both: `hang_up` stops the reader.
-async fn write(mut sink: SplitSink<WebSocket, Message>, mut rx: mpsc::Receiver<Message>, hang_up: Arc<Notify>) {
+/// fails or hangs ends both: `hang_up` stops the reader. `_open` is held here
+/// because this is the task that ends last.
+async fn write(
+	mut sink: SplitSink<WebSocket, Message>,
+	mut rx: mpsc::Receiver<Message>,
+	hang_up: Arc<Notify>,
+	_open: metrics::Socket,
+) {
 	let mut ping = interval(PING_EVERY);
 	// A close with a status, which a browser otherwise reports as abnormal. When
 	// the client closed first the send is refused, and closing the sink answers

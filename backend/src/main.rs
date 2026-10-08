@@ -1,6 +1,6 @@
 use std::env;
 
-use spaceguesser_backend::{Action, Config, SITEVERIFY, Turnstile, app};
+use spaceguesser_backend::{Action, Config, SITEVERIFY, Turnstile, app, metrics};
 use tokio::net::TcpListener;
 use tokio::signal::unix::{SignalKind, signal};
 use tracing::info;
@@ -39,16 +39,19 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 		}),
 	};
 	let bind = env::var("BIND").unwrap_or_else(|_| "127.0.0.1:8787".into());
+	let metrics_bind = env::var("METRICS_BIND").unwrap_or_else(|_| "127.0.0.1:9787".into());
 
 	let router = app(config).await?;
 	let listener = TcpListener::bind(&bind).await?;
-	info!(bind, "listening");
+	let metrics_listener = TcpListener::bind(&metrics_bind).await?;
+	info!(bind, metrics_bind, "listening");
 
 	// Every change is already stored, so stopping is just stopping: waiting on
 	// open sockets would hold a redeploy for as long as a game lasts.
 	let mut terminate = signal(SignalKind::terminate())?;
 	tokio::select! {
 		served = axum::serve(listener, router) => served?,
+		served = axum::serve(metrics_listener, metrics()) => served?,
 		_ = terminate.recv() => {}
 		_ = tokio::signal::ctrl_c() => {}
 	}

@@ -7,7 +7,7 @@ rounds and every client scores its own guess, with the code solo play uses.
 Fine among friends; a competitive mode would move both in here.
 
 ```sh
-docker compose up --build     # from the repo root: server on :8787, Postgres on :5432
+docker compose up --build     # from the repo root: server on :8787, its counts on :9787, Postgres on :5432
 cargo test                    # with DATABASE_URL set, also the tests that need Postgres
 ```
 
@@ -16,7 +16,8 @@ names and drop it after, so it is safe to point at the development one.
 
 `BIND` (default `127.0.0.1:8787`), `DATABASE_URL` (unset: lobbies live in
 memory only) and `ALLOWED_ORIGINS` (comma-separated; unset: any) configure it,
-with `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE` for [proof of a person](#proof-of-a-person).
+with `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE` for [proof of a person](#proof-of-a-person)
+and `METRICS_BIND` (default `127.0.0.1:9787`) for its [metrics](#metrics).
 
 ## Protocol
 
@@ -139,3 +140,35 @@ other close, 1000 included, is one to `rejoin` after.
   safety, not the game. A save skipped meanwhile is made up once writes are
   back. A lobby that closes meanwhile leaves its row, and rows without a lobby
   are cleared every minute.
+
+## Metrics
+
+`METRICS_BIND` is a second listener that answers `/metrics` and nothing else,
+in the text Prometheus reads. It is apart from `BIND` because whatever is
+served there is public.
+
+| metric | |
+| --- | --- |
+| `spaceguesser_lobbies` | lobbies open, out of `spaceguesser_max_lobbies` |
+| `spaceguesser_sockets` | sockets open: the players connected |
+| `spaceguesser_proofs_total{action, proof}` | what the proof of each `create` and `join` was found to be: `held`, `absent`, `refused` or `unchecked` |
+| `spaceguesser_errors_total{code}` | every `error` sent |
+| `spaceguesser_store_failures_total` | writes Postgres did not take |
+| `process_*` | the process's memory, CPU time, open files and start time |
+
+Every series is there from the start, at zero, so a rate sees the first event
+too. Nothing is counted by lobby or by player.
+
+What is worth an alert:
+
+- `up == 0`, with a probe of the public `/healthz` beside it: a scrape does
+  not go through the tunnel.
+- `increase(spaceguesser_proofs_total{proof="unchecked"}[10m]) > 0`:
+  Cloudflare cannot be asked, and those proofs are getting in.
+- `increase(spaceguesser_store_failures_total[10m]) > 0`: games are not being
+  saved.
+- `spaceguesser_lobbies / spaceguesser_max_lobbies > 0.8`, or any `busy`
+  among the errors: the server is close to its cap, or at it.
+- `not_found` among the errors at a rate nobody types at: codes are being
+  tried.
+- `changes(process_start_time_seconds[1h]) > 2`: the server keeps restarting.
