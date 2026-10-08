@@ -191,8 +191,10 @@ export default function App() {
 	useEffect(() => {
 		const { you } = party;
 		if (!lobby || !finished || !you) return;
+		// A seat taken once the game was over, or that answered nothing, has no
+		// run of its own to keep.
+		if (!lobby.history.some((round) => you in round)) return;
 		const played = playedBy(lobby, you);
-		if (!played.length) return;
 		const table = standings(lobby);
 		const place = table.findIndex(({ seat }) => seat.id === you) + 1;
 		setKept(keepRun(pastRun(played, settingsOf(lobby.settings), { place, of: table.length })));

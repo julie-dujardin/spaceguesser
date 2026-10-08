@@ -79,9 +79,10 @@ other close, 1000 included, is one to `rejoin` after.
 - A dropped socket keeps its seat, and for 20 seconds its round waits for it
   and its hosting stays with it. After that the round closes without it and
   the next player in hosts. A restart starts that clock afresh for everyone.
-- Before the first game, a seat dropped for 20 seconds is cleared. After one it
-  stays, with its name on the scoreboard, until the next `start`, which keeps
-  only who is there.
+- A seat with a guess in the game keeps its name on the scoreboard when it
+  leaves or drops, until the next `start`, which keeps only who is there. One
+  with none is cleared: at once when it leaves, and after 20 seconds dropped,
+  unless a game is running that it may still come back to.
 - A lobby everyone has left closes at once; one with nobody connected for five
   minutes is closed.
 - A socket that says nothing for 75 seconds, pings unanswered, is dropped.

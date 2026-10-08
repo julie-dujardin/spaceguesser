@@ -70,8 +70,8 @@ struct Player {
 	/// The seat's secret: whoever holds it is this player after a reconnect.
 	token: String,
 	name: String,
-	/// Left once a game had begun: the seat stays so the scores keep a name,
-	/// until the next start.
+	/// Left with a guess on the board: the seat stays so the scores keep a
+	/// name, until the next start.
 	left: bool,
 	#[serde(skip)]
 	connected: bool,
@@ -146,6 +146,11 @@ fn acceptable(value: &Value, max_bytes: usize) -> bool {
 fn random_hex(bytes: usize) -> String {
 	let mut rng = rand::rng();
 	(0..bytes).map(|_| format!("{:02x}", rng.random::<u8>())).collect()
+}
+
+/// Whether a seat has a guess in the game: a score the board keeps a name for.
+fn scored(results: &[HashMap<String, Value>], id: &str) -> bool {
+	results.iter().any(|round| round.contains_key(id))
 }
 
 fn seat(name: &str) -> Result<Player, Error> {
@@ -232,7 +237,7 @@ impl Lobby {
 	}
 
 	pub fn leave(&mut self, id: &str, now: u64) {
-		if self.phase == Phase::Lobby {
+		if !scored(&self.results, id) {
 			self.players.retain(|p| p.id != id);
 		} else if let Some(player) = self.players.iter_mut().find(|p| p.id == id) {
 			player.left = true;
@@ -329,11 +334,13 @@ impl Lobby {
 		}
 		changed |= self.settle(now);
 
-		// Before a game a seat holds nothing worth keeping a ghost for; after
-		// one it holds a name on the scoreboard, and waits for the next start.
-		if self.phase == Phase::Lobby {
+		// Outside a game a seat with no score holds nothing worth keeping a
+		// ghost for. One with a score holds a name on the scoreboard, and waits
+		// for the next start; during a game any seat may yet come back to play.
+		if matches!(self.phase, Phase::Lobby | Phase::Final) {
 			let seats = self.players.len();
-			self.players.retain(|p| p.awaited(now));
+			let results = &self.results;
+			self.players.retain(|p| p.awaited(now) || scored(results, &p.id));
 			changed |= self.players.len() != seats;
 		}
 
@@ -686,9 +693,10 @@ mod tests {
 	}
 
 	#[test]
-	fn leaving_once_a_game_has_begun_keeps_the_name_until_the_next_start() {
+	fn leaving_with_a_score_keeps_the_name_until_the_next_start() {
 		let (mut lobby, ids) = started(&["ann", "bob", "cat"], 0, 1);
 		let token = lobby.token(&ids[1]).unwrap().to_owned();
+		lobby.guess(&ids[1], 0, json!(1), 0).unwrap();
 		lobby.leave(&ids[1], 0);
 		assert_eq!(seats(&lobby), 3);
 		assert_eq!(lobby.rejoin(&token), Err(Error::NotFound));
@@ -698,10 +706,44 @@ mod tests {
 		lobby.next(&ids[0], 0, 0).unwrap();
 		// The scoreboard is where a name matters most.
 		lobby.leave(&ids[2], 0);
+		lobby.tick(AWAY_GRACE_MS);
 		assert_eq!(seats(&lobby), 3);
 
 		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
 		assert_eq!(seats(&lobby), 1);
+	}
+
+	#[test]
+	fn a_seat_with_no_score_leaves_no_name() {
+		// Walking out of a round not yet answered.
+		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
+		lobby.leave(&ids[1], 0);
+		assert_eq!(seats(&lobby), 1);
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		lobby.next(&ids[0], 0, 0).unwrap();
+
+		// Looking in on a game already over, and leaving by the door.
+		let late = lobby.join("late", 0).unwrap();
+		lobby.leave(&late, 0);
+		assert_eq!(seats(&lobby), 1);
+
+		// Or by dropping off.
+		let ghost = lobby.join("ghost", 0).unwrap();
+		lobby.disconnect(&ghost, 1_000);
+		assert!(!lobby.tick(1_000 + AWAY_GRACE_MS - 1));
+		assert_eq!(seats(&lobby), 2);
+		assert!(lobby.tick(1_000 + AWAY_GRACE_MS));
+		assert_eq!(seats(&lobby), 1);
+	}
+
+	#[test]
+	fn a_seat_dropped_mid_game_is_kept_for_its_return() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
+		let token = lobby.token(&ids[1]).unwrap().to_owned();
+		lobby.disconnect(&ids[1], 1_000);
+		lobby.tick(1_000 + AWAY_GRACE_MS);
+		assert_eq!(seats(&lobby), 2);
+		assert_eq!(lobby.rejoin(&token), Ok(ids[1].clone()));
 	}
 
 	#[test]
