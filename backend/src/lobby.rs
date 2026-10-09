@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize, Serializer};
 use serde_json::Value;
 use serde_json::value::{RawValue, to_raw_value};
 
-pub const MAX_PLAYERS: usize = 12;
+pub const MAX_PLAYERS: usize = 24;
 /// Everyone seated rides in every snapshot, there or not, so a game that
 /// keeps taking players in place of the ones who went does not do so for ever.
 const MAX_SEATS: usize = 4 * MAX_PLAYERS;

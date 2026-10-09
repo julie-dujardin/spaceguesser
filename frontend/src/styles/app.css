@@ -236,11 +236,15 @@ button {
 	pointer-events: auto;
 }
 
+/* The quit button owns the top-right corner: what does not fit beside it
+   drops to a line of its own rather than running under it. */
 .hud-top {
 	position: absolute;
 	left: 16px;
 	top: 16px;
+	max-width: calc(100% - 76px);
 	display: flex;
+	flex-wrap: wrap;
 	gap: 8px;
 	align-items: center;
 }
@@ -844,10 +848,21 @@ input.code {
 	color: var(--bad);
 }
 
+/* A full lobby is taller than most screens: the card stays on one, and its
+   columns scroll. */
 .lobby {
 	width: 720px;
+	max-height: calc(100dvh - 32px);
 	display: grid;
 	grid-template-columns: 1fr 258px;
+	grid-template-rows: minmax(0, 1fr);
+}
+
+.lobby .panel {
+	min-height: 0;
+	overflow: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
 }
 
 .share {
@@ -949,6 +964,8 @@ input.code {
 	gap: 8px;
 	min-height: 0;
 	overflow: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
 }
 
 .pl {
@@ -1066,10 +1083,16 @@ input.code {
 	place-items: center;
 }
 
-/* Who is in the round, lit once their guess is. */
+/* Who is in the round, lit once their guess is. A full lobby is more faces
+   than a line holds: they wrap, twelve to a line on most phones, and the pill
+   grows with them. */
 .party {
-	gap: 4px;
-	padding: 0 6px;
+	flex-wrap: wrap;
+	gap: 3px;
+	height: auto;
+	min-height: 34px;
+	padding: 5px 6px;
+	border-radius: 17px;
 }
 
 .party > span {
@@ -1226,6 +1249,18 @@ input.code {
 	gap: 2px;
 	overflow: auto;
 	min-height: 0;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
+}
+
+/* A full lobby's standings would squeeze the rounds under them to a line: a
+   list gives way down to three rows or so, and a shorter one not at all. */
+.rounds:has(> :nth-child(4)) {
+	min-height: 124px;
+}
+
+.rounds:not(:has(> :nth-child(4))) {
+	flex: none;
 }
 
 .rk {
@@ -1691,6 +1726,12 @@ button.rk {
 		grid-template-columns: minmax(0, 1fr);
 	}
 
+	/* One column is as tall as it is, and the screen scrolls. */
+	.lobby {
+		max-height: none;
+		grid-template-rows: auto;
+	}
+
 	.home .main {
 		order: -1;
 	}
@@ -1814,15 +1855,9 @@ button.rk {
 		display: inline-flex;
 	}
 
-	/* The quit button owns the top-right corner. The status pill has no width
-	   to spare beside it, so it gives up the wordmark and the movement mode,
-	   which the reader chose and can feel, and the clock drops to its own line
-	   rather than running off the screen. */
-	.hud-top {
-		right: 60px;
-		flex-wrap: wrap;
-	}
-
+	/* The status pill has no width to spare beside the quit button, so it
+	   gives up the wordmark and the movement mode, which the reader chose and
+	   can feel. */
 	.status .mark,
 	.status .mark + .sep,
 	.status .move,

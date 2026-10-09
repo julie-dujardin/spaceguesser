@@ -59,6 +59,6 @@ fifth of a core and 1,100 commits a second, every message being one. The VPS
 has 4 cores, 7.7 GB of which search wants about 1, and a disk that syncs 7,900
 times a second (`pg_test_fsync` there: the sweep's Postgres is in memory, so
 the sweep says nothing of it). None of the three is what limits it. The
-server's own caps are: 65,536 open files in its compose file, and 5,000
-lobbies of 12 players. Nothing past 20,000 players was run. Loopback numbers
+server's own caps are: 65,536 open files in its compose file, and 2,500
+lobbies of 24 players. Nothing past 20,000 players was run. Loopback numbers
 on a fast core — add real network RTT.

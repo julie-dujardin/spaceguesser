@@ -24,7 +24,7 @@ DURATION="${DURATION:-30}"
 CPUS="${CPUS:-1 2 4}"
 if [ "$MODE" = "hold" ]; then
 	export THINK_MS=20000
-	# Sockets are what is counted, and the server opens 5,000 lobbies at most.
+	# Sockets are what is counted, and the server opens 2,500 lobbies at most.
 	export PLAYERS="${PLAYERS:-10}"
 	LOBBYLIST="${LOBBYLIST:-100 400 1000 2000}"
 else

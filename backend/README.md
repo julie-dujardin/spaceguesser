@@ -128,8 +128,8 @@ other close, 1000 included, is one to `rejoin` after.
 - A seat that was in the game stays, left or dropped, with its name on the
   scoreboard, until the next `start`, which keeps only who is there. A seat
   waiting for a game, before the first or after the last, is cleared when it
-  leaves, or after 20 seconds dropped. A lobby waits on 12 players at a time,
-  and seats 48 in all.
+  leaves, or after 20 seconds dropped. A lobby waits on 24 players at a time,
+  and seats 96 in all.
 - A lobby everyone has left closes at once; one with nobody connected for five
   minutes is closed.
 - A socket that says nothing for 75 seconds, pings unanswered, is dropped, and

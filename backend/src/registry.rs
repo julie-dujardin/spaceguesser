@@ -13,8 +13,9 @@ use crate::metrics;
 use crate::protocol::{ClientMsg, SEAT_TAKEN, ServerMsg};
 use crate::store::Store;
 
-/// Bounds memory if someone opens lobbies in a loop.
-pub const MAX_LOBBIES: usize = 5_000;
+/// Bounds memory if someone opens lobbies in a loop. All of them full is
+/// still under the open files the server is deployed with.
+pub const MAX_LOBBIES: usize = 2_500;
 /// A client this far behind is gone or stuck, and is dropped rather than buffered for.
 pub const OUTBOX: usize = 32;
 /// How often the store is cleared of lobbies that are gone.
