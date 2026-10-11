@@ -196,8 +196,9 @@ async fn write(
 ) {
 	let mut ping = interval(PING_EVERY);
 	// A close with a status, which a browser otherwise reports as abnormal. When
-	// the client closed first the send is refused, and closing the sink answers
-	// it: either way the socket ends cleanly, not on a bare EOF.
+	// the client closed first a send is refused, this one or that of what was
+	// still queued for it, and closing the sink answers it: either way the
+	// socket ends cleanly, not on a bare EOF.
 	let mut goodbye = CloseFrame {
 		code: close_code::NORMAL,
 		reason: Default::default(),
@@ -217,7 +218,7 @@ async fn write(
 			Some(msg) => {
 				if !matches!(timeout(SEND_TIMEOUT, sink.send(msg)).await, Ok(Ok(()))) {
 					hang_up.notify_one();
-					return;
+					break;
 				}
 			}
 		}

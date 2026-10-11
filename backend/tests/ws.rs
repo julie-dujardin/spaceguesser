@@ -319,6 +319,8 @@ async fn a_player_comes_back_as_themselves_whatever_the_game_is_doing() {
 
 	ann.send(json!({ "type": "start", "settings": {}, "rounds": [1] }))
 		.await;
+	// A guess sent before its sender is told of the round may get there first.
+	bob.lobby(|l| l["phase"] == "playing").await;
 	bob.send(json!({ "type": "guess", "round": 0, "result": 7 })).await;
 	bob.send(json!({ "type": "leave" })).await;
 	while bob.recv().await.is_some() {}
