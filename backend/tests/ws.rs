@@ -6,7 +6,7 @@ use axum::routing::post;
 use axum::{Json, Router};
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
-use spaceguesser_backend::{Action, Config, Turnstile, app};
+use spaceguesser_backend::{Action, Config, MAX_SOCKETS, Turnstile, app};
 use sqlx::PgPool;
 use tokio::net::{TcpListener, TcpStream};
 use tokio::task::JoinHandle;
@@ -25,6 +25,7 @@ async fn serve(database_url: Option<String>, allowed_origins: Vec<String>) -> Se
 		database_url,
 		allowed_origins,
 		turnstile: None,
+		max_sockets: MAX_SOCKETS,
 	})
 	.await
 }
@@ -37,24 +38,38 @@ async fn serve_with(config: Config) -> Server {
 	Server { url, task }
 }
 
-struct Client(WebSocketStream<MaybeTlsStream<TcpStream>>);
+struct Client {
+	socket: WebSocketStream<MaybeTlsStream<TcpStream>>,
+	/// What it has been told was guessed, a round after the other.
+	told: Vec<Value>,
+}
 
 impl Client {
-	async fn open(server: &Server, hello: Value) -> Self {
+	/// A socket opened as a page of the server's build opens one.
+	async fn open(server: &Server, mut hello: Value) -> Self {
+		hello["protocol"] = json!(2);
+		Self::open_saying(server, hello).await
+	}
+
+	/// A socket opened with `hello` as it stands.
+	async fn open_saying(server: &Server, hello: Value) -> Self {
 		let (socket, _) = connect_async(&server.url).await.unwrap();
-		let mut client = Self(socket);
+		let mut client = Self {
+			socket,
+			told: Vec::new(),
+		};
 		client.send(hello).await;
 		client
 	}
 
 	async fn send(&mut self, msg: Value) {
-		self.0.send(Message::Text(msg.to_string().into())).await.unwrap();
+		self.socket.send(Message::Text(msg.to_string().into())).await.unwrap();
 	}
 
 	/// The status the server closes the socket with, past anything sent first.
 	async fn closed(&mut self) -> Option<u16> {
 		loop {
-			let frame = timeout(Duration::from_secs(5), self.0.next())
+			let frame = timeout(Duration::from_secs(5), self.socket.next())
 				.await
 				.expect("server went quiet");
 			match frame {
@@ -67,17 +82,31 @@ impl Client {
 	}
 
 	/// The next JSON message, or `None` once the server has closed the socket.
+	/// A round's guesses come once, in order, and ahead of the first snapshot
+	/// that counts the round as finished: checked here, of every message.
 	async fn recv(&mut self) -> Option<Value> {
 		loop {
-			let frame = timeout(Duration::from_secs(5), self.0.next())
+			let frame = timeout(Duration::from_secs(5), self.socket.next())
 				.await
 				.expect("server went quiet");
-			match frame {
-				Some(Ok(Message::Text(text))) => return Some(serde_json::from_str(&text).unwrap()),
+			let msg: Value = match frame {
+				Some(Ok(Message::Text(text))) => serde_json::from_str(&text).unwrap(),
 				Some(Ok(Message::Close(_))) | None => return None,
 				Some(Err(error)) => panic!("socket ended uncleanly: {error}"),
-				Some(Ok(_)) => {}
+				Some(Ok(_)) => continue,
+			};
+			if msg["type"] == "results" {
+				assert_eq!(msg["round"], json!(self.told.len()), "{msg}");
+				assert!(msg["guesses"].is_object(), "{msg}");
+				self.told.push(msg["guesses"].clone());
 			}
+			if msg["type"] == "lobby" {
+				let finished = msg["lobby"]["finished"].as_u64().unwrap() as usize;
+				// A game started over has none of the last one's rounds.
+				self.told.truncate(finished);
+				assert_eq!(self.told.len(), finished, "{msg}");
+			}
+			return Some(msg);
 		}
 	}
 
@@ -94,6 +123,9 @@ impl Client {
 	async fn lobby(&mut self, wanted: impl Fn(&Value) -> bool) -> Value {
 		loop {
 			let msg = self.recv().await.expect("socket closed");
+			if msg["type"] == "results" {
+				continue;
+			}
 			assert_eq!(msg["type"], "lobby", "{msg}");
 			assert!(msg["now"].as_u64().unwrap() > 0);
 			if wanted(&msg["lobby"]) {
@@ -102,7 +134,7 @@ impl Client {
 		}
 	}
 
-	/// The next error, past any snapshots queued ahead of it.
+	/// The next error, past anything else queued ahead of it.
 	async fn error(&mut self) -> String {
 		loop {
 			let msg = self.recv().await.expect("socket closed");
@@ -163,14 +195,18 @@ async fn two_players_play_a_game_through() {
 
 	ann.send(json!({ "type": "guess", "round": 0, "result": { "points": 4200 } }))
 		.await;
+	// Who has guessed is told at once; what, when the round is over.
 	let waiting = bob.lobby(|l| l["round"]["guessed"] == json!([ann_id])).await;
-	assert_eq!(waiting["history"], json!([]));
+	assert_eq!(waiting["finished"], json!(0));
 
 	bob.send(json!({ "type": "guess", "round": 0, "result": { "points": 100 } }))
 		.await;
 	let result = ann.lobby(|l| l["phase"] == "result").await;
-	assert_eq!(result["history"][0][&ann_id]["points"], json!(4200));
-	assert_eq!(result["history"][0][&bob_id]["points"], json!(100));
+	assert_eq!(result["finished"], json!(1));
+	assert_eq!(
+		ann.told,
+		[json!({ &ann_id: { "points": 4200 }, &bob_id: { "points": 100 } })]
+	);
 
 	// A second click on the same results moves on once.
 	ann.send(json!({ "type": "next", "round": 0 })).await;
@@ -187,7 +223,8 @@ async fn two_players_play_a_game_through() {
 	ann.lobby(|l| l["phase"] == "result").await;
 	ann.send(json!({ "type": "next", "round": 1 })).await;
 	let done = ann.lobby(|l| l["phase"] == "final").await;
-	assert_eq!(done["history"].as_array().unwrap().len(), 2);
+	assert_eq!(done["finished"], json!(2));
+	assert_eq!(ann.told[1], json!({ &ann_id: { "points": 1 } }));
 	assert_eq!(players(&done), 2);
 }
 
@@ -231,8 +268,8 @@ async fn the_host_closes_a_round_nobody_is_finishing() {
 	bob.send(json!({ "type": "close_round", "round": 0 })).await;
 	assert_eq!(bob.error().await, "not_host");
 	ann.send(json!({ "type": "close_round", "round": 0 })).await;
-	let closed = bob.lobby(|l| l["phase"] == "result").await;
-	assert_eq!(closed["history"], json!([{}]));
+	bob.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(bob.told, [json!({})]);
 }
 
 #[tokio::test]
@@ -334,8 +371,8 @@ async fn a_player_comes_back_as_themselves_whatever_the_game_is_doing() {
 
 	ann.send(json!({ "type": "guess", "round": 0, "result": 1 })).await;
 	cat.send(json!({ "type": "guess", "round": 0, "result": 2 })).await;
-	let closed = ann.lobby(|l| l["phase"] == "result").await;
-	assert_eq!(closed["history"][0][&bob_id], json!(7));
+	ann.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(ann.told[0][&bob_id], json!(7));
 	ann.send(json!({ "type": "next", "round": 0 })).await;
 	ann.lobby(|l| l["phase"] == "final").await;
 
@@ -361,8 +398,123 @@ async fn a_client_that_closes_gets_a_close_back() {
 	)
 	.await;
 	ann.joined().await;
-	ann.0.close(None).await.unwrap();
+	ann.socket.close(None).await.unwrap();
 	while ann.recv().await.is_some() {}
+}
+
+#[tokio::test]
+async fn who_comes_into_a_game_is_told_the_rounds_gone_by() {
+	let server = serve(None, vec![]).await;
+	let hello = |name: &str, code: &Value| json!({ "type": "join", "code": code, "name": name, "identity": who(name) });
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
+	let (ann_id, token) = ann.joined().await;
+	let code = ann.lobby(|_| true).await["code"].clone();
+	let mut bob = Client::open(&server, hello("Bob", &code)).await;
+	let (bob_id, _) = bob.joined().await;
+
+	ann.send(json!({ "type": "start", "settings": {}, "rounds": ["a", "b", "c"] }))
+		.await;
+	// A guess sent before its sender is told of the round may get there first.
+	bob.lobby(|l| l["phase"] == "playing").await;
+	for round in 0..2 {
+		ann.send(json!({ "type": "guess", "round": round, "result": { "ann": round } }))
+			.await;
+		// The second round, only Ann answers.
+		if round == 0 {
+			bob.send(json!({ "type": "guess", "round": round, "result": { "bob": round } }))
+				.await;
+		} else {
+			ann.send(json!({ "type": "close_round", "round": round })).await;
+		}
+		ann.lobby(|l| l["phase"] == "result" && l["round"]["index"] == round)
+			.await;
+		ann.send(json!({ "type": "next", "round": round })).await;
+	}
+	let third = ann.lobby(|l| l["phase"] == "playing" && l["round"]["index"] == 2).await;
+	assert_eq!(third["round"]["entry"], json!("c"));
+	let gone_by = [
+		json!({ &ann_id: { "ann": 0 }, &bob_id: { "bob": 0 } }),
+		json!({ &ann_id: { "ann": 1 } }),
+	];
+	assert_eq!(ann.told, gone_by);
+
+	// Someone new, and a seat taken back on another socket: each from the start.
+	let mut cat = Client::open(&server, hello("Cat", &code)).await;
+	cat.joined().await;
+	assert_eq!(cat.lobby(|_| true).await["finished"], json!(2));
+	assert_eq!(cat.told, gone_by);
+	let mut back = Client::open(&server, json!({ "type": "rejoin", "code": code, "token": token })).await;
+	back.joined().await;
+	back.lobby(|_| true).await;
+	assert_eq!(back.told, gone_by);
+
+	// The game after has none of this one's rounds.
+	back.send(json!({ "type": "close_round", "round": 2 })).await;
+	back.send(json!({ "type": "next", "round": 2 })).await;
+	assert_eq!(cat.lobby(|l| l["phase"] == "final").await["finished"], json!(3));
+	back.send(json!({ "type": "start", "settings": {}, "rounds": ["d"] }))
+		.await;
+	assert_eq!(cat.lobby(|l| l["phase"] == "playing").await["finished"], json!(0));
+	cat.send(json!({ "type": "guess", "round": 0, "result": "again" }))
+		.await;
+	back.lobby(|l| {
+		l["round"]["guessed"]
+			.as_array()
+			.is_some_and(|guessed| guessed.len() == 1)
+	})
+	.await;
+	back.send(json!({ "type": "close_round", "round": 0 })).await;
+	cat.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(cat.told.len(), 1);
+	assert_eq!(cat.told[0].as_object().unwrap().values().collect::<Vec<_>>(), ["again"]);
+}
+
+#[tokio::test]
+async fn a_page_from_before_an_update_is_not_let_in() {
+	let server = serve(None, vec![]).await;
+	// What the page takes as its being out of date.
+	for hello in [
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "protocol": 1 }),
+		json!({ "type": "rejoin", "code": "ABCDEF", "token": "kept" }),
+	] {
+		let mut old = Client::open_saying(&server, hello).await;
+		assert_eq!(old.error().await, "bad_request");
+		assert!(old.recv().await.is_none());
+	}
+}
+
+#[tokio::test]
+async fn sockets_past_the_cap_are_refused_until_one_closes() {
+	let server = serve_with(Config {
+		database_url: None,
+		allowed_origins: vec![],
+		turnstile: None,
+		max_sockets: 2,
+	})
+	.await;
+	let hello = json!({ "type": "create", "name": "Ann", "identity": who("Ann") });
+	let mut first = Client::open(&server, hello).await;
+	first.joined().await;
+	// One that has said nothing yet holds a place all the same.
+	let (_idle, _) = connect_async(&server.url).await.unwrap();
+	assert!(connect_async(&server.url).await.is_err());
+
+	first.send(json!({ "type": "leave" })).await;
+	assert_eq!(first.closed().await, Some(1000));
+	// Its place is given up a moment after its client sees it close.
+	let freed = async {
+		while connect_async(&server.url).await.is_err() {
+			tokio::time::sleep(Duration::from_millis(20)).await;
+		}
+	};
+	timeout(Duration::from_secs(5), freed)
+		.await
+		.expect("the place was not given up");
 }
 
 #[tokio::test]
@@ -412,6 +564,7 @@ async fn guarded(secret: &str, verify_url: String, require: Vec<Action>) -> Serv
 			verify_url,
 			require,
 		}),
+		max_sockets: MAX_SOCKETS,
 	})
 	.await
 }
@@ -529,6 +682,7 @@ async fn a_secret_cloudflare_does_not_know_stops_the_server_starting() {
 			verify_url: siteverify().await,
 			require: vec![],
 		}),
+		max_sockets: MAX_SOCKETS,
 	};
 	assert!(app(misconfigured).await.is_err());
 }
@@ -665,11 +819,50 @@ async fn a_game_outlives_the_process_that_started_it() {
 	assert_eq!(restored["round"]["ends_at"], open["round"]["ends_at"]);
 	assert_eq!(restored["round"]["guessed"], json!([ann_id]));
 
+	// A guess from before the restart and one from after, as they were sent.
 	bob.send(json!({ "type": "guess", "round": 0, "result": { "points": 7 } }))
 		.await;
-	let result = ann.lobby(|l| l["phase"] == "result").await;
-	assert_eq!(result["history"][0][&ann_id]["points"], json!(4200));
-	assert_eq!(result["history"][0][&bob_id]["points"], json!(7));
+	ann.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(
+		ann.told,
+		[json!({ &ann_id: { "points": 4200 }, &bob_id: { "points": 7 } })]
+	);
+
+	// The round after is the database's to give, and so is the one gone by to
+	// whoever comes in.
+	ann.send(json!({ "type": "next", "round": 0 })).await;
+	let second = bob.lobby(|l| l["round"]["index"] == 1).await;
+	assert_eq!(second["round"]["entry"], json!({ "id": "b" }));
+	let mut dan = Client::open(
+		&after,
+		json!({ "type": "join", "code": code, "name": "Dan", "identity": who("Dan") }),
+	)
+	.await;
+	dan.joined().await;
+	dan.lobby(|_| true).await;
+	assert_eq!(dan.told, ann.told);
+
+	// Its guesses go with the lobby.
+	for client in [&mut ann, &mut bob, &mut dan] {
+		client.send(json!({ "type": "leave" })).await;
+		while client.recv().await.is_some() {}
+	}
+	let pool = PgPool::connect(&scratch.url).await.unwrap();
+	let kept = "select (select count(*) from lobbies where code = $1) + (select count(*) from guesses)";
+	let gone = async {
+		while sqlx::query_scalar::<_, i64>(kept)
+			.bind(code.as_str())
+			.fetch_one(&pool)
+			.await
+			.unwrap() > 0
+		{
+			tokio::time::sleep(Duration::from_millis(20)).await;
+		}
+	};
+	timeout(Duration::from_secs(5), gone)
+		.await
+		.expect("the lobby left rows behind");
+	pool.close().await;
 
 	after.task.abort();
 	scratch.drop().await;

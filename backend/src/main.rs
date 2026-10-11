@@ -1,6 +1,6 @@
 use std::env;
 
-use spaceguesser_backend::{Action, Config, SITEVERIFY, Turnstile, app, metrics};
+use spaceguesser_backend::{Action, Config, MAX_SOCKETS, SITEVERIFY, Turnstile, app, metrics};
 use tokio::net::TcpListener;
 use tokio::signal::unix::{SignalKind, signal};
 use tracing::info;
@@ -37,6 +37,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
 			verify_url: SITEVERIFY.into(),
 			require,
 		}),
+		max_sockets: MAX_SOCKETS,
 	};
 	let bind = env::var("BIND").unwrap_or_else(|_| "127.0.0.1:8787".into());
 	let metrics_bind = env::var("METRICS_BIND").unwrap_or_else(|_| "127.0.0.1:9787".into());

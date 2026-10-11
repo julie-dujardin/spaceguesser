@@ -10,16 +10,21 @@ use axum::http::{HeaderMap, StatusCode, header};
 use axum::response::{IntoResponse, Response};
 use futures_util::stream::SplitSink;
 use futures_util::{SinkExt, StreamExt};
-use tokio::sync::{Notify, mpsc, oneshot};
+use serde::de::DeserializeOwned;
+use tokio::sync::{Notify, OwnedSemaphorePermit, mpsc, oneshot};
 use tokio::time::{Instant, interval, timeout};
 
 use crate::App;
 use crate::lobby::{Error, check_identity, clean_name};
 use crate::metrics;
-use crate::protocol::{ClientMsg, ServerMsg};
+use crate::protocol::{ClientMsg, Hello, PROTOCOL, ServerMsg};
 use crate::registry::{Command, Conn, Entry, Handle, OUTBOX};
 use crate::turnstile::Action;
 
+/// Every socket is an open file, and the server is deployed with 65,536 of
+/// them: the rest are for its database, its checks with Cloudflare and whoever
+/// is being turned away.
+pub const MAX_SOCKETS: usize = 60_000;
 /// Room for a `start` carrying every round, and little more: a socket's read
 /// buffer stays as large as the largest message it has taken.
 const MAX_MESSAGE_BYTES: usize = 48 * 1024;
@@ -47,30 +52,41 @@ pub async fn upgrade(State(app): State<Arc<App>>, headers: HeaderMap, upgrade: W
 	if !app.origins.is_empty() && !origin.is_some_and(|o| app.origins.iter().any(|allowed| allowed == o)) {
 		return StatusCode::FORBIDDEN.into_response();
 	}
+	let Ok(place) = app.sockets.clone().try_acquire_owned() else {
+		return StatusCode::SERVICE_UNAVAILABLE.into_response();
+	};
 	upgrade
 		.max_message_size(MAX_MESSAGE_BYTES)
 		.read_buffer_size(READ_BUFFER_BYTES)
-		.on_upgrade(move |socket| serve(app, socket))
+		.on_upgrade(move |socket| serve(app, socket, place))
 }
 
 /// Reads the socket until it ends. Returning drops the last sender to the
 /// writer, which then sends what is queued and closes.
-async fn serve(app: Arc<App>, socket: WebSocket) {
+async fn serve(app: Arc<App>, socket: WebSocket, place: OwnedSemaphorePermit) {
 	let (sink, mut stream) = socket.split();
 	let (tx, rx) = mpsc::channel(OUTBOX);
 	let hang_up = Arc::new(Notify::new());
-	tokio::spawn(write(sink, rx, hang_up.clone(), metrics::Socket::open()));
+	tokio::spawn(write(sink, rx, hang_up.clone(), (metrics::Socket::open(), place)));
 	let conn = Conn {
 		id: NEXT_CONN.fetch_add(1, Ordering::Relaxed),
 		tx: tx.clone(),
 		hang_up: hang_up.clone(),
+		told: 0,
 	};
 	let conn_id = conn.id;
 
-	let hello = timeout(HELLO_TIMEOUT, next_msg(&mut stream)).await.ok().flatten();
+	let hello = timeout(HELLO_TIMEOUT, next_msg::<Hello>(&mut stream))
+		.await
+		.ok()
+		.flatten();
 	let entered = match hello {
-		Some(Ok(hello)) => enter(&app, hello, conn).await,
-		Some(Err(())) => Err(Error::BadRequest),
+		Some(Ok(Hello {
+			protocol: PROTOCOL,
+			msg,
+		})) => enter(&app, msg, conn).await,
+		// Unread, or from a page of before an update: the same to that page.
+		Some(_) => Err(Error::BadRequest),
 		None => return,
 	};
 	let (lobby, player) = match entered {
@@ -119,9 +135,9 @@ async fn serve(app: Arc<App>, socket: WebSocket) {
 
 /// The next client message; `Err` for one that does not parse, `None` once the
 /// socket is done or has gone quiet.
-async fn next_msg(
+async fn next_msg<T: DeserializeOwned>(
 	stream: &mut (impl StreamExt<Item = Result<Message, axum::Error>> + Unpin),
-) -> Option<Result<ClientMsg, ()>> {
+) -> Option<Result<T, ()>> {
 	loop {
 		match timeout(IDLE_TIMEOUT, stream.next()).await.ok()?? {
 			Ok(Message::Text(text)) => return Some(serde_json::from_str(&text).map_err(|_| ())),
@@ -192,7 +208,7 @@ async fn write(
 	mut sink: SplitSink<WebSocket, Message>,
 	mut rx: mpsc::Receiver<Message>,
 	hang_up: Arc<Notify>,
-	_open: metrics::Socket,
+	_open: (metrics::Socket, OwnedSemaphorePermit),
 ) {
 	let mut ping = interval(PING_EVERY);
 	// A close with a status, which a browser otherwise reports as abnormal. When

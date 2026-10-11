@@ -3,13 +3,26 @@
 use axum::extract::ws::Utf8Bytes;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
+use serde_json::value::RawValue;
 
 use crate::lobby::{Error, Snapshot};
+
+/// What the server and the page speak. It changes when a page of before could
+/// no longer follow: such a page says another, or none, and is not let in.
+pub const PROTOCOL: u32 = 2;
 
 /// The status a socket is closed with when its seat was opened on another one.
 /// A client that came straight back from it would have the two trade the seat
 /// forever; from any other close it does come back.
 pub const SEAT_TAKEN: u16 = 4000;
+
+/// What a socket opens with.
+#[derive(Deserialize)]
+pub struct Hello {
+	pub protocol: u32,
+	#[serde(flatten)]
+	pub msg: ClientMsg,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(tag = "type", rename_all = "snake_case")]
@@ -63,8 +76,14 @@ pub enum ServerMsg<'a> {
 		you: &'a str,
 		token: &'a str,
 	},
-	/// The whole lobby, on every change. `now` is the server's clock, for
-	/// reading `ends_at` on a device whose own clock is off.
+	/// What was guessed in a round that is over, by player. Sent once to each
+	/// socket, ahead of the first `lobby` that counts the round as finished.
+	Results {
+		round: usize,
+		guesses: &'a RawValue,
+	},
+	/// The lobby, on every change. `now` is the server's clock, for reading
+	/// `ends_at` on a device whose own clock is off.
 	Lobby {
 		now: u64,
 		lobby: Snapshot<'a>,

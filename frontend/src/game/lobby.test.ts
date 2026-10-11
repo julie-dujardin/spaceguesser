@@ -1,5 +1,14 @@
 import { describe, expect, it } from 'vitest';
-import { lobbyOf, outdated, playedBy, slim, standings, type Lobby } from './lobby';
+import {
+	guessesOf,
+	lobbyOf,
+	outdated,
+	playedBy,
+	slim,
+	standings,
+	type Lobby,
+	type ToldLobby
+} from './lobby';
 import type { Round } from './rounds';
 import { play, type Played } from './run';
 import { NO_SKY } from './scoring';
@@ -53,7 +62,8 @@ const NO_PICK = sent(
 	play(ORBIT, { body: 'naif-502', lat: -10, lon: 120 }, null, NO_SKY, 1560.8, 0, true)
 );
 
-function lobby(history: Record<string, unknown>[]): Lobby {
+/** A game the server says has `finished` rounds over. */
+function told(finished: number): ToldLobby {
 	return {
 		code: 'ABCDEF',
 		phase: 'final',
@@ -61,14 +71,34 @@ function lobby(history: Record<string, unknown>[]): Lobby {
 		players: ['ann', 'bob'].map((id) => ({ id, name: id, connected: true })),
 		settings: {},
 		round: null,
-		history: history as Lobby['history']
+		finished
 	};
+}
+
+/** The lobby a socket has once it is told those rounds, then that they are over. */
+function lobby(rounds: Record<string, unknown>[]): Lobby {
+	return lobbyOf(told(rounds.length), rounds.map(guessesOf));
 }
 
 describe('lobbyOf', () => {
 	it('keeps every guess this app writes', () => {
-		const told = lobby([{ ann: ON_MARS, bob: OVER_EUROPA }, { ann: NO_PICK }]);
-		expect(lobbyOf(told)).toEqual(told);
+		const rounds = [{ ann: ON_MARS, bob: OVER_EUROPA }, { ann: NO_PICK }];
+		expect(lobby(rounds).history).toEqual(rounds);
+	});
+
+	it('counts the rounds the server says are over, and no others', () => {
+		const last: Record<string, Played>[] = [
+			{ ann: ON_MARS },
+			{ ann: NO_PICK },
+			{ bob: OVER_EUROPA }
+		];
+		// A game started over: the last one's rounds are still held, and not its.
+		expect(lobbyOf(told(0), last).history).toEqual([]);
+		expect(lobbyOf(told(1), [{ bob: ON_MARS }, ...last.slice(1)]).history).toEqual([
+			{ bob: ON_MARS }
+		]);
+		// A round nobody answered is told as nobody's, and one never told reads the same.
+		expect(lobbyOf(told(2), [{ ann: ON_MARS }]).history).toEqual([{ ann: ON_MARS }, {}]);
 	});
 
 	it('drops a guess it cannot read, and counts its player out of the round', () => {
@@ -85,7 +115,7 @@ describe('lobbyOf', () => {
 			{ ...OVER_EUROPA, secondsLeft: 'soon' }
 		];
 		for (const guess of wrong) {
-			const read = lobbyOf(lobby([{ ann: ON_MARS, bob: guess }]));
+			const read = lobby([{ ann: ON_MARS, bob: guess }]);
 			expect(read.history).toEqual([{ ann: ON_MARS }]);
 			expect(standings(read).map(({ seat, total }) => [seat.id, total])).toEqual([
 				['ann', ON_MARS.score.points],

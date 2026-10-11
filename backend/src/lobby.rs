@@ -3,8 +3,9 @@
 //! Settings, rounds and guesses are the clients' own JSON. The server owns who
 //! is in, whose turn it is to act and when a round closes; the clients draw the
 //! rounds and score the guesses.
-
-use std::collections::HashMap;
+//!
+//! A lobby holds what every message needs. Its rounds and its guesses are
+//! handed back to be stored, and read from the store when they are relayed.
 
 use rand::Rng;
 use serde::{Deserialize, Serialize, Serializer};
@@ -23,9 +24,8 @@ const MAX_NAME_CHARS: usize = 24;
 const IDENTITY_CHARS: std::ops::RangeInclusive<usize> = 16..=64;
 const MAX_TIMER_S: f64 = 3600.0;
 
-// Every guess rides in every later snapshot, so these bound a broadcast, and
-// with the lobby cap what the server holds. Each leaves room over the largest
-// the page sends.
+// These bound a message relayed, and with the lobby cap what the store is
+// given to keep. Each leaves room over the largest the page sends.
 const MAX_SETTINGS_BYTES: usize = 512;
 const MAX_ROUND_BYTES: usize = 2 * 1024;
 const MAX_GUESS_BYTES: usize = 1024;
@@ -148,14 +148,19 @@ pub struct Lobby {
 	players: Vec<Player>,
 	phase: Phase,
 	settings: Value,
-	/// Text, like the guesses: the server reads neither, and parsed JSON takes
-	/// up to sixteen times the memory of its text.
-	rounds: Vec<Box<RawValue>>,
 	round: usize,
+	/// How many rounds the game has.
+	total: usize,
+	/// The round in play or just played. Text, like the guesses: the server
+	/// reads neither, and parsed JSON takes up to sixteen times the memory of
+	/// its text. Not stored with the lobby: the store has every round, and
+	/// this one is read back from it.
+	#[serde(skip)]
+	entry: Option<Box<RawValue>>,
 	/// Epoch milliseconds, so a deadline survives a restart.
 	ends_at: Option<u64>,
-	/// Guesses by player id, one map per round begun.
-	results: Vec<HashMap<String, Box<RawValue>>>,
+	/// Who has guessed in the round in play or just played.
+	guessed: Vec<String>,
 	#[serde(skip)]
 	empty_since: Option<u64>,
 }
@@ -168,8 +173,9 @@ pub struct Snapshot<'a> {
 	players: Vec<PlayerView<'a>>,
 	settings: &'a Value,
 	round: Option<RoundView<'a>>,
-	/// Finished rounds only: a round's guesses stay hidden until it closes.
-	history: &'a [HashMap<String, Box<RawValue>>],
+	/// How many rounds are over. Their guesses are sent apart, once each: a
+	/// round's stay hidden until it closes.
+	finished: usize,
 }
 
 #[derive(Serialize)]
@@ -185,7 +191,7 @@ struct RoundView<'a> {
 	total: usize,
 	entry: &'a RawValue,
 	ends_at: Option<u64>,
-	guessed: Vec<&'a str>,
+	guessed: &'a [String],
 }
 
 /// The client's JSON as it is kept, if it is small enough to relay, and
@@ -253,10 +259,11 @@ impl Lobby {
 			players: vec![host],
 			phase: Phase::Lobby,
 			settings: Value::Object(Default::default()),
-			rounds: Vec::new(),
 			round: 0,
+			total: 0,
+			entry: None,
 			ends_at: None,
-			results: Vec::new(),
+			guessed: Vec::new(),
 			empty_since: None,
 		};
 		Ok((lobby, token))
@@ -340,7 +347,14 @@ impl Lobby {
 	}
 
 	/// Begins a game with whoever is here: seats left or long gone are cleared.
-	pub fn start(&mut self, by: &str, settings: Value, rounds: Vec<Value>, now: u64) -> Result<(), Error> {
+	/// Returns its rounds, for the store.
+	pub fn start(
+		&mut self,
+		by: &str,
+		settings: Value,
+		rounds: Vec<Value>,
+		now: u64,
+	) -> Result<Vec<Box<RawValue>>, Error> {
 		if rounds.is_empty() || rounds.len() > MAX_ROUNDS {
 			return Err(Error::BadRequest);
 		}
@@ -351,26 +365,26 @@ impl Lobby {
 		for player in &mut self.players {
 			player.in_game = true;
 		}
-		self.rounds = rounds;
-		self.results.clear();
+		self.total = rounds.len();
 		self.begin_round(0, now);
-		Ok(())
+		self.entry = Some(rounds[0].clone());
+		Ok(rounds)
 	}
 
-	/// A guess at round `round`. Naming the round keeps one that arrives late,
-	/// or is sent again on a new socket, out of the round opened since.
-	pub fn guess(&mut self, by: &str, round: usize, result: Value, now: u64) -> Result<(), Error> {
+	/// A guess at round `round`, returned for the store. Naming the round keeps
+	/// one that arrives late, or is sent again on a new socket, out of the round
+	/// opened since.
+	pub fn guess(&mut self, by: &str, round: usize, result: Value, now: u64) -> Result<Box<RawValue>, Error> {
 		if self.phase != Phase::Playing || round != self.round {
 			return Err(Error::BadPhase);
 		}
 		let result = kept(&result, MAX_GUESS_BYTES).ok_or(Error::BadRequest)?;
-		let guesses = &mut self.results[self.round];
-		if guesses.contains_key(by) {
+		if self.guessed.iter().any(|id| id == by) {
 			return Err(Error::AlreadyGuessed);
 		}
-		guesses.insert(by.to_owned(), result);
+		self.guessed.push(by.to_owned());
 		self.settle(now);
-		Ok(())
+		Ok(result)
 	}
 
 	/// The host closing round `round` early, so one idle player cannot hold an
@@ -391,10 +405,11 @@ impl Lobby {
 		if self.phase != Phase::Result || round != self.round {
 			return Err(Error::BadPhase);
 		}
-		if self.round + 1 < self.rounds.len() {
+		if self.round + 1 < self.total {
 			self.begin_round(self.round + 1, now);
 		} else {
 			self.phase = Phase::Final;
+			self.entry = None;
 		}
 		Ok(())
 	}
@@ -443,13 +458,41 @@ impl Lobby {
 				.is_some_and(|since| now.saturating_sub(since) >= EMPTY_TTL_MS)
 	}
 
-	pub fn snapshot(&self) -> Snapshot<'_> {
-		let in_round = matches!(self.phase, Phase::Playing | Phase::Result);
-		let finished = match self.phase {
+	/// How many rounds are over.
+	pub fn finished(&self) -> usize {
+		match self.phase {
+			Phase::Lobby => 0,
 			Phase::Playing => self.round,
-			_ => self.results.len(),
+			Phase::Result => self.round + 1,
+			Phase::Final => self.total,
+		}
+	}
+
+	/// The round whose entry has yet to be read back from the store: the one
+	/// in play, after a `next` or a restart.
+	pub fn missing_entry(&self) -> Option<usize> {
+		(self.in_round() && self.entry.is_none()).then_some(self.round)
+	}
+
+	pub fn set_entry(&mut self, entry: Box<RawValue>) {
+		self.entry = Some(entry);
+	}
+
+	/// `None` until the round in play has been read back: there is nothing to
+	/// show of it yet.
+	pub fn snapshot(&self) -> Option<Snapshot<'_>> {
+		let round = match &self.entry {
+			_ if !self.in_round() => None,
+			Some(entry) => Some(RoundView {
+				index: self.round,
+				total: self.total,
+				entry,
+				ends_at: self.ends_at,
+				guessed: &self.guessed,
+			}),
+			None => return None,
 		};
-		Snapshot {
+		Some(Snapshot {
 			code: &self.code,
 			phase: self.phase,
 			host: &self.host,
@@ -463,15 +506,13 @@ impl Lobby {
 				})
 				.collect(),
 			settings: &self.settings,
-			round: in_round.then(|| RoundView {
-				index: self.round,
-				total: self.rounds.len(),
-				entry: &self.rounds[self.round],
-				ends_at: self.ends_at,
-				guessed: self.results[self.round].keys().map(String::as_str).collect(),
-			}),
-			history: &self.results[..finished],
-		}
+			round,
+			finished: self.finished(),
+		})
+	}
+
+	fn in_round(&self) -> bool {
+		matches!(self.phase, Phase::Playing | Phase::Result)
 	}
 
 	fn player(&self, id: &str) -> Option<&Player> {
@@ -495,7 +536,8 @@ impl Lobby {
 	fn begin_round(&mut self, index: usize, now: u64) {
 		let timer = self.settings.get("timer").and_then(Value::as_f64).filter(|s| *s > 0.0);
 		self.round = index;
-		self.results.push(HashMap::new());
+		self.entry = None;
+		self.guessed.clear();
 		self.ends_at = timer.map(|s| now + (s.min(MAX_TIMER_S) * 1000.0) as u64);
 		self.phase = Phase::Playing;
 	}
@@ -512,13 +554,12 @@ impl Lobby {
 		if self.phase != Phase::Playing {
 			return false;
 		}
-		let guesses = &self.results[self.round];
 		let anyone_here = self.players.iter().any(|p| p.connected);
 		let all_in = self
 			.players
 			.iter()
 			.filter(|p| p.awaited(now))
-			.all(|p| guesses.contains_key(&p.id));
+			.all(|p| self.guessed.contains(&p.id));
 		if anyone_here && all_in {
 			self.end_round();
 		}
@@ -553,7 +594,16 @@ mod tests {
 	}
 
 	fn view(lobby: &Lobby) -> Value {
-		serde_json::to_value(lobby.snapshot()).unwrap()
+		serde_json::to_value(lobby.snapshot().expect("the round in play is read back")).unwrap()
+	}
+
+	/// The host moving on, and the store's part after it: the next round read back.
+	fn next(lobby: &mut Lobby, by: &str, round: usize) -> Result<(), Error> {
+		lobby.next(by, round, 0)?;
+		if let Some(index) = lobby.missing_entry() {
+			lobby.set_entry(to_raw_value(&json!({ "id": index })).unwrap());
+		}
+		Ok(())
 	}
 
 	fn seats(lobby: &Lobby) -> usize {
@@ -565,7 +615,7 @@ mod tests {
 		let (mut lobby, ids) = lobby_of(&["ann", "bob"]);
 		assert_eq!(view(&lobby)["host"], json!(ids[0]));
 		let start = lobby.start(&ids[1], json!({}), vec![json!(1)], 0);
-		assert_eq!(start, Err(Error::NotHost));
+		assert_eq!(start.err(), Some(Error::NotHost));
 		assert_eq!(lobby.set_settings(&ids[1], json!({})), Err(Error::NotHost));
 	}
 
@@ -597,7 +647,7 @@ mod tests {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		lobby.guess(&ids[1], 0, json!(1), 0).unwrap();
-		lobby.next(&ids[0], 0, 0).unwrap();
+		next(&mut lobby, &ids[0], 0).unwrap();
 
 		// Looking in and leaving by the door, or by dropping off.
 		let late = lobby.join("late", &who("late"), 0).unwrap();
@@ -633,7 +683,7 @@ mod tests {
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		assert_eq!(view(&lobby)["phase"], json!("playing"));
 		lobby.guess(&late, 0, json!(2), 0).unwrap();
-		assert_eq!(view(&lobby)["history"][0][&late], json!(2));
+		assert_eq!(view(&lobby)["phase"], json!("result"));
 
 		// And keeps their name when they go, as anyone's.
 		lobby.leave(&late, 0);
@@ -670,39 +720,55 @@ mod tests {
 	}
 
 	#[test]
-	fn a_round_closes_when_everyone_has_guessed_and_hides_guesses_until_then() {
+	fn a_round_closes_when_everyone_has_guessed_and_is_over_only_then() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
-		lobby.guess(&ids[0], 0, json!({ "points": 10 }), 0).unwrap();
-		assert_eq!(lobby.guess(&ids[0], 0, json!({}), 0), Err(Error::AlreadyGuessed));
+		let kept = lobby.guess(&ids[0], 0, json!({ "points": 10 }), 0).unwrap();
+		assert_eq!(kept.get(), r#"{"points":10}"#);
+		assert_eq!(lobby.guess(&ids[0], 0, json!({}), 0).err(), Some(Error::AlreadyGuessed));
 
 		let open = view(&lobby);
 		assert_eq!(open["phase"], json!("playing"));
 		assert_eq!(open["round"]["guessed"], json!([ids[0]]));
-		assert_eq!(open["history"], json!([]));
+		assert_eq!(open["finished"], json!(0));
+		// Who has guessed is told; what they guessed is not the lobby's to tell.
+		assert!(!open.to_string().contains("points"));
 
 		lobby.guess(&ids[1], 0, json!({ "points": 20 }), 0).unwrap();
 		let closed = view(&lobby);
 		assert_eq!(closed["phase"], json!("result"));
-		assert_eq!(closed["history"][0][&ids[1]]["points"], json!(20));
+		assert_eq!(closed["finished"], json!(1));
+		assert_eq!(closed["round"]["guessed"], json!([ids[0], ids[1]]));
 	}
 
 	#[test]
 	fn the_host_walks_the_game_to_its_end_and_can_start_another() {
 		let (mut lobby, ids) = started(&["ann"], 0, 2);
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
-		lobby.next(&ids[0], 0, 0).unwrap();
-		assert_eq!(view(&lobby)["round"]["index"], json!(1));
-		lobby.guess(&ids[0], 1, json!(2), 0).unwrap();
-		lobby.next(&ids[0], 1, 0).unwrap();
 
+		// The round moved on to is the store's to give: until it has, there is
+		// nothing to tell of it.
+		lobby.next(&ids[0], 0, 0).unwrap();
+		assert_eq!(lobby.missing_entry(), Some(1));
+		assert!(lobby.snapshot().is_none());
+		lobby.set_entry(to_raw_value(&json!({ "id": 1 })).unwrap());
+		let second = view(&lobby);
+		assert_eq!(second["round"]["index"], json!(1));
+		assert_eq!(second["round"]["entry"], json!({ "id": 1 }));
+		assert_eq!(second["round"]["guessed"], json!([]));
+
+		lobby.guess(&ids[0], 1, json!(2), 0).unwrap();
+		next(&mut lobby, &ids[0], 1).unwrap();
 		let done = view(&lobby);
 		assert_eq!(done["phase"], json!("final"));
 		assert_eq!(done["round"], Value::Null);
-		assert_eq!(done["history"].as_array().unwrap().len(), 2);
+		assert_eq!(done["finished"], json!(2));
 		assert_eq!(lobby.next(&ids[0], 1, 0), Err(Error::BadPhase));
 
-		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
-		assert_eq!(view(&lobby)["history"], json!([]));
+		let rounds = lobby.start(&ids[0], json!({}), vec![json!(1), json!(2)], 0).unwrap();
+		assert_eq!(rounds.len(), 2);
+		let again = view(&lobby);
+		assert_eq!(again["finished"], json!(0));
+		assert_eq!(again["round"]["entry"], json!(1));
 	}
 
 	#[test]
@@ -715,7 +781,7 @@ mod tests {
 		assert_eq!(lobby.close_round(&ids[0], 0), Err(Error::BadPhase));
 		assert_eq!(view(&lobby)["phase"], json!("result"));
 
-		lobby.next(&ids[0], 0, 0).unwrap();
+		next(&mut lobby, &ids[0], 0).unwrap();
 		assert_eq!(lobby.next(&ids[0], 0, 0), Err(Error::BadPhase));
 		let after = view(&lobby);
 		assert_eq!(after["phase"], json!("playing"));
@@ -727,10 +793,10 @@ mod tests {
 		let (mut lobby, ids) = started(&["ann", "bob"], 0, 2);
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		lobby.close_round(&ids[0], 0).unwrap();
-		lobby.next(&ids[0], 0, 0).unwrap();
+		next(&mut lobby, &ids[0], 0).unwrap();
 
 		// Bob's guess at the first round, arriving after his socket came back.
-		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0), Err(Error::BadPhase));
+		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0).err(), Some(Error::BadPhase));
 		assert_eq!(view(&lobby)["round"]["guessed"], json!([]));
 		lobby.guess(&ids[1], 1, json!(2), 0).unwrap();
 	}
@@ -752,7 +818,7 @@ mod tests {
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		assert!(lobby.tick(61_000 + DEADLINE_GRACE_MS));
 		assert_eq!(view(&lobby)["phase"], json!("result"));
-		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0), Err(Error::BadPhase));
+		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0).err(), Some(Error::BadPhase));
 	}
 
 	#[test]
@@ -779,7 +845,7 @@ mod tests {
 		lobby.rejoin(&token).unwrap();
 		assert!(!lobby.tick(5_000 + AWAY_GRACE_MS));
 		lobby.guess(&ids[1], 0, json!(2), 5_000 + AWAY_GRACE_MS).unwrap();
-		assert_eq!(view(&lobby)["history"][0][&ids[1]], json!(2));
+		assert_eq!(view(&lobby)["phase"], json!("result"));
 	}
 
 	#[test]
@@ -850,7 +916,7 @@ mod tests {
 
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		lobby.guess(&ids[2], 0, json!(1), 0).unwrap();
-		lobby.next(&ids[0], 0, 0).unwrap();
+		next(&mut lobby, &ids[0], 0).unwrap();
 		// The scoreboard is where a name matters most.
 		lobby.leave(&ids[2], 0);
 		lobby.tick(AWAY_GRACE_MS);
@@ -873,13 +939,14 @@ mod tests {
 		assert_eq!((&back["name"], &back["connected"]), (&json!("bobby"), &json!(true)));
 
 		// Their guess still stands, and the next round waits for them again.
+		assert_eq!(lobby.guess(&ids[1], 0, json!(8), 0).err(), Some(Error::AlreadyGuessed));
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
-		assert_eq!(view(&lobby)["history"][0][&ids[1]], json!(7));
-		lobby.next(&ids[0], 0, 0).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("result"));
+		next(&mut lobby, &ids[0], 0).unwrap();
 		lobby.guess(&ids[0], 1, json!(1), 0).unwrap();
 		assert_eq!(view(&lobby)["phase"], json!("playing"));
 		lobby.guess(&ids[1], 1, json!(1), 0).unwrap();
-		lobby.next(&ids[0], 1, 0).unwrap();
+		next(&mut lobby, &ids[0], 1).unwrap();
 
 		// A game that is over gives them their place on its scoreboard back.
 		lobby.leave(&ids[1], 0);
@@ -919,14 +986,16 @@ mod tests {
 	fn what_cannot_be_relayed_or_stored_is_refused() {
 		let (mut lobby, ids) = lobby_of(&["ann"]);
 		let big = json!("x".repeat(MAX_ROUND_BYTES));
-		assert_eq!(lobby.start(&ids[0], json!({}), vec![big], 0), Err(Error::BadRequest));
-		assert_eq!(lobby.start(&ids[0], json!({}), vec![], 0), Err(Error::BadRequest));
 		let long = vec![json!(1); MAX_ROUNDS + 1];
-		assert_eq!(lobby.start(&ids[0], json!({}), long, 0), Err(Error::BadRequest));
-		assert_eq!(
-			lobby.start(&ids[0], json!([]), vec![json!(1)], 0),
-			Err(Error::BadRequest)
-		);
+		for (settings, rounds) in [
+			(json!({}), vec![big]),
+			(json!({}), vec![]),
+			(json!({}), long),
+			(json!([]), vec![json!(1)]),
+		] {
+			let start = lobby.start(&ids[0], settings, rounds, 0);
+			assert_eq!(start.err(), Some(Error::BadRequest));
+		}
 		assert_eq!(
 			lobby.set_settings(&ids[0], json!({ "a": "\u{0}" })),
 			Err(Error::BadRequest)
@@ -934,8 +1003,9 @@ mod tests {
 
 		let (mut lobby, ids) = started(&["ann"], 0, 1);
 		let big = json!("x".repeat(MAX_GUESS_BYTES));
-		assert_eq!(lobby.guess(&ids[0], 0, big, 0), Err(Error::BadRequest));
-		assert_eq!(lobby.guess(&ids[0], 0, json!("a\u{0}b"), 0), Err(Error::BadRequest));
+		for guess in [big, json!("a\u{0}b")] {
+			assert_eq!(lobby.guess(&ids[0], 0, guess, 0).err(), Some(Error::BadRequest));
+		}
 	}
 
 	#[test]
@@ -945,8 +1015,12 @@ mod tests {
 		let ann = lobby.token(&ids[0]).unwrap().to_owned();
 		let bob = lobby.token(&ids[1]).unwrap().to_owned();
 
+		// The row is the lobby's alone: the rounds and the guesses are beside it.
 		let stored = serde_json::to_value(&lobby).unwrap();
+		assert!(!stored.to_string().contains("points"));
 		let mut back: Lobby = serde_json::from_value(stored).unwrap();
+		assert_eq!(back.missing_entry(), Some(0));
+		back.set_entry(to_raw_value(&json!({ "id": 0 })).unwrap());
 		let restored = view(&back);
 		assert_eq!(restored["round"]["ends_at"], json!(61_000));
 		assert_eq!(restored["round"]["guessed"], json!([ids[0]]));

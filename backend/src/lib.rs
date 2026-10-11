@@ -5,6 +5,7 @@ use std::sync::Arc;
 use axum::Router;
 use axum::http::header;
 use axum::routing::get;
+use tokio::sync::Semaphore;
 use tracing::info;
 
 mod lobby;
@@ -19,6 +20,7 @@ use registry::Registry;
 use store::Store;
 use turnstile::Verifier;
 pub use turnstile::{Action, SITEVERIFY, Turnstile};
+pub use ws::MAX_SOCKETS;
 
 pub struct Config {
 	/// Unset, lobbies live in memory only and end with the process.
@@ -27,12 +29,16 @@ pub struct Config {
 	pub allowed_origins: Vec<String>,
 	/// Unset, nobody is asked for proof that they are a person.
 	pub turnstile: Option<Turnstile>,
+	/// Sockets open at once before more are refused: `MAX_SOCKETS`, deployed.
+	pub max_sockets: usize,
 }
 
 struct App {
 	registry: Arc<Registry>,
 	origins: Vec<String>,
 	turnstile: Option<Arc<Verifier>>,
+	/// A place for each socket that may still open.
+	sockets: Arc<Semaphore>,
 }
 
 pub async fn app(config: Config) -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
@@ -54,6 +60,7 @@ pub async fn app(config: Config) -> Result<Router, Box<dyn std::error::Error + S
 		registry,
 		origins: config.allowed_origins,
 		turnstile,
+		sockets: Arc::new(Semaphore::new(config.max_sockets)),
 	});
 	Ok(Router::new()
 		.route("/ws", get(ws::upgrade))

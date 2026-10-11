@@ -27,7 +27,10 @@ player count is what a connection costs.
 
 ## Results
 
-On a desktop (Ryzen 9 9900X3D), over loopback, with no errors in any run.
+On a desktop (Ryzen 9 9900X3D), over loopback, with no errors in any run. The
+sweeps are of the server that wrote a lobby's every round and guess with each
+message; it now writes the one guess and a row without them, and reads a
+round's guesses back when it closes.
 
 `play`: messages in per second, and the p95 from a round's last guess to its
 results.
@@ -59,6 +62,10 @@ fifth of a core and 1,100 commits a second, every message being one. The VPS
 has 4 cores, 7.7 GB of which search wants about 1, and a disk that syncs 7,900
 times a second (`pg_test_fsync` there: the sweep's Postgres is in memory, so
 the sweep says nothing of it). None of the three is what limits it. The
-server's own caps are: 65,536 open files in its compose file, and 2,500
-lobbies of 24 players. Nothing past 20,000 players was run. Loopback numbers
-on a fast core — add real network RTT.
+server's own caps are: 60,000 sockets, under the 65,536 open files of its
+compose file, and 20,000 lobbies. Held open at both, three players a lobby in
+their third round, the server took 1.0 GiB; with every lobby at its 96 seats,
+and each name and round as long as they come, 2.7 GiB, under the 4 GiB it is
+held to. A lobby's memory is its seats, 50 KiB of them at most, whatever was
+played in it. Nothing past 20,000 players was swept. Loopback numbers on a
+fast core — add real network RTT.

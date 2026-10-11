@@ -3,7 +3,9 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ENV } from './env';
 import {
+	PROTOCOL,
 	SEAT_TAKEN,
+	guessesOf,
 	lobbyOf,
 	outdated,
 	type ClientMessage,
@@ -13,6 +15,7 @@ import {
 } from './lobby';
 import { identity, seatName, type Profile } from './players';
 import type { RunSettings } from './rules';
+import type { Played } from './run';
 
 /** With no server named there is no multiplayer to offer, and the app does not
  *  show any. */
@@ -113,8 +116,10 @@ export function useLobby(invite: string | null, resume = true) {
 			const returning = hello.type === 'rejoin';
 			let token: string | null = null;
 			let refused: LobbyError | null = null;
+			// The finished rounds, which each socket is told from the first.
+			const rounds: Record<string, Played>[] = [];
 
-			opened.onopen = () => opened.send(JSON.stringify(hello));
+			opened.onopen = () => opened.send(JSON.stringify({ ...hello, protocol: PROTOCOL }));
 
 			opened.onmessage = (event) => {
 				if (socket.current !== opened) return;
@@ -124,6 +129,8 @@ export function useLobby(invite: string | null, resume = true) {
 					attempt = 0;
 					setSession((old) => ({ ...old, you: message.you, connection: old.connection + 1 }));
 					for (const queued of after) opened.send(JSON.stringify(queued));
+				} else if (message.type === 'results') {
+					rounds[message.round] = guessesOf(message.guesses);
 				} else if (message.type === 'lobby') {
 					if (token) {
 						seat.current = { code: message.lobby.code, token };
@@ -132,7 +139,7 @@ export function useLobby(invite: string | null, resume = true) {
 					setSession((old) => ({
 						...old,
 						status: 'open',
-						lobby: lobbyOf(message.lobby),
+						lobby: lobbyOf(message.lobby, rounds),
 						skew: message.now - Date.now(),
 						trouble: null
 					}));

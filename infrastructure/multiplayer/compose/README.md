@@ -11,10 +11,13 @@ port of their own, 9787, which the tunnel must not be routed to. With
 Turnstile token, and with `create,join` so does joining one: the server's
 [README](../../../backend/README.md#proof-of-a-person) has the settings.
 
-Postgres holds games in progress only, one row per lobby, so a redeploy does
-not end them: the new process reads the rows back and players reconnect into
-the round they left. A lobby everyone has left, or that nobody has been
-connected to for five minutes, is closed and its row deleted.
+Postgres holds games in progress only, a row per lobby and one per guess. A
+redeploy does not end them: the new process reads the lobbies back and players
+reconnect into the round they left. It is also where a game's rounds and
+guesses wait until they are relayed, so that the server holds little of a
+lobby in memory: a game being played reads from it, and waits on it when it
+does not answer. A lobby everyone has left, or that nobody has been connected
+to for five minutes, is closed and its rows deleted.
 
 ## Deploy
 

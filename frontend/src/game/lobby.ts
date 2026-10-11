@@ -11,6 +11,10 @@ import { QUICK_PLAY, type Movement, type RunSettings } from './rules';
 import { NO_SKY, score, type Guess, type Score } from './scoring';
 import type { Played } from './run';
 
+/** What the page and the server speak. A socket opened with another is not
+ *  let in, and the page that opened it reads the refusal as `outdated`. */
+export const PROTOCOL = 2;
+
 export type LobbyPhase = 'lobby' | 'playing' | 'result' | 'final';
 
 export interface Seat {
@@ -40,6 +44,10 @@ export interface Lobby {
 	/** The finished rounds' guesses, by player id. */
 	history: Record<string, Played>[];
 }
+
+/** A lobby as the server tells it. A finished round's guesses come once, in a
+ *  message of their own, and a snapshot only counts the rounds. */
+export type ToldLobby = Omit<Lobby, 'history'> & { finished: number };
 
 /** What the server refuses a page of its own build with. */
 const REFUSALS = [
@@ -81,7 +89,9 @@ export type ClientMessage =
 
 export type ServerMessage =
 	| { type: 'joined'; you: string; token: string }
-	| { type: 'lobby'; now: number; lobby: Lobby }
+	// A round that is over, ahead of the first `lobby` that counts it.
+	| { type: 'results'; round: number; guesses: Record<string, unknown> }
+	| { type: 'lobby'; now: number; lobby: ToldLobby }
 	| { type: 'error'; code: LobbyError };
 
 export const CODE_LENGTH = 6;
@@ -117,8 +127,8 @@ export function settingsOf(value: unknown): RunSettings {
 }
 
 /** What a guess carries of the round it answered. The server keeps every
- *  guess in every later snapshot, so a panorama's credits and geometry stay
- *  behind; this is what the recaps read. */
+ *  guess and sends it to every player, so a panorama's credits and geometry
+ *  stay behind; this is what the recaps read. */
 export function slim(round: Round): Round {
 	if (round.mode === 'orbit') return round;
 	const { id, mission, sol, time, lat, lon } = round.entry;
@@ -176,15 +186,24 @@ function isPlayed(value: unknown): value is Played {
 }
 
 /**
- * A snapshot as this build can draw it. The server relays guesses unread, so
- * one another build of the app wrote, or none did, is dropped here rather than
- * met in a render: its player sat the round out.
+ * A round's guesses as this build can draw them. The server relays guesses
+ * unread, so one another build of the app wrote, or none did, is dropped here
+ * rather than met in a render: its player sat the round out.
  */
-export function lobbyOf(told: Lobby): Lobby {
-	const history = told.history.map((round) =>
-		Object.fromEntries(Object.entries(round).filter(([, played]) => isPlayed(played)))
+export function guessesOf(told: Record<string, unknown>): Record<string, Played> {
+	return Object.fromEntries(
+		Object.entries(told).filter((guess): guess is [string, Played] => isPlayed(guess[1]))
 	);
-	return { ...told, history };
+}
+
+/**
+ * A snapshot with the rounds it counts as finished, from those told so far.
+ * Counting is what forgets a game: `rounds` may still hold the last one's past
+ * the count, until this one's are told over them.
+ */
+export function lobbyOf(told: ToldLobby, rounds: Record<string, Played>[]): Lobby {
+	const { finished, ...lobby } = told;
+	return { ...lobby, history: Array.from({ length: finished }, (_, index) => rounds[index] ?? {}) };
 }
 
 export interface Standing {

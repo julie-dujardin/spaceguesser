@@ -10,6 +10,7 @@ use prometheus::{
 use crate::lobby::Error;
 use crate::registry::MAX_LOBBIES;
 use crate::turnstile::{Action, Proof};
+use crate::ws::MAX_SOCKETS;
 
 struct Metrics {
 	lobbies: IntGauge,
@@ -29,6 +30,12 @@ static METRICS: LazyLock<Metrics> = LazyLock::new(|| {
 	)
 	.expect(named)
 	.set(MAX_LOBBIES as i64);
+	register_int_gauge!(
+		"spaceguesser_max_sockets",
+		"Sockets the server holds open before it refuses more."
+	)
+	.expect(named)
+	.set(MAX_SOCKETS as i64);
 	let metrics = Metrics {
 		lobbies: register_int_gauge!("spaceguesser_lobbies", "Lobbies open.").expect(named),
 		sockets: register_int_gauge!("spaceguesser_sockets", "Sockets open.").expect(named),
@@ -44,8 +51,11 @@ static METRICS: LazyLock<Metrics> = LazyLock::new(|| {
 			&["code"]
 		)
 		.expect(named),
-		store_failures: register_int_counter!("spaceguesser_store_failures_total", "Writes the database did not take.")
-			.expect(named),
+		store_failures: register_int_counter!(
+			"spaceguesser_store_failures_total",
+			"Reads and writes the database did not take."
+		)
+		.expect(named),
 	};
 	// Every series is there from the start, at zero: a rate over one that
 	// appears with its first event does not see that event.

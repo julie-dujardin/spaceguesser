@@ -10,7 +10,7 @@ services:
       - POSTGRES_USER=multiplayer
       - POSTGRES_PASSWORD=${POSTGRES_PASSWORD:?}
       - POSTGRES_DB=multiplayer
-    # A few hundred small rows: sized to stay out of the search index's memory.
+    # Small rows, read by their key: sized to stay out of the search index's memory.
     command: postgres -c shared_buffers=32MB -c max_connections=20
     mem_limit: 1g
     memswap_limit: 1g
@@ -34,7 +34,8 @@ services:
       # Unset, the server asks nobody for proof of a person.
       - TURNSTILE_SECRET=${TURNSTILE_SECRET:-}
       - TURNSTILE_REQUIRE=${TURNSTILE_REQUIRE:-}
-    # Every player is an open file, and a container's soft limit is 1024.
+    # Every player is an open file, and a container's soft limit is 1024. The
+    # server takes 60,000 sockets, and needs what is left over.
     ulimits:
       nofile: 65536
     # A backstop for the search index on the same host: the server's own caps

@@ -5,7 +5,7 @@ use std::time::Duration;
 
 use futures_util::{SinkExt, StreamExt};
 use serde_json::{Value, json};
-use spaceguesser_backend::{Action, Config, Turnstile, app, metrics};
+use spaceguesser_backend::{Action, Config, MAX_SOCKETS, Turnstile, app, metrics};
 use tokio::net::{TcpListener, TcpStream};
 use tokio::time::{sleep, timeout};
 use tokio_tungstenite::tungstenite::Message;
@@ -55,6 +55,7 @@ async fn what_happens_at_the_sockets_is_counted() {
 			verify_url: format!("http://{nowhere}/siteverify"),
 			require: vec![Action::Create],
 		}),
+		max_sockets: MAX_SOCKETS,
 	})
 	.await
 	.unwrap();
@@ -73,8 +74,9 @@ async fn what_happens_at_the_sockets_is_counted() {
 		&counts,
 		&[
 			"spaceguesser_lobbies 0",
-			"spaceguesser_max_lobbies 2500",
+			"spaceguesser_max_lobbies 20000",
 			"spaceguesser_sockets 0",
+			"spaceguesser_max_sockets 60000",
 			r#"spaceguesser_errors_total{code="not_found"} 0"#,
 			r#"spaceguesser_proofs_total{action="create",proof="unchecked"} 0"#,
 			"spaceguesser_store_failures_total 0",
@@ -84,10 +86,12 @@ async fn what_happens_at_the_sockets_is_counted() {
 	// The process's own, which say what the server costs its host.
 	assert!(idle.contains("\nprocess_resident_memory_bytes "), "{idle}");
 
-	let create = json!({ "type": "create", "name": "Ann", "identity": "Ann-------------", "proof": "token" });
+	let create =
+		json!({ "type": "create", "protocol": 2, "name": "Ann", "identity": "Ann-------------", "proof": "token" });
 	let (mut ann, joined) = open(&game, create).await;
 	assert_eq!(joined["type"], "joined", "{joined}");
-	let join = json!({ "type": "join", "code": "NOSUCH", "name": "Bob", "identity": "Bob-------------" });
+	let join =
+		json!({ "type": "join", "protocol": 2, "code": "NOSUCH", "name": "Bob", "identity": "Bob-------------" });
 	let (_, error) = open(&game, join).await;
 	assert_eq!(error["code"], "not_found", "{error}");
 	scraped(

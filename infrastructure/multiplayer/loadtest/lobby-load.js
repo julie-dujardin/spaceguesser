@@ -95,7 +95,7 @@ export default function () {
     seats.push(seat);
     // A browser each: two seats naming themselves alike would be one seat.
     const identity = `load-test-player-${index}`;
-    ws.onopen = () => ws.send(JSON.stringify({ ...hello, identity }));
+    ws.onopen = () => ws.send(JSON.stringify({ ...hello, identity, protocol: 2 }));
     ws.onmessage = (event) => receive(seat, JSON.parse(event.data));
     ws.onerror = () => {
       errors.add(1);
@@ -112,6 +112,8 @@ export default function () {
       errors.add(1);
       return closeAll();
     }
+    // A finished round's guesses, which only a page reads.
+    if (msg.type !== "lobby") return;
 
     const lobby = msg.lobby;
     if (host && code === null) {
