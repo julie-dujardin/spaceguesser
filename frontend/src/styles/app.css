@@ -306,6 +306,13 @@ button {
 	width: 640px;
 }
 
+/* Held until it is given back, so the view keeps a margin to be looked at and
+   turned in. No wider than the world drawn that tall. */
+.mapw.max {
+	--tall: max(400px, min(66vh, 100dvh - 270px));
+	width: clamp(640px, 70vw, 2 * var(--tall));
+}
+
 /* Where the reader is on the way down, the way back up, and the way straight
    to a body by name. */
 .mapw .head {
@@ -498,9 +505,14 @@ button {
 	height: 400px;
 }
 
+.mapw.max .surface {
+	height: var(--tall);
+}
+
 .mapw .foot {
 	padding: 10px;
 	display: flex;
+	flex-wrap: wrap;
 	align-items: center;
 	gap: 10px;
 	background: var(--glass);
@@ -508,6 +520,38 @@ button {
 	border: 1px solid var(--gborder);
 	border-top: 0;
 	border-radius: 0 0 12px 12px;
+}
+
+/* The place as numbers, on a line of its own over the buttons. */
+.mapw .at {
+	width: 100%;
+	display: flex;
+	gap: 12px;
+}
+
+.mapw .at label {
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	font-size: 11.5px;
+}
+
+.mapw .at input {
+	width: 96px;
+	height: 26px;
+	padding: 0 8px;
+	border-radius: 7px;
+	font-family: var(--font-mono);
+	font-size: 12px;
+	font-variant-numeric: tabular-nums;
+}
+
+.mapw .at input:disabled {
+	opacity: 0.5;
+}
+
+.mapw .at input[aria-invalid='true'] {
+	border-color: var(--bad);
 }
 
 .pin {
@@ -1833,7 +1877,8 @@ button.rk {
 	}
 
 	/* The peek has no room to type in. */
-	.mapw:not(.wide) .find {
+	.mapw:not(.wide) .find,
+	.mapw:not(.wide) .at {
 		display: none;
 	}
 
@@ -1845,6 +1890,10 @@ button.rk {
 	   rather than map. */
 	.mapw.wide .surface {
 		height: min(230px, 34vh);
+	}
+
+	.mapw.max .surface {
+		height: min(60vh, 100dvh - 300px);
 	}
 
 	.mapw.wide .foot {

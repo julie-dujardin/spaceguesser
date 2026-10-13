@@ -331,12 +331,7 @@ function Round({
 				}
 				action={
 					onEnd && (
-						<button
-							type="button"
-							className="btn ghost"
-							style={{ marginLeft: 'auto' }}
-							onClick={onEnd}
-						>
+						<button type="button" className="btn ghost" onClick={onEnd}>
 							{m.end_round()}
 						</button>
 					)

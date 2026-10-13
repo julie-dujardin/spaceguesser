@@ -157,8 +157,21 @@ function Surface({
 		if (!at) {
 			marker.current?.remove();
 			marker.current = null;
-		} else if (marker.current) marker.current.setPosition(at);
+			return;
+		}
+		if (marker.current) marker.current.setPosition(at);
 		else marker.current = map.addMarker({ at, element: pin('pin'), align: [0.5, 0.5] });
+		// A clicked place is in the frame already; a typed one may not be.
+		const spot = map.project(at.lon, at.lat);
+		const frame = container.current;
+		const seen =
+			spot &&
+			frame &&
+			spot[0] >= 0 &&
+			spot[1] >= 0 &&
+			spot[0] <= frame.clientWidth &&
+			spot[1] <= frame.clientHeight;
+		if (!seen) map.setView({ centerLon: at.lon, centerLat: at.lat });
 	}, [map, at]);
 
 	return (
@@ -166,6 +179,98 @@ function Surface({
 			<div className="flat" ref={container} />
 			{error && <div className="whole">{m.guess_no_map()}</div>}
 		</>
+	);
+}
+
+const AXES = [
+	{ axis: 'lat', limit: 90, short: m.latitude_short, name: m.latitude },
+	// Longitudes are written 0 to 360 east as often as either side of zero.
+	{ axis: 'lon', limit: 360, short: m.longitude_short, name: m.longitude }
+] as const;
+
+type Typed = Record<(typeof AXES)[number]['axis'], string>;
+
+/** What was typed, in degrees, with either decimal mark: null when it is not
+ *  a number, or is past `limit`. */
+function degrees(text: string, limit: number): number | null {
+	if (!/^[+-]?(\d+[.,]?\d*|[.,]\d+)$/.test(text.trim())) return null;
+	const value = Number(text.trim().replace(',', '.'));
+	return Math.abs(value) <= limit ? value : null;
+}
+
+function written(at: LonLat | null): Typed {
+	return at ? { lat: at.lat.toFixed(4), lon: at.lon.toFixed(4) } : { lat: '', lon: '' };
+}
+
+/** The place as two numbers: read off the map, or typed onto it. */
+function Coordinates({
+	at,
+	disabled,
+	onPick
+}: {
+	at: LonLat | null;
+	disabled: boolean;
+	onPick: (at: LonLat) => void;
+}) {
+	// What is typed stands as typed, so half a number is not rewritten under
+	// the reader; a place from anywhere else is written out.
+	const [entry, setEntry] = useState({ text: written(at), of: at });
+	if (at !== entry.of) setEntry({ text: written(at), of: at });
+
+	const type = (text: Typed) => {
+		const [lat, lon] = AXES.map(({ axis, limit }) => degrees(text[axis], limit));
+		if (lat === null || lon === null) return setEntry({ text, of: entry.of });
+		const place = { lat, lon: ((((lon + 180) % 360) + 360) % 360) - 180 };
+		setEntry({ text, of: place });
+		onPick(place);
+	};
+
+	return (
+		<div className="at">
+			{AXES.map(({ axis, limit, short, name }) => (
+				<label key={axis}>
+					<span className="mono dim">{short()}</span>
+					<input
+						type="text"
+						value={entry.text[axis]}
+						aria-label={name()}
+						aria-invalid={
+							entry.text[axis].trim() !== '' && degrees(entry.text[axis], limit) === null
+						}
+						autoComplete="off"
+						spellCheck={false}
+						disabled={disabled}
+						onChange={(event) => type({ ...entry.text, [axis]: event.target.value })}
+						onBlur={() => at && setEntry({ text: written(at), of: at })}
+					/>
+				</label>
+			))}
+		</div>
+	);
+}
+
+/** Arrows out to the corners, or back in from them. */
+function Corners({ inward }: { inward: boolean }) {
+	return (
+		<svg
+			width="14"
+			height="14"
+			viewBox="0 0 24 24"
+			fill="none"
+			stroke="currentColor"
+			strokeWidth="2"
+			strokeLinecap="round"
+			strokeLinejoin="round"
+			aria-hidden="true"
+		>
+			<path
+				d={
+					inward
+						? 'M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7'
+						: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'
+				}
+			/>
+		</svg>
 	);
 }
 
@@ -182,13 +287,17 @@ export function GuessPanel({
 }: Props) {
 	const [trail, setTrail] = useState<Level[]>(ROOT);
 	const [query, setQuery] = useState('');
+	/** Extra large, and kept so until it is given back: turning to the view
+	 *  does not tuck it away. */
+	const [maximized, setMaximized] = useState(false);
+	const wide = open || maximized;
 	const level = trail[trail.length - 1];
 	const locked = waiting !== undefined;
 	/** Whether the panel was already open when the gesture began: the tap that
 	 *  opens it also lands as a click, on a box that has grown since, and a
 	 *  pick from it would be nowhere the reader aimed. A key is pressed on what
 	 *  already has the focus, which opened the panel on arriving. */
-	const taking = useRef(open);
+	const taking = useRef(wide);
 	const live = () => taking.current && !locked;
 
 	const go = (next: Level[]) => {
@@ -211,21 +320,23 @@ export function GuessPanel({
 	const hits = search(query);
 	const info = level.kind === 'body' ? bodyOf(level.id) : undefined;
 	const complete = !!guess && (!info?.surface || !!guess.at);
-	const hint =
-		level.kind !== 'body'
-			? ''
-			: info?.surface
-				? guess?.at
-					? m.guess_heading({ degrees: String(Math.round(headingDeg) % 360).padStart(3, '0') })
-					: m.guess_pick_place()
-				: m.guess_whole_body();
+	const body = level.kind === 'body' ? level.id : null;
+	const at = guess && guess.body === body ? guess.at : null;
+	const place = (picked: LonLat) => body && onPick({ body, at: picked });
+	const hint = !body
+		? ''
+		: !info?.surface
+			? m.guess_whole_body()
+			: at
+				? m.guess_heading({ degrees: String(Math.round(headingDeg) % 360).padStart(3, '0') })
+				: '';
 
 	return (
 		<div
-			className={`mapw${open ? ' wide' : ''}`}
+			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}`}
 			onPointerEnter={onOpen}
 			onPointerDown={() => {
-				taking.current = open;
+				taking.current = wide;
 				onOpen();
 			}}
 			onKeyDownCapture={() => (taking.current = true)}
@@ -275,13 +386,7 @@ export function GuessPanel({
 				{level.kind !== 'body' ? (
 					<Chart level={level} onSelect={select} />
 				) : info?.surface ? (
-					<Surface
-						key={level.id}
-						body={level.id}
-						at={guess?.body === level.id ? guess.at : null}
-						taking={live}
-						onPick={(at) => onPick({ body: level.id, at })}
-					/>
+					<Surface key={level.id} body={level.id} at={at} taking={live} onPick={place} />
 				) : (
 					<div className="whole">
 						<b>{levelTitle(level)}</b>
@@ -289,14 +394,15 @@ export function GuessPanel({
 				)}
 			</div>
 			<div className="foot">
-				<span className="mono mut" style={{ fontSize: '11.5px' }}>
+				<Coordinates key={body} at={at} disabled={locked || !info?.surface} onPick={place} />
+				<span className="mono mut" style={{ flex: 1, fontSize: '11.5px' }}>
 					{waiting ?? hint}
 				</span>
 				{waiting === undefined ? (
 					<button
 						type="button"
 						className="btn"
-						style={{ marginLeft: 'auto', width: 120 }}
+						style={{ width: 120 }}
 						disabled={!placed || !complete}
 						onClick={onGuess}
 					>
@@ -305,6 +411,15 @@ export function GuessPanel({
 				) : (
 					action
 				)}
+				<button
+					type="button"
+					className="btn ghost ico"
+					title={maximized ? m.minimize() : m.maximize()}
+					aria-label={maximized ? m.minimize() : m.maximize()}
+					onClick={() => setMaximized(!maximized)}
+				>
+					<Corners inward={maximized} />
+				</button>
 			</div>
 		</div>
 	);
