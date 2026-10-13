@@ -21,16 +21,16 @@ interface Props {
 }
 
 const PADDING = 2.5;
-/** Mars's global mosaic runs out of detail well before the map's own zoom
- *  ceiling, so a near-perfect guess is framed at a readable scale rather than
- *  on mush. Across a full window this still sets a thirty-kilometre miss
- *  visibly apart. */
-const MAX_ZOOM = 8;
+/** The map lets the reader in until its picture is stretched double. A framing
+ *  stops at this much of that, where the picture is still sharp: a
+ *  near-perfect guess is not shown on mush. */
+const SHARP = 0.5;
 /** A round with nothing to compare the place against: near enough to read the
  *  ground, far enough to say where on the body it is. */
 const LONE_ZOOM = 4;
 
-/** A view holding every point, with room around them; zoom 1 is the whole body. */
+/** A view holding every point, with room around them; zoom 1 is the whole
+ *  body. It is as near as the points allow, which the map may not be sharp at. */
 function framing(rounds: Placement[]): { lon: number; lat: number; zoom: number } {
 	const points = rounds.flatMap(({ guess, truth, others = [] }) => [
 		truth,
@@ -47,11 +47,11 @@ function framing(rounds: Placement[]): { lon: number; lat: number; zoom: number 
 	const [south, north] = [Math.min(...lats), Math.max(...lats)];
 	const middle = { lon: (west + east) / 2, lat: (south + north) / 2 };
 	// One place, with nothing to hold it against.
-	if (east - west < 0.01 && north - south < 0.01) return { ...middle, zoom: LONE_ZOOM };
-	const span = (low: number, high: number, floor: number) =>
-		Math.max((high - low) * PADDING, floor);
-	const zoom = Math.min(360 / span(west, east, 4), 180 / span(south, north, 2));
-	return { ...middle, zoom: Math.max(1, Math.min(zoom, MAX_ZOOM)) };
+	if (points.length === 1) return { ...middle, zoom: LONE_ZOOM };
+	// A guess on the place itself still has a zoom to be framed at.
+	const span = (low: number, high: number) => Math.max(high - low, 1e-6) * PADDING;
+	const zoom = Math.min(360 / span(west, east), 180 / span(south, north));
+	return { ...middle, zoom: Math.max(1, zoom) };
 }
 
 export function ResultMap({ body, rounds }: Props) {
@@ -68,7 +68,12 @@ export function ResultMap({ body, rounds }: Props) {
 	useEffect(() => {
 		if (!map) return;
 		const { lon, lat, zoom } = framing(opening.current);
-		map.setView({ centerLon: lon, centerLat: lat, zoom });
+		const at = { centerLon: lon, centerLat: lat };
+		// The map's own ceiling is that of the place in the middle of the frame,
+		// so the frame goes there to ask for it.
+		map.setView({ ...at, zoom });
+		const ceiling = map.getLimits().maxZoom;
+		if (ceiling) map.setView({ ...at, zoom: Math.min(zoom, ceiling * SHARP) });
 	}, [map]);
 
 	useEffect(() => {

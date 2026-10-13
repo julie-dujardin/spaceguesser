@@ -159,7 +159,8 @@ colour travel in front of the name (`frontend/src/game/players.ts`).
 - `createSystemMap` is the diagram a body is picked on, told which bodies are
   in play.
 - `createFlatMap` is the map a place is picked on, with the graticule and no
-  names, and the map a recap ends on, with the names back.
+  names, and the map a recap ends on, with the names back. It goes in as far
+  as the body's tiles are sharp, and a recap frames a near guess that close.
 - `groundDistanceM` scores a miss along the ground.
 
 A recap opens far enough back to hold every guess, flies in to the place, and
@@ -189,6 +190,10 @@ installed one; `pnpm install` puts the published one back:
 ```sh
 frontend/scripts/use-local-sdk.sh ../space-map
 ```
+
+The close-up imagery is a tile pyramid for each body that has one, served from
+`tiles.spacemap.co`. The SDK asks for none unless told where they are, which
+`frontend/src/game/host.ts` does for every view.
 
 ## Languages
 

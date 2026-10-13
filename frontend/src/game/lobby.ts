@@ -3,7 +3,7 @@
  * settings, rounds and guesses are this app's own JSON, and are read back here.
  */
 
-import type { LonLat } from 'spacemap';
+import type { LonLat, PanoramaEntry } from 'spacemap';
 import { profileOf, type Profile } from './players';
 import type { Round } from './rounds';
 import { INVITE_PATH } from './routes';
@@ -128,11 +128,12 @@ export function settingsOf(value: unknown): RunSettings {
 
 /** What a guess carries of the round it answered. The server keeps every
  *  guess and sends it to every player, so a panorama's credits and geometry
- *  stay behind; this is what the recaps read. */
+ *  stay behind; this is what the recaps read. It is less than the export's
+ *  entry, which no recap stands in. */
 export function slim(round: Round): Round {
 	if (round.mode === 'orbit') return round;
 	const { id, mission, sol, time, lat, lon } = round.entry;
-	return { ...round, entry: { id, mission, sol, time, lat, lon } };
+	return { ...round, entry: { id, mission, sol, time, lat, lon } as PanoramaEntry };
 }
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>

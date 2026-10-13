@@ -26,7 +26,8 @@ const GROUND: Round = {
 		sol: 1000,
 		time: '2023-12-12',
 		lat: 18.4,
-		lon: 77.4
+		lon: 77.4,
+		north_offset_deg: 0
 	}
 };
 const ORBIT: Round = { mode: 'orbit', body: 'naif-502', time: TIME, u: 0.25, v: 0.75 };
