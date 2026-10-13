@@ -5,7 +5,7 @@
  */
 
 import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
-import { bodyOf, systemOf, viewDistance } from './bodies';
+import { bodyOf, setTiled, systemOf, viewDistance } from './bodies';
 import { HOST } from './host';
 import { RAD, spot, type OrbitRound, type Place } from './rounds';
 
@@ -187,12 +187,16 @@ export class Space {
 		};
 		this.cover(false);
 		this.map.clock.setDate(new Date(time));
+		// The standoff depends on it.
+		const tiled = this.map.hasTiles(body);
 		const deadline = Date.now() + LOAD_TIMEOUT_MS;
 		while (!this.map.getBody(body)) {
 			if (Date.now() > deadline) throw new Error(`${body} never loaded`);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			mine();
 		}
+		setTiled(body, await tiled);
+		mine();
 		const settled = Date.now() + SETTLE_TIMEOUT_MS;
 		for (let tries = 0; Date.now() < settled; tries++) {
 			const target = { body, distanceKm: this.standoffKm(body) };

@@ -57,8 +57,12 @@ drawn within thirty days of today when the run starts and shown in the HUD, and
 the place is somewhere the Sun stands at least 40° high at that date — the sky decides, so the round is drawn
 as two numbers and comes out the same for everyone playing it. A moon with a
 shadow on it at that date, its planet's or another moon's, is left out of the draw: in full eclipse it is a black disc. The camera hangs
-as close as the body's map stays sharp: 1,000 km over Mars, the whole disc for
-Ganymede. Whatever else is in that sky at that date is there to be seen:
+as close as the body's picture stays sharp on the player's device: 60 km over
+Mars and the Moon where the map draws their tile pyramids, 1,000 km over Mars
+on a device short of memory, which draws none, and the whole disc for Ganymede.
+Players on different devices can so stand at different heights over one round.
+Only the relief stops the camera short of that, at three times the height of
+the body's highest ground. Whatever else is in that sky at that date is there to be seen:
 Saturn and its rings from Enceladus. Names and orbits are not.
 
 Movement is the same setting for both kinds. Free walks a panorama's traverse;

@@ -1,6 +1,6 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
-import { BODIES, bodyOf, viewDistance } from './bodies';
+import { BODIES, bodyOf, setTiled, viewDistance } from './bodies';
 import { altitudeKm, drawDate, drawRun, measuredAt, shownDate, spot, type Stop } from './rounds';
 
 const RAD = Math.PI / 180;
@@ -161,19 +161,31 @@ describe('altitudeKm', () => {
 });
 
 describe('viewDistance', () => {
-	it('comes close over a fine map and stands back from a coarse one', () => {
-		const mars = viewDistance(bodyOf('naif-499')!);
-		const ganymede = viewDistance(bodyOf('naif-503')!);
-		expect(mars).toBeGreaterThanOrEqual(1.25);
-		expect(mars).toBeLessThan(1.5);
-		expect(ganymede).toBeGreaterThan(3);
+	afterEach(() => BODIES.forEach((body) => setTiled(body.id, false)));
+
+	it('comes close where the map draws tiles, and stands back from a coarse map', () => {
+		const mars = bodyOf('naif-499')!;
+		expect(viewDistance(mars)).toBeGreaterThan(1.2);
+		setTiled(mars.id, true);
+		expect(viewDistance(mars)).toBeLessThan(1.05);
+		expect(viewDistance(bodyOf('naif-503')!)).toBeGreaterThan(3);
 		expect(viewDistance(bodyOf('naif-699')!)).toBe(5);
 	});
 
-	it('stays off the ground and within sight for every body in play', () => {
-		for (const body of BODIES) {
-			expect(viewDistance(body)).toBeGreaterThanOrEqual(1.25);
-			expect(viewDistance(body)).toBeLessThanOrEqual(5);
-		}
+	it('comes no nearer than the relief lets it', () => {
+		const smooth = { ...bodyOf('naif-499')!, widthPx: 2 ** 24, peakKm: undefined };
+		const rough = { ...smooth, peakKm: 20 };
+		expect((viewDistance(smooth) - 1) * smooth.radiusKm).toBeLessThan(2);
+		expect((viewDistance(rough) - 1) * rough.radiusKm).toBeCloseTo(60);
+	});
+
+	it('stays over the ground and within sight for every body in play, tiles or not', () => {
+		for (const tiled of [false, true])
+			for (const body of BODIES) {
+				setTiled(body.id, tiled);
+				const altitude = (viewDistance(body) - 1) * body.radiusKm;
+				expect(altitude).toBeGreaterThan(2 * (body.peakKm ?? 0));
+				expect(viewDistance(body)).toBeLessThanOrEqual(5);
+			}
 	});
 });

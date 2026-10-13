@@ -35,6 +35,12 @@ const CLOUDED = new Set([
 	'naif-899'
 ]);
 
+/** Tiles sharp on one side only: flown down to them, the other side is a blur
+ *  with nothing to guess from. */
+const ONE_SIDE_SHARP = new Set([
+	'naif-999' // Pluto: New Horizons passed close over one hemisphere
+]);
+
 /** Semi-major axis of Jupiter in AU: what divides the two zones. */
 const JUPITER_AU = 5.2;
 
@@ -90,6 +96,16 @@ async function widthOf(bundle, tiers = ['high', 'medium', 'low']) {
 	return 0;
 }
 
+/**
+ * Pixels round the equator of the finest level of a map's tile pyramid.
+ * Three levels are as wide as a whole map gets, and a pyramid that shallow is
+ * cut from the same coarse mosaic. Whether the map draws it is the SDK's to
+ * say, device by device.
+ */
+function pyramidWidth(tiles) {
+	return tiles?.max_level > 3 ? 2 * tiles.tile_size * 2 ** tiles.max_level : 0;
+}
+
 /** The best map this app may draw: the first that is open, or licensed for
  *  non-commercial use, which the game is. */
 function openMap(id, texture, tiers, alternates = []) {
@@ -141,6 +157,7 @@ for (const [id, { map: systemMap, model }] of candidates) {
 			? openMap(id, record.texture, undefined, record.alternates)
 			: undefined);
 	const widthPx = map ? await widthOf(map.id, map.tiers) : 0;
+	const tilesPx = ONE_SIDE_SHARP.has(id) ? 0 : pyramidWidth(map?.tiles);
 	const { a, b, c } = record.radii ?? {};
 	const radiusKm = a
 		? (a + b + c) / 3
@@ -152,6 +169,12 @@ for (const [id, { map: systemMap, model }] of candidates) {
 		console.warn(`skipped ${id} ${record.name}: no size`);
 		continue;
 	}
+	// A height map of whole radii starts at the centre, the others at the
+	// radius the body is drawn with.
+	const relief = record.displacement;
+	const peakKm = relief
+		? relief.bias_km + relief.scale_km - (relief.absolute_radius ? radiusKm : 0)
+		: 0;
 	// What orbits the Sun by itself is found on the zone maps, which place it
 	// by its orbit.
 	const small = system === id && kind !== 'planet';
@@ -166,6 +189,8 @@ for (const [id, { map: systemMap, model }] of candidates) {
 		tiltDeg: small ? Math.round(orbit.i * 10) / 10 : undefined,
 		radiusKm: Math.round(radiusKm * 100) / 100,
 		widthPx: widthPx || undefined,
+		tilesPx: tilesPx > widthPx ? tilesPx : undefined,
+		peakKm: peakKm > 0 ? Math.round(peakKm * 100) / 100 : undefined,
 		surface: widthPx > 0 && !CLOUDED.has(id),
 		model: model || undefined,
 		// With no measured spin there is no noon to stand under.

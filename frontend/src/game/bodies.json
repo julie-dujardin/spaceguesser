@@ -6,6 +6,8 @@
 		"system": "naif-199",
 		"radiusKm": 2439.77,
 		"widthPx": 8192,
+		"tilesPx": 131072,
+		"peakKm": 4.5,
 		"surface": true
 	},
 	{
@@ -15,6 +17,8 @@
 		"system": "naif-299",
 		"radiusKm": 6051.8,
 		"widthPx": 8192,
+		"tilesPx": 524288,
+		"peakKm": 11.69,
 		"surface": false
 	},
 	{
@@ -24,6 +28,8 @@
 		"system": "naif-399",
 		"radiusKm": 1737.4,
 		"widthPx": 16383,
+		"tilesPx": 131072,
+		"peakKm": 10.76,
 		"surface": true
 	},
 	{
@@ -53,6 +59,8 @@
 		"system": "naif-499",
 		"radiusKm": 3389.53,
 		"widthPx": 16383,
+		"tilesPx": 2097152,
+		"peakKm": 21.14,
 		"surface": true
 	},
 	{
@@ -62,6 +70,7 @@
 		"system": "naif-599",
 		"radiusKm": 1821.5,
 		"widthPx": 11445,
+		"peakKm": 16.96,
 		"surface": true
 	},
 	{
@@ -71,6 +80,7 @@
 		"system": "naif-599",
 		"radiusKm": 1560.8,
 		"widthPx": 16383,
+		"tilesPx": 32768,
 		"surface": true
 	},
 	{
@@ -136,6 +146,7 @@
 		"system": "naif-699",
 		"radiusKm": 252.1,
 		"widthPx": 15960,
+		"peakKm": 2.34,
 		"surface": true,
 		"model": true
 	},
@@ -368,6 +379,7 @@
 		"system": "naif-999",
 		"radiusKm": 606,
 		"widthPx": 6000,
+		"peakKm": 6.91,
 		"surface": true
 	},
 	{
@@ -398,6 +410,7 @@
 		"tiltDeg": 17.1,
 		"radiusKm": 1188.3,
 		"widthPx": 5926,
+		"peakKm": 6.49,
 		"surface": true
 	},
 	{
@@ -410,6 +423,8 @@
 		"tiltDeg": 10.6,
 		"radiusKm": 473.53,
 		"widthPx": 7383,
+		"tilesPx": 131072,
+		"peakKm": 13.52,
 		"surface": true,
 		"model": true
 	},
@@ -486,6 +501,8 @@
 		"tiltDeg": 7.1,
 		"radiusKm": 266,
 		"widthPx": 16382,
+		"tilesPx": 131072,
+		"peakKm": 27.01,
 		"surface": true,
 		"model": true
 	},
