@@ -97,6 +97,17 @@ export function Recap({ space, rounds, focus }: Props) {
 	const key = JSON.stringify(rounds);
 	const shown = useRef(rounds);
 	shown.current = rounds;
+	// Another round starts over in the render that asks for it: an effect
+	// handed the last round's flight would take the camera back from this
+	// one's way there.
+	const subject = `${focus}:${key}`;
+	const [shownFor, setShownFor] = useState(subject);
+	if (shownFor !== subject) {
+		setShownFor(subject);
+		setFlight(null);
+		setError(null);
+		setZoom(0);
+	}
 
 	const land = () => {
 		if (flying.current !== null) cancelAnimationFrame(flying.current);
@@ -118,9 +129,6 @@ export function Recap({ space, rounds, focus }: Props) {
 		let dropped = false;
 		const drawn: { remove(): void }[] = [];
 		const { map } = space;
-		setFlight(null);
-		setError(null);
-		setZoom(0);
 		land();
 
 		// A pin on the far side of its body is hidden rather than shown through
