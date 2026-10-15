@@ -163,16 +163,9 @@ export function formatClock(seconds: number): string {
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
-/** A panorama's date as the export writes it: a day, or a moment that is UTC
- *  whether or not it says so. Read as text, so no browser's timezone gets in. */
-export function formatTaken(time: string): string {
-	const [, day, clock] = /^(\d{4}-\d\d-\d\d)(?:T(\d\d:\d\d))?/.exec(time) ?? [];
-	if (!day) return time;
-	return clock ? `${day} ${clock} UTC` : day;
-}
-
-/** The same date as epoch milliseconds, a bare day being its midnight. Null
- *  when the export wrote something else. */
+/** A panorama's date in epoch milliseconds. The export writes a day, which is
+ *  read as its midnight, or a moment that is UTC whether or not it says so.
+ *  Null when the export wrote something else. */
 export function takenAt(time: string): number | null {
 	const [, day, clock] = /^(\d{4}-\d\d-\d\d)(?:T(\d\d:\d\d(?::\d\d)?))?/.exec(time) ?? [];
 	const at = day ? Date.parse(`${day}T${clock ?? '00:00'}Z`) : NaN;

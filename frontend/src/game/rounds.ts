@@ -3,7 +3,7 @@
 import type { LonLat, PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, viewDistance, type BodyInfo } from './bodies';
 import { eclipsed, shadedOn } from './eclipse';
-import { drawRounds, formatTaken, formatWhen, takenAt } from './rules';
+import { drawRounds, formatWhen, takenAt } from './rules';
 
 /** A panorama, and the body it was taken on. */
 export interface Stop {
@@ -15,7 +15,7 @@ interface Asked {
 	body: string;
 	/** The run's date in epoch milliseconds, the same for every round of it:
 	 *  when a flown round happens, and where one map shows the whole run. A
-	 *  panorama has its own date, see `shownDate` and `measuredAt`. */
+	 *  panorama has its own date, see `measuredAt`. */
 	time: number;
 }
 
@@ -40,9 +40,10 @@ export interface OrbitRound extends Asked {
 export type Round = GroundRound | OrbitRound;
 export type Mode = Round['mode'];
 
-/** The date a round shows: a panorama's is the day it was taken. */
-export function shownDate(round: Round): string {
-	return round.mode === 'ground' ? formatTaken(round.entry.time) : formatWhen(round.time);
+/** The date a round shows. Only a flown round shows one: where the Sun lights
+ *  the body is worked out from it. */
+export function shownDate(round: Round): string | null {
+	return round.mode === 'orbit' ? formatWhen(round.time) : null;
 }
 
 /** Epoch milliseconds a miss is measured at: the bodies were where they were

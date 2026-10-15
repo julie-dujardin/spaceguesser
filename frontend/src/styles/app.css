@@ -287,7 +287,8 @@ button {
 }
 
 /* The quit button owns the top-right corner: what does not fit beside it
-   drops to a line of its own rather than running under it. */
+   drops to a line of its own rather than running under it. The pills hang
+   from its top edge, so a taller one does not push the others down. */
 .hud-top {
 	position: absolute;
 	left: 16px;
@@ -296,7 +297,7 @@ button {
 	display: flex;
 	flex-wrap: wrap;
 	gap: 8px;
-	align-items: center;
+	align-items: flex-start;
 }
 
 .hud-topr {
@@ -1863,6 +1864,23 @@ button.rk {
 		height: 1px;
 	}
 
+	/* Altitude and date on one line run under the quit button: the date goes
+	   under. */
+	.status.view {
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 2px;
+		height: auto;
+		min-height: 34px;
+		padding: 6px 12px;
+		border-radius: 17px;
+	}
+
+	.status.view .sep {
+		display: none;
+	}
+
 	/* The history says more about the face than there is room for beside the
 	   name: it goes under. */
 	.history .prev {
@@ -1967,7 +1985,7 @@ button.rk {
 	.status .mark,
 	.status .mark + .sep,
 	.status .move,
-	.status .move + .sep {
+	.status .sep:has(+ .move) {
 		display: none;
 	}
 }

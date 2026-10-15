@@ -102,16 +102,9 @@ describe('drawRun', () => {
 });
 
 describe('shownDate', () => {
-	const on = (time: string) =>
-		shownDate({ mode: 'ground', body: 'naif-499', time: 0, entry: { time } as PanoramaEntry });
-
-	it('shows a panorama at its own date, in UTC whatever the export left off', () => {
-		expect(on('2012-08-08T05:01:47Z')).toBe('2012-08-08 05:01 UTC');
-		expect(on('2004-01-04T05:01:47.477')).toBe('2004-01-04 05:01 UTC');
-	});
-
-	it('shows no time of day the export does not have', () => {
-		expect(on('1969-07-21')).toBe('1969-07-21');
+	it('shows no date for a panorama', () => {
+		const entry = { time: '2012-08-08T05:01:47Z' } as PanoramaEntry;
+		expect(shownDate({ mode: 'ground', body: 'naif-499', time: 0, entry })).toBeNull();
 	});
 
 	it("shows a flown round at the run's date", () => {
