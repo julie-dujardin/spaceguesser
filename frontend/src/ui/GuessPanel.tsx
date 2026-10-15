@@ -4,7 +4,7 @@
  * the body's own map where it has one.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
 import {
 	createSystemMap,
 	type FlatMarker,
@@ -18,6 +18,7 @@ import { HOST } from '../game/host';
 import { PICKER, ROOT, intoSystem, levelTitle, search, trailTo, type Level } from '../game/picker';
 import type { Guess } from '../game/scoring';
 import * as m from '../paraglide/messages.js';
+import { ToolSlot } from './tools';
 import { pin, useFlatMap } from './useFlatMap';
 
 interface Props {
@@ -291,6 +292,7 @@ export function GuessPanel({
 	 *  does not tuck it away. */
 	const [maximized, setMaximized] = useState(false);
 	const wide = open || maximized;
+	const { setSlot } = useContext(ToolSlot);
 	const level = trail[trail.length - 1];
 	const locked = waiting !== undefined;
 	/** Whether the panel was already open when the gesture began: the tap that
@@ -342,6 +344,7 @@ export function GuessPanel({
 			onKeyDownCapture={() => (taking.current = true)}
 			onFocusCapture={onOpen}
 		>
+			<div className="tools" ref={setSlot} />
 			<div className="head">
 				{trail.length > 1 && (
 					<button

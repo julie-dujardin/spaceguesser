@@ -80,22 +80,27 @@ const MIN_SUN_DEG = 40;
 
 export const RAD = Math.PI / 180;
 
-/** Where an orbit round is, given where the Sun is overhead: uniform over the
- *  cap of the body the Sun stands high enough on. */
-export function spot(round: Pick<OrbitRound, 'u' | 'v'>, noon: LonLat): LonLat {
-	const reach = Math.acos(1 - round.u * (1 - Math.cos((90 - MIN_SUN_DEG) * RAD)));
-	const bearing = round.v * 2 * Math.PI;
-	const lat0 = noon.lat * RAD;
+/** Where a great circle from `from` lands after `reach` radians, setting off
+ *  `bearing` radians clockwise from north. */
+export function step(from: LonLat, bearing: number, reach: number): LonLat {
+	const lat0 = from.lat * RAD;
 	const lat = Math.asin(
 		Math.sin(lat0) * Math.cos(reach) + Math.cos(lat0) * Math.sin(reach) * Math.cos(bearing)
 	);
 	const lon =
-		noon.lon * RAD +
+		from.lon * RAD +
 		Math.atan2(
 			Math.sin(bearing) * Math.sin(reach) * Math.cos(lat0),
 			Math.cos(reach) - Math.sin(lat0) * Math.sin(lat)
 		);
 	return { lat: lat / RAD, lon: ((((lon / RAD + 180) % 360) + 360) % 360) - 180 };
+}
+
+/** Where an orbit round is, given where the Sun is overhead: uniform over the
+ *  cap of the body the Sun stands high enough on. */
+export function spot(round: Pick<OrbitRound, 'u' | 'v'>, noon: LonLat): LonLat {
+	const reach = Math.acos(1 - round.u * (1 - Math.cos((90 - MIN_SUN_DEG) * RAD)));
+	return step(noon, round.v * 2 * Math.PI, reach);
 }
 
 export interface Modes {

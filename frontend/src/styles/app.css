@@ -213,6 +213,56 @@ button {
 	background: #0a0a0a;
 }
 
+/* The view's own controls, held in the guess panel: across from it and at its
+   height, clear of the links under them. */
+.tools {
+	position: fixed;
+	left: 16px;
+	bottom: 46px;
+}
+
+.hands {
+	display: flex;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: 8px;
+}
+
+.pick {
+	display: flex;
+	gap: 2px;
+	padding: 3px;
+	border-radius: 9999px;
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	border: 1px solid var(--gborder);
+}
+
+.pick button {
+	display: inline-flex;
+	align-items: center;
+	gap: 7px;
+	height: 28px;
+	padding: 0 12px 0 10px;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--mut);
+	font-family: var(--font-mono);
+	font-size: 12px;
+	cursor: pointer;
+	transition: all 150ms;
+}
+
+.pick button:hover {
+	color: var(--fg);
+}
+
+.pick button[aria-pressed='true'] {
+	background: var(--light);
+	color: var(--on-light);
+}
+
 .stage-note {
 	position: absolute;
 	inset: 0;
@@ -1847,6 +1897,13 @@ button.rk {
 
 	.mapw.wide {
 		width: calc(100% - 32px);
+	}
+
+	/* The panel leaves no room beside it here: they ride on top of it. */
+	.tools {
+		position: absolute;
+		left: 0;
+		bottom: calc(100% + 8px);
 	}
 }
 

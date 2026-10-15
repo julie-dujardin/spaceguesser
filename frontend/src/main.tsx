@@ -6,6 +6,7 @@ import { setHost } from './game/host';
 import { getLocale, getTextDirection } from './paraglide/runtime.js';
 import { About } from './ui/About';
 import { Boundary } from './ui/Boundary';
+import { ToolSlotProvider } from './ui/tools';
 import './styles/app.css';
 
 setHost();
@@ -18,6 +19,14 @@ const ABOUT = aboutPage(location.pathname);
 
 createRoot(document.getElementById('root')!).render(
 	<StrictMode>
-		<Boundary>{ABOUT ? <About page={ABOUT} /> : <App />}</Boundary>
+		<Boundary>
+			{ABOUT ? (
+				<About page={ABOUT} />
+			) : (
+				<ToolSlotProvider>
+					<App />
+				</ToolSlotProvider>
+			)}
+		</Boundary>
 	</StrictMode>
 );

@@ -36,6 +36,9 @@ export const DOWN: Gaze = { heading: 0, pitch: -90 };
 /** Looking up stops short of the zenith, where a heading stops meaning anything. */
 const MAX_PITCH = 80;
 
+/** The map camera's field of view, top to bottom. The SDK does not expose it. */
+const FOV_DEG = 60;
+
 type Vec = [number, number, number];
 
 /** Unit vectors east, north and up at a place, in body-fixed axes. */
@@ -172,6 +175,13 @@ export class Space {
 	standoffKm(body: string): number {
 		const info = bodyOf(body);
 		return (this.radiusKm(body) ?? 1) * (info ? viewDistance(info) : 4);
+	}
+
+	/** Kilometres of ground the view spans top to bottom, looking straight down. */
+	spanKm(body: string): number | null {
+		const radius = this.radiusKm(body);
+		if (!radius) return null;
+		return 2 * (this.standoffKm(body) - radius) * Math.tan((FOV_DEG / 2) * RAD);
 	}
 
 	/**
