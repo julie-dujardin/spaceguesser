@@ -1,3 +1,4 @@
+import { X } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
 import * as m from '../paraglide/messages.js';
@@ -78,8 +79,14 @@ export function Hud({
 				{tip && <div className="tip-row">{tip}</div>}
 			</div>
 			<div className="hud-topr">
-				<button type="button" className="btn glassy ico" title={m.leave_run()} onClick={onQuit}>
-					×
+				<button
+					type="button"
+					className="btn glassy ico"
+					title={m.leave_run()}
+					aria-label={m.leave_run()}
+					onClick={onQuit}
+				>
+					<X size={16} />
 				</button>
 			</div>
 		</>

@@ -4,6 +4,7 @@
  * the body's own map where it has one.
  */
 
+import { ChevronLeft, ChevronRight, Maximize2, Minimize2 } from 'lucide-react';
 import {
 	useContext,
 	useEffect,
@@ -126,10 +127,11 @@ function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTa
 					<button
 						type="button"
 						key={target.kind === 'zone' ? target.zone : `${target.kind}:${target.id}`}
-						className={`chip${target.kind === 'body' ? '' : ' deeper'}`}
+						className="chip"
 						onClick={() => onSelect(target)}
 					>
 						{target.name}
+						{target.kind !== 'body' && <ChevronRight className="deeper" size={12} />}
 					</button>
 				))}
 			</div>
@@ -264,31 +266,6 @@ function Coordinates({
 	);
 }
 
-/** Arrows out to the corners, or back in from them. */
-function Corners({ inward }: { inward: boolean }) {
-	return (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path
-				d={
-					inward
-						? 'M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7'
-						: 'M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7'
-				}
-			/>
-		</svg>
-	);
-}
-
 export function GuessPanel({
 	guess,
 	open,
@@ -380,7 +357,7 @@ export function GuessPanel({
 						disabled={locked}
 						onClick={() => go(trail.slice(0, -1))}
 					>
-						←
+						<ChevronLeft size={16} />
 					</button>
 				)}
 				<span className="where">{levelTitle(level)}</span>
@@ -446,7 +423,7 @@ export function GuessPanel({
 					aria-label={maximized ? m.minimize() : m.maximize()}
 					onClick={() => setMaximized(!maximized)}
 				>
-					<Corners inward={maximized} />
+					{maximized ? <Minimize2 size={14} /> : <Maximize2 size={14} />}
 				</button>
 			</div>
 		</div>

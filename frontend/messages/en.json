@@ -212,7 +212,7 @@
 	"tutorial_complete": "tutorial complete",
 	"tutorial_next_title": "from here",
 	"tutorial_next": "A quick play draws from {panoramas} panoramas and {bodies} worlds, under today's sky. No more tips.",
-	"tutorial_more": "Need more practice? Check out {site}, the map of the solar system that spaceguesser is based on. You can also click ↗ to explore the position of any round at the end of a game.",
+	"tutorial_more": "Need more practice? Check out {site}, the map of the solar system that spaceguesser is based on. You can also click {icon} to explore the position of any round at the end of a game.",
 	"shared_run": "shared run",
 	"of_points": "of {best} points",
 	"share_text": "{points} of {best} points on spaceguesser",

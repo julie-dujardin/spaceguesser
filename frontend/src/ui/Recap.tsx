@@ -5,6 +5,7 @@
  * same flight in the reader's hands.
  */
 
+import { Minus, Plus } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Anchor, LonLat } from 'spacemap';
 import { bodyOf, systemOf } from '../game/bodies';
@@ -336,7 +337,7 @@ export function Recap({ space, rounds, focus }: Props) {
 			{error && !mapped && <div className="stage-note">{error}</div>}
 			{flight && (
 				<label className="zoomer glass">
-					<span aria-hidden="true">−</span>
+					<Minus size={16} />
 					<input
 						type="range"
 						min={0}
@@ -350,7 +351,7 @@ export function Recap({ space, rounds, focus }: Props) {
 							setZoom(Number(event.target.value) / 1000);
 						}}
 					/>
-					<span aria-hidden="true">+</span>
+					<Plus size={16} />
 				</label>
 			)}
 		</>

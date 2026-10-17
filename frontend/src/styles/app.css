@@ -43,6 +43,11 @@ button {
 	font-family: inherit;
 }
 
+/* On a line of text, an icon sits where a letter would. */
+.lucide {
+	vertical-align: -0.125em;
+}
+
 .mono {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
@@ -165,7 +170,6 @@ button {
 	width: 32px;
 	height: 32px;
 	padding: 0;
-	font-size: 16px;
 }
 
 /* --- the panorama underneath everything ---------------------------------- */
@@ -391,7 +395,6 @@ button {
 	width: 26px;
 	height: 26px;
 	margin-left: -6px;
-	font-size: 14px;
 }
 
 .mapw .where {
@@ -537,8 +540,9 @@ button {
 }
 
 /* Leads to another map rather than to a body. */
-.chip.deeper::after {
-	content: ' ›';
+.chip .deeper {
+	margin-left: 2px;
+	margin-right: -3px;
 	color: var(--mut);
 }
 
@@ -1295,8 +1299,6 @@ input.code {
 	gap: 10px;
 	border-radius: 999px;
 	color: var(--mut);
-	font-size: 16px;
-	line-height: 1;
 }
 
 .zoomer input {
@@ -1434,12 +1436,10 @@ a.rk:hover,
 
 /* The way out of the app from a row, without shouting it. */
 .go {
+	display: flex;
 	padding: 4px;
 	margin: -4px;
-	font-size: 11px;
-	line-height: 1;
 	color: var(--dim);
-	text-decoration: none;
 }
 
 .go:hover {

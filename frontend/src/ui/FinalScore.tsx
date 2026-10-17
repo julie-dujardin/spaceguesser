@@ -1,3 +1,4 @@
+import { ExternalLink } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
 import { KIND_LABELS, describePast, formatDay, kindOf, type PastRun } from '../game/history';
@@ -148,7 +149,7 @@ export function FinalScore({
 								aria-label={m.show_in_spacemap()}
 								onClick={(event) => event.stopPropagation()}
 							>
-								↗
+								<ExternalLink size={12} />
 							</a>
 						</div>
 					))}

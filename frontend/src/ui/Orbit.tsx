@@ -1,5 +1,6 @@
 /** An orbit round: hanging over a body, in the game's Solar System map. */
 
+import { Eye, LocateFixed, Move } from 'lucide-react';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { bearingDeg, type LonLat } from 'spacemap';
@@ -239,7 +240,7 @@ export function Orbit({
 								aria-label={m.orbit_back()}
 								onClick={back}
 							>
-								<Icon d={LOCATE} />
+								<LocateFixed size={14} />
 							</button>
 						)}
 						<div className="drag" role="group" aria-label={m.orbit_drag()}>
@@ -249,7 +250,7 @@ export function Orbit({
 								title={m.orbit_look_title()}
 								onClick={() => setHands('look')}
 							>
-								<Icon d={EYE} />
+								<Eye size={14} />
 								<span>{m.orbit_look()}</span>
 							</button>
 							<button
@@ -258,7 +259,7 @@ export function Orbit({
 								title={m.orbit_move_title()}
 								onClick={() => setHands('move')}
 							>
-								<Icon d={MOVE} />
+								<Move size={14} />
 								<span>{m.orbit_move()}</span>
 							</button>
 						</div>
@@ -266,29 +267,5 @@ export function Orbit({
 					slot
 				)}
 		</>
-	);
-}
-
-const EYE =
-	'M2.06 12.35a1 1 0 0 1 0-.7 10.75 10.75 0 0 1 19.88 0 1 1 0 0 1 0 .7 10.75 10.75 0 0 1-19.88 0M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0';
-const MOVE = 'M12 2v20M2 12h20M9 5l3-3 3 3M9 19l3 3 3-3M5 9l-3 3 3 3M19 9l3 3-3 3';
-const LOCATE =
-	'M2 12h3M19 12h3M12 2v3M12 19v3M19 12a7 7 0 1 1-14 0 7 7 0 0 1 14 0M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0';
-
-function Icon({ d }: { d: string }) {
-	return (
-		<svg
-			width="14"
-			height="14"
-			viewBox="0 0 24 24"
-			fill="none"
-			stroke="currentColor"
-			strokeWidth="2"
-			strokeLinecap="round"
-			strokeLinejoin="round"
-			aria-hidden="true"
-		>
-			<path d={d} />
-		</svg>
 	);
 }
