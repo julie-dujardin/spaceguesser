@@ -172,6 +172,17 @@ button {
 	padding: 0;
 }
 
+/* Says a greyed-out way to play is on its way, not shut. */
+.spin {
+	animation: spin 0.9s linear infinite;
+}
+
+@keyframes spin {
+	to {
+		transform: rotate(360deg);
+	}
+}
+
 /* --- the panorama underneath everything ---------------------------------- */
 
 .stage {
@@ -918,6 +929,10 @@ button {
 	font-weight: 500;
 }
 
+.mode .spin {
+	margin-left: 6px;
+}
+
 .mode .d {
 	font-size: 11.5px;
 	color: var(--mut);
@@ -954,6 +969,10 @@ button {
 .start .t {
 	font-size: 16px;
 	font-weight: 500;
+}
+
+.start .spin {
+	margin-right: 8px;
 }
 
 .start .d {

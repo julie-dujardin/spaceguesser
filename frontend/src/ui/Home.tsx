@@ -1,3 +1,4 @@
+import { LoaderCircle } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 import { REPO } from '../game/links';
 import { recallProfile } from '../game/players';
@@ -52,7 +53,10 @@ export function Home({
 	const [lead, aside] = runs ? [quick, tutorial] : [tutorial, quick];
 	const other = (
 		<button type="button" className="mode" onClick={aside.go} disabled={!ready}>
-			<span className="t">{aside.name}</span>
+			<span className="t">
+				{aside.name}
+				{!ready && <LoaderCircle className="spin" size="1em" />}
+			</span>
 			<span className="d">{aside.rules}</span>
 		</button>
 	);
@@ -88,7 +92,10 @@ export function Home({
 						<span>{m.home_lede_how()}</span>
 					</p>
 					<button type="button" className="start" onClick={lead.go} disabled={!ready}>
-						<span className="t">{lead.name}</span>
+						<span className="t">
+							{!ready && <LoaderCircle className="spin" size="1em" />}
+							{lead.name}
+						</span>
 						<span className="d">{lead.rules}</span>
 					</button>
 					{!ready && <span className="note">{m.finding_somewhere_to_stand()}</span>}

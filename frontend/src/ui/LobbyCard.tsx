@@ -1,3 +1,4 @@
+import { LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import { invitePath, settingsOf, type Lobby } from '../game/lobby';
 import { profileOf } from '../game/players';
@@ -71,6 +72,7 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 					<div className="acts">
 						{hosting ? (
 							<button type="button" className="btn lg" disabled={!ready} onClick={onStart}>
+								{!ready && <LoaderCircle className="spin" size="1em" />}
 								{m.start_run()}
 							</button>
 						) : (

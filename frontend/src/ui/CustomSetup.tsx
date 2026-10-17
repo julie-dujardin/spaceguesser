@@ -1,3 +1,4 @@
+import { LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
 import { MOVEMENT_LABELS, QUICK_PLAY, type Movement, type RunSettings } from '../game/rules';
 import * as m from '../paraglide/messages.js';
@@ -114,6 +115,7 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 							disabled={action.plays && !ready}
 							onClick={() => action.go(settings)}
 						>
+							{action.plays && !ready && <LoaderCircle className="spin" size="1em" />}
 							{action.label}
 						</button>
 					))}
