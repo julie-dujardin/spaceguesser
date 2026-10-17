@@ -33,7 +33,7 @@ import { Avatar } from './Avatar';
 import { CustomSetup } from './CustomSetup';
 import { FinalScore } from './FinalScore';
 import { GuessPanel } from './GuessPanel';
-import { Hud } from './Hud';
+import { Hud, Quit } from './Hud';
 import { LobbyCard } from './LobbyCard';
 import { RoundResult } from './RoundResult';
 import { Standings } from './Standings';
@@ -158,7 +158,14 @@ export function Party({
 			)}
 
 			{lobby.phase === 'result' && round && (
-				<Result space={space} lobby={lobby} round={round} you={you} onNext={act('next')}>
+				<Result
+					space={space}
+					lobby={lobby}
+					round={round}
+					you={you}
+					onNext={act('next')}
+					onQuit={session.leave}
+				>
 					<Standings standings={table} you={you} gains />
 				</Result>
 			)}
@@ -347,10 +354,11 @@ interface ResultProps {
 	round: LobbyRound;
 	you: string | null;
 	onNext?: () => void;
+	onQuit: () => void;
 	children: ReactNode;
 }
 
-function Result({ space, lobby, round, you, onNext, children }: ResultProps) {
+function Result({ space, lobby, round, you, onNext, onQuit, children }: ResultProps) {
 	const guesses = lobby.history[round.index];
 	const mine = guesses?.[you ?? ''];
 	const me = lobby.players.find((seat) => seat.id === you);
@@ -374,6 +382,7 @@ function Result({ space, lobby, round, you, onNext, children }: ResultProps) {
 	if (!drawn.played)
 		return (
 			<div className="board">
+				<Quit onQuit={onQuit} />
 				<div className="rpanel glass">
 					<span className="hd">{m.round_number({ round: round.index + 1 })}</span>
 					<span className="note">{m.nobody_reached()}</span>
@@ -396,6 +405,7 @@ function Result({ space, lobby, round, you, onNext, children }: ResultProps) {
 			round={round.index + 1}
 			rounds={round.total}
 			onNext={onNext}
+			onQuit={onQuit}
 		>
 			{children}
 		</RoundResult>

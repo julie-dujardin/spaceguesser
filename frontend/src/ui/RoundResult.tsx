@@ -10,6 +10,7 @@ import type { Played } from '../game/run';
 import type { Guess } from '../game/scoring';
 import type { Profile } from '../game/players';
 import * as m from '../paraglide/messages.js';
+import { Quit } from './Hud';
 import { Recap, type RecapGuess } from './Recap';
 
 interface Props {
@@ -19,6 +20,7 @@ interface Props {
 	rounds: number;
 	/** Absent for a player who is not the one moving the game on. */
 	onNext?: () => void;
+	onQuit: () => void;
 	/** Multiplayer: the face on the reader's guess, and the other guesses. */
 	avatar?: Profile;
 	others?: { guess: Guess; avatar: Profile }[];
@@ -81,6 +83,7 @@ export function RoundResult({
 	round,
 	rounds,
 	onNext,
+	onQuit,
 	avatar,
 	others,
 	children
@@ -101,6 +104,7 @@ export function RoundResult({
 	return (
 		<div className="board">
 			<Recap space={space} rounds={recap} focus={0} />
+			<Quit onQuit={onQuit} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">{m.actual_location()}</span>

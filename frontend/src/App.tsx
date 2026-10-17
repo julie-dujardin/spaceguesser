@@ -661,6 +661,7 @@ export default function App() {
 					round={run.round + 1}
 					rounds={run.drawn.length}
 					onNext={next}
+					onQuit={() => dispatch({ kind: 'home' })}
 				>
 					{recapped && <Explanation score={last.score} lines={recapped.recap} />}
 				</RoundResult>

@@ -78,17 +78,24 @@ export function Hud({
 				{children}
 				{tip && <div className="tip-row">{tip}</div>}
 			</div>
-			<div className="hud-topr">
-				<button
-					type="button"
-					className="btn glassy ico"
-					title={m.leave_run()}
-					aria-label={m.leave_run()}
-					onClick={onQuit}
-				>
-					<X size={16} />
-				</button>
-			</div>
+			<Quit onQuit={onQuit} />
 		</>
+	);
+}
+
+/** The way out of a run, on a round and on its result alike. */
+export function Quit({ onQuit }: { onQuit: () => void }) {
+	return (
+		<div className="hud-topr">
+			<button
+				type="button"
+				className="btn glassy ico"
+				title={m.leave_run()}
+				aria-label={m.leave_run()}
+				onClick={onQuit}
+			>
+				<X size={16} />
+			</button>
+		</div>
 	);
 }

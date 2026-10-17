@@ -1315,7 +1315,8 @@ input.code {
 }
 
 .board > .rpanel,
-.board > .zoomer {
+.board > .zoomer,
+.board > .hud-topr {
 	pointer-events: auto;
 }
 
@@ -1396,6 +1397,12 @@ input.code {
 	flex-direction: column;
 	gap: 14px;
 	min-height: 0;
+}
+
+/* A round's result keeps the run's quit button in the top-right corner, so a
+   narrow window does not run the panel under it. */
+.hud-topr ~ .rpanel {
+	width: min(360px, calc(100% - 76px));
 }
 
 /* Three buttons are more than the panel is wide. */
