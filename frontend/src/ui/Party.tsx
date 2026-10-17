@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { bodyOf } from '../game/bodies';
 import { shadedOn } from '../game/eclipse';
 import {
+	held,
 	playedBy,
 	playedIn,
 	settingsOf,
@@ -52,6 +53,8 @@ interface Props {
 	onSpent: () => void;
 	/** Where the round on screen is, once that is known. */
 	truth: Place | null;
+	/** The round's view is up here, or will not come up. */
+	up: boolean;
 	space: Space | null;
 	heading: number;
 	mapOpen: boolean;
@@ -66,6 +69,7 @@ export function Party({
 	opener,
 	onSpent,
 	truth,
+	up,
 	space,
 	heading,
 	mapOpen,
@@ -150,6 +154,7 @@ export function Party({
 					round={round}
 					settings={settings}
 					truth={truth}
+					up={up}
 					heading={heading}
 					mapOpen={mapOpen}
 					onMapOpen={onMapOpen}
@@ -235,6 +240,7 @@ interface RoundProps {
 	round: LobbyRound;
 	settings: RunSettings;
 	truth: Place | null;
+	up: boolean;
 	heading: number;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
@@ -248,6 +254,7 @@ function Round({
 	round,
 	settings,
 	truth,
+	up,
 	heading,
 	mapOpen,
 	onMapOpen,
@@ -292,6 +299,13 @@ function Round({
 		if (sent) post.current({ type: 'guess', round: round.index, result: sent });
 	}, [sent, connection, round.index]);
 
+	// The clock waits for everyone's view, and the server does not keep who
+	// has said so: a new socket says it again.
+	const waiting = held(lobby);
+	useEffect(() => {
+		if (up && waiting) post.current({ type: 'ready', round: round.index });
+	}, [up, waiting, connection, round.index]);
+
 	const out = lobby.players.filter(
 		(seat) => seat.connected && seat.id !== you && !round.guessed.includes(seat.id)
 	).length;
@@ -302,8 +316,9 @@ function Round({
 				settings={settings}
 				round={round.index}
 				rounds={round.total}
-				when={shownDate(round.entry)}
-				altitude={altitudeKm(round.entry)}
+				// Nothing of the round is shown before everyone's clock starts.
+				when={waiting ? null : shownDate(round.entry)}
+				altitude={waiting ? null : altitudeKm(round.entry)}
 				left={left}
 				onQuit={session.leave}
 			>
@@ -319,31 +334,33 @@ function Round({
 					))}
 				</span>
 			</Hud>
-			<GuessPanel
-				placed={placed}
-				guess={guess}
-				open={mapOpen}
-				headingDeg={heading}
-				onOpen={() => onMapOpen(true)}
-				onPick={setGuess}
-				onGuess={() => void commit(guess, false)}
-				waiting={
-					measuring
-						? m.measuring()
-						: answered
-							? out
-								? m.guess_in_waiting({ count: out })
-								: m.guess_in()
-							: undefined
-				}
-				action={
-					onEnd && (
-						<button type="button" className="btn ghost" onClick={onEnd}>
-							{m.end_round()}
-						</button>
-					)
-				}
-			/>
+			{!waiting && (
+				<GuessPanel
+					placed={placed}
+					guess={guess}
+					open={mapOpen}
+					headingDeg={heading}
+					onOpen={() => onMapOpen(true)}
+					onPick={setGuess}
+					onGuess={() => void commit(guess, false)}
+					waiting={
+						measuring
+							? m.measuring()
+							: answered
+								? out
+									? m.guess_in_waiting({ count: out })
+									: m.guess_in()
+								: undefined
+					}
+					action={
+						onEnd && (
+							<button type="button" className="btn ghost" onClick={onEnd}>
+								{m.end_round()}
+							</button>
+						)
+					}
+				/>
+			)}
 		</div>
 	);
 }

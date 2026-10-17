@@ -87,11 +87,11 @@ async fn what_happens_at_the_sockets_is_counted() {
 	assert!(idle.contains("\nprocess_resident_memory_bytes "), "{idle}");
 
 	let create =
-		json!({ "type": "create", "protocol": 2, "name": "Ann", "identity": "Ann-------------", "proof": "token" });
+		json!({ "type": "create", "protocol": 3, "name": "Ann", "identity": "Ann-------------", "proof": "token" });
 	let (mut ann, joined) = open(&game, create).await;
 	assert_eq!(joined["type"], "joined", "{joined}");
 	let join =
-		json!({ "type": "join", "protocol": 2, "code": "NOSUCH", "name": "Bob", "identity": "Bob-------------" });
+		json!({ "type": "join", "protocol": 3, "code": "NOSUCH", "name": "Bob", "identity": "Bob-------------" });
 	let (_, error) = open(&game, join).await;
 	assert_eq!(error["code"], "not_found", "{error}");
 	scraped(

@@ -47,7 +47,7 @@ struct Client {
 impl Client {
 	/// A socket opened as a page of the server's build opens one.
 	async fn open(server: &Server, mut hello: Value) -> Self {
-		hello["protocol"] = json!(2);
+		hello["protocol"] = json!(3);
 		Self::open_saying(server, hello).await
 	}
 
@@ -479,7 +479,7 @@ async fn a_page_from_before_an_update_is_not_let_in() {
 	// What the page takes as its being out of date.
 	for hello in [
 		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
-		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "protocol": 1 }),
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann"), "protocol": 2 }),
 		json!({ "type": "rejoin", "code": "ABCDEF", "token": "kept" }),
 	] {
 		let mut old = Client::open_saying(&server, hello).await;
@@ -781,6 +781,13 @@ async fn a_game_outlives_the_process_that_started_it() {
 	let rounds = json!([{ "id": "a" }, { "id": "b" }]);
 	ann.send(json!({ "type": "start", "settings": { "timer": 600 }, "rounds": rounds }))
 		.await;
+	// The clock waits for both to have the round on screen.
+	let told = bob.lobby(|l| l["phase"] == "playing").await;
+	assert_eq!(told["round"]["ends_at"], Value::Null);
+	for client in [&mut ann, &mut bob] {
+		client.send(json!({ "type": "ready", "round": 0 })).await;
+	}
+	bob.lobby(|l| l["round"]["ends_at"].is_u64()).await;
 	ann.send(json!({ "type": "guess", "round": 0, "result": { "points": 4200 } }))
 		.await;
 	let open = bob.lobby(|l| l["round"]["guessed"] == json!([ann_id])).await;

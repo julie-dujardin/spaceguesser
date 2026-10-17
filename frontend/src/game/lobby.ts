@@ -13,7 +13,7 @@ import type { Played } from './run';
 
 /** What the page and the server speak. A socket opened with another is not
  *  let in, and the page that opened it reads the refusal as `outdated`. */
-export const PROTOCOL = 2;
+export const PROTOCOL = 3;
 
 export type LobbyPhase = 'lobby' | 'playing' | 'result' | 'final';
 
@@ -28,7 +28,8 @@ export interface LobbyRound {
 	total: number;
 	/** The round itself. The server calls it an entry, and does not read it. */
 	entry: Round;
-	/** Epoch milliseconds on the server's clock; null on an untimed run. */
+	/** Epoch milliseconds on the server's clock; null on an untimed run, and
+	 *  while a timed round's clock waits for everyone to have it on screen. */
 	ends_at: number | null;
 	guessed: string[];
 }
@@ -82,6 +83,7 @@ export type ClientMessage =
 	| { type: 'start'; settings: RunSettings; rounds: Round[] }
 	// These name the round they mean, so a second click or a late guess moves
 	// nothing.
+	| { type: 'ready'; round: number }
 	| { type: 'guess'; round: number; result: Played }
 	| { type: 'close_round'; round: number }
 	| { type: 'next'; round: number }
@@ -124,6 +126,16 @@ export function settingsOf(value: unknown): RunSettings {
 				? { ground: !!given.modes.ground, orbit: !!given.modes.orbit }
 				: QUICK_PLAY.modes
 	};
+}
+
+/** A timed round told but not to be shown yet: everyone sees it first when
+ *  its clock starts, whoever loaded it first. */
+export function held(lobby: Lobby): boolean {
+	return (
+		lobby.phase === 'playing' &&
+		lobby.round?.ends_at === null &&
+		settingsOf(lobby.settings).timer > 0
+	);
 }
 
 /** What a guess carries of the round it answered. The server keeps every

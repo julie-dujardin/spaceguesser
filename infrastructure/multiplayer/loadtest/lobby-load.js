@@ -95,7 +95,7 @@ export default function () {
     seats.push(seat);
     // A browser each: two seats naming themselves alike would be one seat.
     const identity = `load-test-player-${index}`;
-    ws.onopen = () => ws.send(JSON.stringify({ ...hello, identity, protocol: 2 }));
+    ws.onopen = () => ws.send(JSON.stringify({ ...hello, identity, protocol: 3 }));
     ws.onmessage = (event) => receive(seat, JSON.parse(event.data));
     ws.onerror = () => {
       errors.add(1);

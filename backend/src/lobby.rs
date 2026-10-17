@@ -32,6 +32,9 @@ const MAX_GUESS_BYTES: usize = 1024;
 
 /// A guess sent as the clock runs out still has to cross the network.
 const DEADLINE_GRACE_MS: u64 = 2_000;
+/// The longest a timed round's clock waits for everyone to have it on screen:
+/// one slow device holds the others up this long at most.
+const LOAD_GRACE_MS: u64 = 5_000;
 /// Long enough for a phone to come back from a dropped socket, or for everyone
 /// to come back from a redeploy: until then a seat, its round and its hosting
 /// wait for it.
@@ -157,10 +160,18 @@ pub struct Lobby {
 	/// this one is read back from it.
 	#[serde(skip)]
 	entry: Option<Box<RawValue>>,
-	/// Epoch milliseconds, so a deadline survives a restart.
+	/// Epoch milliseconds, so a deadline survives a restart. Unset on a timed
+	/// round whose clock has yet to start.
 	ends_at: Option<u64>,
 	/// Who has guessed in the round in play or just played.
 	guessed: Vec<String>,
+	/// Who has the timed round in play on screen, while its clock waits.
+	#[serde(skip)]
+	loaded: Vec<String>,
+	/// When a waiting clock starts, whoever is still loading. Unset until the
+	/// round is told, which after a restart is when someone is back to tell.
+	#[serde(skip)]
+	load_by: Option<u64>,
 	#[serde(skip)]
 	empty_since: Option<u64>,
 }
@@ -264,6 +275,8 @@ impl Lobby {
 			entry: None,
 			ends_at: None,
 			guessed: Vec::new(),
+			loaded: Vec::new(),
+			load_by: None,
 			empty_since: None,
 		};
 		Ok((lobby, token))
@@ -366,9 +379,21 @@ impl Lobby {
 			player.in_game = true;
 		}
 		self.total = rounds.len();
-		self.begin_round(0, now);
-		self.entry = Some(rounds[0].clone());
+		self.begin_round(0);
+		self.set_entry(rounds[0].clone(), now);
 		Ok(rounds)
+	}
+
+	/// `by` has round `round` on screen. True when that started its clock: a
+	/// timed round's waits for everyone here to.
+	pub fn loaded(&mut self, by: &str, round: usize, now: u64) -> Result<bool, Error> {
+		if self.phase != Phase::Playing || round != self.round {
+			return Err(Error::BadPhase);
+		}
+		if self.loading() && !self.loaded.iter().any(|id| id == by) {
+			self.loaded.push(by.to_owned());
+		}
+		Ok(self.start_clock(now))
 	}
 
 	/// A guess at round `round`, returned for the store. Naming the round keeps
@@ -400,13 +425,13 @@ impl Lobby {
 
 	/// The host moving on from the results of round `round`. Naming the round
 	/// keeps a second click from moving on twice.
-	pub fn next(&mut self, by: &str, round: usize, now: u64) -> Result<(), Error> {
+	pub fn next(&mut self, by: &str, round: usize) -> Result<(), Error> {
 		self.host_only(by)?;
 		if self.phase != Phase::Result || round != self.round {
 			return Err(Error::BadPhase);
 		}
 		if self.round + 1 < self.total {
-			self.begin_round(self.round + 1, now);
+			self.begin_round(self.round + 1);
 		} else {
 			self.phase = Phase::Final;
 			self.entry = None;
@@ -422,7 +447,7 @@ impl Lobby {
 			}
 		}
 
-		let mut changed = false;
+		let mut changed = self.start_clock(now);
 		if self.phase == Phase::Playing && self.ends_at.is_some_and(|t| now >= t + DEADLINE_GRACE_MS) {
 			self.end_round();
 			changed = true;
@@ -474,8 +499,13 @@ impl Lobby {
 		(self.in_round() && self.entry.is_none()).then_some(self.round)
 	}
 
-	pub fn set_entry(&mut self, entry: Box<RawValue>) {
+	/// The round in play, about to be told: a clock waiting on it gives
+	/// everyone from now to load it.
+	pub fn set_entry(&mut self, entry: Box<RawValue>, now: u64) {
 		self.entry = Some(entry);
+		if self.loading() {
+			self.load_by = Some(now + LOAD_GRACE_MS);
+		}
 	}
 
 	/// `None` until the round in play has been read back: there is nothing to
@@ -533,13 +563,47 @@ impl Lobby {
 			.unwrap_or_default();
 	}
 
-	fn begin_round(&mut self, index: usize, now: u64) {
+	/// Milliseconds a round lasts; `None` on an untimed game.
+	fn timer_ms(&self) -> Option<u64> {
 		let timer = self.settings.get("timer").and_then(Value::as_f64).filter(|s| *s > 0.0);
+		timer.map(|s| (s.min(MAX_TIMER_S) * 1000.0) as u64)
+	}
+
+	/// A timed round in play whose clock has yet to start.
+	fn loading(&self) -> bool {
+		self.phase == Phase::Playing && self.ends_at.is_none() && self.timer_ms().is_some()
+	}
+
+	fn begin_round(&mut self, index: usize) {
 		self.round = index;
 		self.entry = None;
 		self.guessed.clear();
-		self.ends_at = timer.map(|s| now + (s.min(MAX_TIMER_S) * 1000.0) as u64);
+		self.loaded.clear();
+		self.load_by = None;
+		self.ends_at = None;
 		self.phase = Phase::Playing;
+	}
+
+	/// Starts a waiting clock once everyone here has the round on screen, or
+	/// has had long enough to, and says so. A device that loads it first must
+	/// not get the time a slower one spends on it. With nobody connected it
+	/// waits, as `settle` does.
+	fn start_clock(&mut self, now: u64) -> bool {
+		let Some(timer) = self.timer_ms().filter(|_| self.loading()) else {
+			return false;
+		};
+		let mut here = self.players.iter().filter(|p| p.connected && !p.left).peekable();
+		if here.peek().is_none() {
+			return false;
+		}
+		let all_up = here.all(|p| self.loaded.contains(&p.id));
+		if !all_up && !self.load_by.is_some_and(|by| now >= by) {
+			return false;
+		}
+		self.ends_at = Some(now + timer);
+		self.loaded.clear();
+		self.load_by = None;
+		true
 	}
 
 	fn end_round(&mut self) {
@@ -599,9 +663,9 @@ mod tests {
 
 	/// The host moving on, and the store's part after it: the next round read back.
 	fn next(lobby: &mut Lobby, by: &str, round: usize) -> Result<(), Error> {
-		lobby.next(by, round, 0)?;
+		lobby.next(by, round)?;
 		if let Some(index) = lobby.missing_entry() {
-			lobby.set_entry(to_raw_value(&json!({ "id": index })).unwrap());
+			lobby.set_entry(to_raw_value(&json!({ "id": index })).unwrap(), 0);
 		}
 		Ok(())
 	}
@@ -747,10 +811,10 @@ mod tests {
 
 		// The round moved on to is the store's to give: until it has, there is
 		// nothing to tell of it.
-		lobby.next(&ids[0], 0, 0).unwrap();
+		lobby.next(&ids[0], 0).unwrap();
 		assert_eq!(lobby.missing_entry(), Some(1));
 		assert!(lobby.snapshot().is_none());
-		lobby.set_entry(to_raw_value(&json!({ "id": 1 })).unwrap());
+		lobby.set_entry(to_raw_value(&json!({ "id": 1 })).unwrap(), 0);
 		let second = view(&lobby);
 		assert_eq!(second["round"]["index"], json!(1));
 		assert_eq!(second["round"]["entry"], json!({ "id": 1 }));
@@ -762,7 +826,7 @@ mod tests {
 		assert_eq!(done["phase"], json!("final"));
 		assert_eq!(done["round"], Value::Null);
 		assert_eq!(done["finished"], json!(2));
-		assert_eq!(lobby.next(&ids[0], 1, 0), Err(Error::BadPhase));
+		assert_eq!(lobby.next(&ids[0], 1), Err(Error::BadPhase));
 
 		let rounds = lobby.start(&ids[0], json!({}), vec![json!(1), json!(2)], 0).unwrap();
 		assert_eq!(rounds.len(), 2);
@@ -782,7 +846,7 @@ mod tests {
 		assert_eq!(view(&lobby)["phase"], json!("result"));
 
 		next(&mut lobby, &ids[0], 0).unwrap();
-		assert_eq!(lobby.next(&ids[0], 0, 0), Err(Error::BadPhase));
+		assert_eq!(lobby.next(&ids[0], 0), Err(Error::BadPhase));
 		let after = view(&lobby);
 		assert_eq!(after["phase"], json!("playing"));
 		assert_eq!(after["round"]["index"], json!(1));
@@ -813,12 +877,74 @@ mod tests {
 	#[test]
 	fn the_clock_closes_a_round_after_its_grace() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 60, 1);
+		lobby.loaded(&ids[0], 0, 1_000).unwrap();
+		lobby.loaded(&ids[1], 0, 1_000).unwrap();
 		assert_eq!(view(&lobby)["round"]["ends_at"], json!(61_000));
 		assert!(!lobby.tick(61_000 + DEADLINE_GRACE_MS - 1));
 		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
 		assert!(lobby.tick(61_000 + DEADLINE_GRACE_MS));
 		assert_eq!(view(&lobby)["phase"], json!("result"));
 		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0).err(), Some(Error::BadPhase));
+	}
+
+	#[test]
+	fn a_timed_clock_starts_once_everyone_here_has_the_round_on_screen() {
+		let (mut lobby, ids) = started(&["ann", "bob", "cat"], 60, 2);
+		// Cat's line is down, and the clock does not wait on it.
+		lobby.disconnect(&ids[2], 1_000);
+		assert_eq!(view(&lobby)["round"]["ends_at"], Value::Null);
+		assert_eq!(lobby.loaded(&ids[0], 0, 2_000), Ok(false));
+		assert_eq!(lobby.loaded(&ids[0], 0, 2_500), Ok(false));
+		assert_eq!(lobby.loaded(&ids[1], 0, 3_000), Ok(true));
+		assert_eq!(view(&lobby)["round"]["ends_at"], json!(63_000));
+
+		// Once it runs, a late word moves nothing.
+		assert_eq!(lobby.loaded(&ids[2], 0, 4_000), Ok(false));
+		assert_eq!(view(&lobby)["round"]["ends_at"], json!(63_000));
+		assert_eq!(lobby.loaded(&ids[0], 1, 4_000), Err(Error::BadPhase));
+	}
+
+	#[test]
+	fn a_slow_device_holds_the_clock_up_for_the_load_grace_and_no_longer() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 60, 2);
+		lobby.loaded(&ids[0], 0, 2_000).unwrap();
+		assert!(!lobby.tick(1_000 + LOAD_GRACE_MS - 1));
+		assert!(lobby.tick(1_000 + LOAD_GRACE_MS));
+		assert_eq!(view(&lobby)["round"]["ends_at"], json!(1_000 + LOAD_GRACE_MS + 60_000));
+
+		// The next round's grace runs from when it is told, which is the
+		// store's to say.
+		lobby.close_round(&ids[0], 0).unwrap();
+		lobby.next(&ids[0], 0).unwrap();
+		assert!(!lobby.tick(90_000));
+		lobby.set_entry(to_raw_value(&json!({ "id": 1 })).unwrap(), 90_000);
+		assert!(!lobby.tick(90_000 + LOAD_GRACE_MS - 1));
+		assert!(lobby.tick(90_000 + LOAD_GRACE_MS));
+	}
+
+	#[test]
+	fn an_untimed_round_waits_on_nobody() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 0, 1);
+		assert_eq!(lobby.loaded(&ids[0], 0, 1_000), Ok(false));
+		assert!(!lobby.tick(1_000 + LOAD_GRACE_MS));
+		assert_eq!(view(&lobby)["round"]["ends_at"], Value::Null);
+	}
+
+	#[test]
+	fn a_clock_waiting_through_a_restart_gives_the_grace_afresh() {
+		let (mut lobby, ids) = started(&["ann", "bob"], 60, 1);
+		lobby.loaded(&ids[0], 0, 2_000).unwrap();
+		let ann = lobby.token(&ids[0]).unwrap().to_owned();
+		let mut back: Lobby = serde_json::from_value(serde_json::to_value(&lobby).unwrap()).unwrap();
+
+		// Nobody is told the round until somebody is back to tell.
+		back.tick(50_000);
+		back.rejoin(&ann).unwrap();
+		assert!(!back.tick(60_000));
+		back.set_entry(to_raw_value(&json!({ "id": 0 })).unwrap(), 60_000);
+		assert_eq!(view(&back)["round"]["ends_at"], Value::Null);
+		assert!(!back.tick(60_000 + LOAD_GRACE_MS - 1));
+		assert!(back.tick(60_000 + LOAD_GRACE_MS));
 	}
 
 	#[test]
@@ -1011,6 +1137,8 @@ mod tests {
 	#[test]
 	fn a_stored_lobby_comes_back_mid_round_and_waits_for_its_players() {
 		let (mut lobby, ids) = started(&["ann", "bob"], 60, 3);
+		lobby.loaded(&ids[0], 0, 1_000).unwrap();
+		lobby.loaded(&ids[1], 0, 1_000).unwrap();
 		lobby.guess(&ids[0], 0, json!({ "points": 7 }), 2_000).unwrap();
 		let ann = lobby.token(&ids[0]).unwrap().to_owned();
 		let bob = lobby.token(&ids[1]).unwrap().to_owned();
@@ -1020,7 +1148,7 @@ mod tests {
 		assert!(!stored.to_string().contains("points"));
 		let mut back: Lobby = serde_json::from_value(stored).unwrap();
 		assert_eq!(back.missing_entry(), Some(0));
-		back.set_entry(to_raw_value(&json!({ "id": 0 })).unwrap());
+		back.set_entry(to_raw_value(&json!({ "id": 0 })).unwrap(), 10_000);
 		let restored = view(&back);
 		assert_eq!(restored["round"]["ends_at"], json!(61_000));
 		assert_eq!(restored["round"]["guessed"], json!([ids[0]]));

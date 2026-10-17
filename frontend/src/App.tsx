@@ -3,7 +3,7 @@ import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { shadedOn } from './game/eclipse';
 import { clearHistory, keepRun, pastRun, recallHistory, type PastRun } from './game/history';
-import { inviteCode, invitePath, playedBy, settingsOf, standings } from './game/lobby';
+import { held, inviteCode, invitePath, playedBy, settingsOf, standings } from './game/lobby';
 import { keepProfile } from './game/players';
 import {
 	altitudeKm,
@@ -113,6 +113,8 @@ export default function App() {
 	/** Where an orbit round turned out to be, which the sky says once the map
 	 *  is there. */
 	const [over, setOver] = useState<Place | null>(null);
+	/** The round whose view is up, or will not come up, by its key. */
+	const [up, setUp] = useState<string | null>(null);
 	const [guess, setGuess] = useState<Guess | null>(null);
 	/** A guess is in and the sky is being asked how far off it was. */
 	const [measuring, setMeasuring] = useState(false);
@@ -271,8 +273,14 @@ export default function App() {
 		: lobby
 			? (lobby.round?.entry ?? opener)
 			: (round ?? opener);
-	const shownKey = shown && `${shown.mode}:${shown.body}:${shown.time}`;
+	// Every round of a run has its date: the place tells them apart.
+	const shownKey =
+		shown &&
+		(shown.mode === 'ground'
+			? `ground:${shown.entry.id}`
+			: `orbit:${shown.body}:${shown.time}:${shown.u}:${shown.v}`);
 	useEffect(() => setOver(null), [shownKey]);
+	const viewUp = !!shownKey && up === shownKey;
 
 	// Where the round is. On the ground that is the panorama, or the one the
 	// reader walked to; from orbit it is wherever the sky put the camera.
@@ -313,19 +321,21 @@ export default function App() {
 		[truth, round, run.standing, run.settings.timer]
 	);
 
-	// The round's clock. It reads the guess and the round's ending through refs,
-	// so that neither picking a point nor walking to another panorama — both of
-	// which are ordinary moves mid-round — hands it a fresh minute. It waits for
-	// the place: an orbit round has not begun until the camera is over it.
+	// The round's clock, which stands at its full time until the view is up:
+	// the time a slow device spends loading it is not the reader's to lose. It
+	// reads the guess and the round's ending through refs, so that neither
+	// picking a point nor walking to another panorama hands it a fresh minute.
 	const pending = useRef<Guess | null>(null);
 	pending.current = guess;
 	const close = useRef(commit);
 	close.current = commit;
-	const timed = run.phase === 'playing' && run.settings.timer > 0 && !!truth;
+	const timed = run.phase === 'playing' && run.settings.timer > 0;
+	const running = timed && !!truth && viewUp;
 	useEffect(() => {
 		if (!timed) return setLeft(null);
-		const ends = Date.now() + run.settings.timer * 1000;
 		setLeft(run.settings.timer);
+		if (!running) return;
+		const ends = Date.now() + run.settings.timer * 1000;
 		const tick = setInterval(() => {
 			const remaining = (ends - Date.now()) / 1000;
 			setLeft(Math.max(0, remaining));
@@ -335,7 +345,7 @@ export default function App() {
 			}
 		}, 200);
 		return () => clearInterval(tick);
-	}, [timed, run.settings.timer, run.round]);
+	}, [timed, running, run.settings.timer, run.round]);
 
 	// An orbit round the map cannot reach is swapped for another, wherever a
 	// swap is this browser's to make: a lobby's rounds are the host's.
@@ -455,6 +465,7 @@ export default function App() {
 	);
 	const movement = lobby ? settingsOf(lobby.settings).movement : run.settings.movement;
 	const dimmed = lobby ? lobby.phase === 'lobby' : run.phase === 'home' || run.phase === 'setup';
+	const veiled = !!lobby && held(lobby);
 
 	return (
 		<>
@@ -470,8 +481,10 @@ export default function App() {
 						if (!lobby) dispatch({ kind: 'stand', entry: placed });
 					}}
 					onHeading={setHeading}
+					onReady={() => setUp(shownKey)}
 					onEngage={engage}
 					dimmed={dimmed}
+					veiled={veiled}
 				/>
 			)}
 
@@ -484,8 +497,10 @@ export default function App() {
 					onPlace={setOver}
 					onLost={redraw}
 					onHeading={setHeading}
+					onReady={() => setUp(shownKey)}
 					onEngage={engage}
 					dimmed={dimmed}
+					veiled={veiled}
 				/>
 			)}
 
@@ -498,6 +513,7 @@ export default function App() {
 					opener={opener}
 					onSpent={() => setOpener(null)}
 					truth={truth}
+					up={viewUp}
 					space={space}
 					heading={heading}
 					mapOpen={mapOpen}

@@ -134,6 +134,7 @@
 	"tutorial_ceres": "Not all small objects orbit a planet. Look for asteroids and comets in the inner or outer solar system.",
 	"leave_run": "Leave run",
 	"dropping_in": "dropping in…",
+	"waiting_for_others": "waiting for the others to drop in…",
 	"guess": "Guess",
 	"guess_heading": "heading {degrees}°",
 	"guess_whole_body": "no map of this one: the world is the guess",

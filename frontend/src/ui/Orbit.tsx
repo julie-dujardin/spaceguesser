@@ -22,10 +22,14 @@ interface Props {
 	onHeading: (deg: number) => void;
 	/** The map could not get there: the round cannot be played. */
 	onLost: () => void;
+	/** The view is over the place, or will not be: the round can begin. */
+	onReady: () => void;
 	/** The reader has turned back to the view. */
 	onEngage: () => void;
 	/** Held back behind a card, rather than being played on. */
 	dimmed?: boolean;
+	/** Kept out of sight, there or not, until the round begins for everyone. */
+	veiled?: boolean;
 }
 
 /** Degrees the view turns per pixel dragged. */
@@ -59,8 +63,10 @@ export function Orbit({
 	onPlace,
 	onLost,
 	onHeading,
+	onReady,
 	onEngage,
-	dimmed
+	dimmed,
+	veiled
 }: Props) {
 	const [place, setPlace] = useState<Place | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -74,9 +80,11 @@ export function Orbit({
 	const placed = useRef(onPlace);
 	const heading = useRef(onHeading);
 	const lost = useRef(onLost);
+	const ready = useRef(onReady);
 	placed.current = onPlace;
 	heading.current = onHeading;
 	lost.current = onLost;
+	ready.current = onReady;
 	// A lobby hands the same round over as a new object on every snapshot.
 	const asked = useRef(round);
 	asked.current = round;
@@ -99,11 +107,13 @@ export function Orbit({
 				heading.current(0);
 				setPlace(found);
 				placed.current(found);
+				ready.current();
 			})
 			.catch((cause: unknown) => {
 				if (dropped) return;
 				setError(String(cause));
 				lost.current();
+				ready.current();
 			});
 		return () => {
 			dropped = true;
@@ -111,9 +121,14 @@ export function Orbit({
 		};
 	}, [space, key]);
 
+	// No map at all is no view to wait for.
+	useEffect(() => {
+		if (unavailable) ready.current();
+	}, [unavailable, key]);
+
 	// Frozen is the view straight down and nothing else; free moves the camera
 	// as well as turning it.
-	const active = !dimmed && !!place;
+	const active = !dimmed && !veiled && !!place;
 	const turning = movement !== 'frozen' && active;
 	const roaming = movement === 'free' && active;
 	const last = useRef<{ x: number; y: number } | null>(null);
@@ -190,10 +205,12 @@ export function Orbit({
 		setMoved(false);
 	};
 
+	const note =
+		error ?? unavailable ?? (!place ? m.dropping_in() : veiled ? m.waiting_for_others() : null);
 	return (
 		<>
 			<div
-				className={`stage-over${turning ? ' turning' : ''}${place ? '' : ' veiled'}`}
+				className={`stage-over${turning ? ' turning' : ''}${place && !veiled ? '' : ' veiled'}`}
 				onPointerDown={(event) => {
 					onEngage();
 					if (!turning) return;
@@ -225,8 +242,7 @@ export function Orbit({
 			>
 				{dimmed && <div className="stage-dim" />}
 				<div className="stage-shade" />
-				{!place && !error && !unavailable && <div className="stage-note">{m.dropping_in()}</div>}
-				{(error ?? unavailable) && <div className="stage-note">{error ?? unavailable}</div>}
+				{note && <div className="stage-note">{note}</div>}
 			</div>
 			{roaming &&
 				slot &&

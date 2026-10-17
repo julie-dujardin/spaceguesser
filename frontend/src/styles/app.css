@@ -225,8 +225,10 @@ button {
 	cursor: grabbing;
 }
 
-/* The map shows its way there, which is not the round's to give away. */
+/* The map shows its way there, which is not the round's to give away, and its
+   credit line says whose pictures are coming. */
 .stage-over.veiled {
+	z-index: 2;
 	background: #0a0a0a;
 }
 
@@ -293,6 +295,12 @@ button {
 	font-family: var(--font-mono);
 	font-size: 13px;
 	color: var(--mut);
+}
+
+/* A panorama held until everyone's clock starts, credit line and all. */
+.stage-note.veil {
+	z-index: 2;
+	background: #0a0a0a;
 }
 
 /* --- hud ----------------------------------------------------------------- */

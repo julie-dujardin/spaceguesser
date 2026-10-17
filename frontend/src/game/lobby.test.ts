@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import {
 	guessesOf,
+	held,
 	lobbyOf,
 	outdated,
 	playedBy,
@@ -124,6 +125,25 @@ describe('lobbyOf', () => {
 			]);
 			expect(playedBy(read, 'bob')).toHaveLength(1);
 		}
+	});
+});
+
+describe('held', () => {
+	const playing = (timer: number, ends_at: number | null): Lobby => ({
+		...lobby([]),
+		phase: 'playing',
+		settings: { timer },
+		round: { index: 0, total: 1, entry: GROUND, ends_at, guessed: [] }
+	});
+
+	it('holds a timed round back until its clock starts', () => {
+		expect(held(playing(60, null))).toBe(true);
+		expect(held(playing(60, TIME))).toBe(false);
+	});
+
+	it('shows an untimed round at once, and holds back no result', () => {
+		expect(held(playing(0, null))).toBe(false);
+		expect(held({ ...playing(60, null), phase: 'result' })).toBe(false);
 	});
 });
 

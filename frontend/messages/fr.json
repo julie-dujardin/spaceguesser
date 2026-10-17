@@ -134,6 +134,7 @@
 	"tutorial_ceres": "Tous les petits corps ne tournent pas autour d'une planète. Cherchez les astéroïdes et les comètes dans le Système solaire interne ou externe.",
 	"leave_run": "Quitter la partie",
 	"dropping_in": "arrivée sur place…",
+	"waiting_for_others": "en attente des autres joueurs…",
 	"guess": "Deviner",
 	"guess_heading": "cap {degrees}°",
 	"guess_whole_body": "pas de carte pour celui-ci : le monde est la réponse",

@@ -9,7 +9,7 @@ use crate::lobby::{Error, Snapshot};
 
 /// What the server and the page speak. It changes when a page of before could
 /// no longer follow: such a page says another, or none, and is not let in.
-pub const PROTOCOL: u32 = 2;
+pub const PROTOCOL: u32 = 3;
 
 /// The status a socket is closed with when its seat was opened on another one.
 /// A client that came straight back from it would have the two trade the seat
@@ -55,6 +55,9 @@ pub enum ClientMsg {
 		rounds: Vec<Value>,
 	},
 	// These name the round they are about, so a stale one does nothing.
+	Ready {
+		round: usize,
+	},
 	Guess {
 		round: usize,
 		result: Value,

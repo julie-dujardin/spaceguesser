@@ -31,7 +31,7 @@ socket sends picks its lobby:
 | `join {protocol, code, name, identity, proof?}` | takes a seat: the player's own, or a new one in the game under way or for the next |
 | `rejoin {protocol, code, token}` | takes a seat back after a dropped socket or a redeploy |
 
-`protocol` is `2`. It changes when a page of before could no longer follow the
+`protocol` is `3`. It changes when a page of before could no longer follow the
 server. A socket opened with another, or with none, is refused `bad_request`,
 which such a page reads as its being out of date.
 
@@ -47,14 +47,16 @@ Then, in the lobby:
 | --- | --- | --- |
 | `settings {settings}` | host | shows the others the mode being picked |
 | `start {settings, rounds}` | host | `rounds` is one JSON value per round; `settings.timer` is seconds per round, 0 for none |
+| `ready {round}` | anyone | the round is on screen, which a timed round's clock waits for |
 | `guess {round, result}` | anyone | once per round |
 | `close_round {round}` | host | closes the open round without waiting for the rest |
 | `next {round}` | host | moves on from that round's results, to the next round or the end |
 | `leave` | anyone | gives the seat up |
 
-`guess`, `close_round` and `next` name the round they mean, and get `bad_phase`
-when it is no longer the one in play: a second click, a guess sent again on a
-new socket, or one that crossed the round closing on its own, does nothing.
+`ready`, `guess`, `close_round` and `next` name the round they mean, and get
+`bad_phase` when it is no longer the one in play: a second click, a guess sent
+again on a new socket, or one that crossed the round closing on its own, does
+nothing.
 
 The server sends four things:
 
@@ -82,6 +84,8 @@ The server sends four things:
   `lobby` to count it, so a round's guesses stay hidden until it closes. A
   `start` sets it back to 0, and the rounds told before it are the last
   game's. `ends_at` and `now` are epoch milliseconds on the server's clock.
+  `ends_at` is null on a timed round whose clock has yet to start: the round
+  is told, but not to be shown.
 
 - `error {code}`: `not_found`, `full`, `not_host`, `bad_phase`,
   `bad_request`, `already_guessed`, `busy`, `unverified`.
@@ -128,6 +132,10 @@ other close, 1000 included, is one to `rejoin` after.
 
 ## Rules
 
+- A timed round's clock starts once everyone connected has the round on
+  screen, or five seconds after it is told: a device that loads it first does
+  not get the time a slower one spends on it, and a slow one holds the others
+  up that long at most.
 - A round closes when everyone has guessed, when its timer runs out (plus two
   seconds for a last guess in flight), or when the host closes it.
 - A dropped socket keeps its seat, and for 20 seconds its round waits for it

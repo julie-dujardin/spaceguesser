@@ -15,13 +15,27 @@ interface Props {
 	 *  started: the guess is scored against this. */
 	onPlace: (entry: PanoramaEntry) => void;
 	onHeading: (deg: number) => void;
+	/** The panorama asked for is on screen, or will not be: the round can begin. */
+	onReady: () => void;
 	/** The reader has turned back to the panorama. */
 	onEngage: () => void;
 	/** Held back behind a card, rather than being played on. */
 	dimmed?: boolean;
+	/** Kept out of sight, loaded or not, until the round begins for everyone. */
+	veiled?: boolean;
 }
 
-export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dimmed }: Props) {
+export function Panorama({
+	body,
+	at,
+	movement,
+	onPlace,
+	onHeading,
+	onReady,
+	onEngage,
+	dimmed,
+	veiled
+}: Props) {
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
@@ -35,9 +49,11 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 	const opening = useRef(at);
 	const place = useRef(onPlace);
 	const heading = useRef(onHeading);
+	const ready = useRef(onReady);
 	opening.current = at;
 	place.current = onPlace;
 	heading.current = onHeading;
+	ready.current = onReady;
 
 	useEffect(() => {
 		const element = container.current;
@@ -53,7 +69,14 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 			interactive: movement !== 'frozen',
 			arrows: movement === 'free',
 			events: {
-				load: (entry) => place.current(entry),
+				load: (entry) => {
+					// A view taken down while it loaded still says so, about a round
+					// no longer on screen.
+					if (dropped) return;
+					place.current(entry);
+					// Not a panorama walked to.
+					if (entry.id === opening.current) ready.current();
+				},
 				viewchange: (state) => heading.current(state.heading)
 			}
 		})
@@ -64,7 +87,9 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 				setView(created);
 			})
 			.catch((cause: unknown) => {
-				if (!dropped) setError(String(cause));
+				if (dropped) return;
+				setError(String(cause));
+				ready.current();
 			});
 		return () => {
 			dropped = true;
@@ -77,17 +102,19 @@ export function Panorama({ body, at, movement, onPlace, onHeading, onEngage, dim
 	useEffect(() => {
 		if (!view || view !== live.current || view.getCurrent()?.id === at) return;
 		void view.open(at).catch((cause: unknown) => {
-			if (view === live.current) setError(String(cause));
+			if (view !== live.current) return;
+			setError(String(cause));
+			ready.current();
 		});
 	}, [view, at]);
 
+	const note = error ?? (!view ? m.dropping_in() : veiled ? m.waiting_for_others() : null);
 	return (
 		<div className="stage" onPointerDown={onEngage}>
 			<div ref={container} style={{ position: 'absolute', inset: 0 }} />
 			{dimmed && <div className="stage-dim" />}
 			<div className="stage-shade" />
-			{!view && !error && <div className="stage-note">{m.dropping_in()}</div>}
-			{error && <div className="stage-note">{error}</div>}
+			{note && <div className={`stage-note${veiled ? ' veil' : ''}`}>{note}</div>}
 		</div>
 	);
 }

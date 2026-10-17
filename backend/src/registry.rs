@@ -232,6 +232,11 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, owed: &mut Owed,
 						guesses: Vec::new(),
 					};
 				}),
+				// Who has loaded is not told, nor kept: only a clock starting is news.
+				ClientMsg::Ready { round } => match lobby.loaded(&player, round, now) {
+					Ok(started) => return if started { Change::Stored } else { Change::None },
+					Err(code) => Err(code),
+				},
 				ClientMsg::Guess { round, result } => lobby.guess(&player, round, result, now).map(|result| {
 					let player = player.clone();
 					owed.guesses.push(Guess { round, player, result });
@@ -240,7 +245,7 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, owed: &mut Owed,
 				// With the store away a lobby holds the guesses of the round it
 				// is on, and of no more than that.
 				ClientMsg::Next { .. } if !owed.guesses.is_empty() => Err(Error::Busy),
-				ClientMsg::Next { round } => lobby.next(&player, round, now),
+				ClientMsg::Next { round } => lobby.next(&player, round),
 				ClientMsg::Leave => {
 					lobby.leave(&player, now);
 					current.hang_up.notify_one();
@@ -283,7 +288,7 @@ async fn catch_up(store: &Store, lobby: &mut Lobby, conns: &mut HashMap<String, 
 		let Some(entry) = store.round(&lobby.code, round).await else {
 			return false;
 		};
-		lobby.set_entry(entry);
+		lobby.set_entry(entry, now_ms());
 		news = true;
 	}
 	let finished = lobby.finished();
