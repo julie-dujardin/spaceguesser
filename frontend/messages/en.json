@@ -197,6 +197,8 @@
 	"no_guess": "no guess",
 	"miss_off": "{distance} off",
 	"miss_away": "{body} · {distance} away",
+	"right_world": "right world",
+	"wrong_world": "wrong world",
 	"time_left": "{time} left",
 	"timed_out": "time ran out",
 	"timed_out_stood": "time ran out — the last point you picked stood",

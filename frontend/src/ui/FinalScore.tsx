@@ -1,4 +1,4 @@
-import { ExternalLink } from 'lucide-react';
+import { Check, ExternalLink, X } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
 import { KIND_LABELS, describePast, formatDay, kindOf, type PastRun } from '../game/history';
@@ -133,6 +133,9 @@ export function FinalScore({
 						>
 							<span className="n">{index + 1}</span>
 							<span className="nm">{bodyName(round.truth.body)}</span>
+							{round.guess?.body === round.truth.body && (
+								<Check className="ok" size={14} role="img" aria-label={m.right_world()} />
+							)}
 							{round.secondsLeft !== null && !round.timedOut && (
 								<span className="mono dim spare">
 									{m.time_left({ time: formatClock(round.secondsLeft) })}
@@ -150,7 +153,7 @@ export function FinalScore({
 							>
 								<ExternalLink size={12} />
 							</a>
-							<span className="mono mut miss">{miss(round)}</span>
+							<Guessed round={round} />
 						</div>
 					))}
 				</div>
@@ -183,5 +186,21 @@ export function FinalScore({
 				</div>
 			</div>
 		</div>
+	);
+}
+
+/** What a round's guess was, under its world, crossed out when it named
+ *  another world. The right world with no place on it has its check, which
+ *  says all there is. */
+function Guessed({ round }: { round: Played }) {
+	const { guess, truth, score } = round;
+	if (guess?.body === truth.body && score.groundKm === null) return null;
+	return (
+		<span className="mono mut miss">
+			{guess && guess.body !== truth.body && (
+				<X className="off" size={12} role="img" aria-label={m.wrong_world()} />
+			)}
+			{miss(round)}
+		</span>
 	);
 }

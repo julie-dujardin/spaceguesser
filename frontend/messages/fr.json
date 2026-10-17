@@ -207,6 +207,8 @@
 	"no_guess": "aucune réponse",
 	"miss_off": "à {distance}",
 	"miss_away": "{body} · à {distance}",
+	"right_world": "bon monde",
+	"wrong_world": "mauvais monde",
 	"time_left": "reste {time}",
 	"timed_out": "temps écoulé",
 	"timed_out_stood": "temps écoulé — le dernier point choisi a été retenu",

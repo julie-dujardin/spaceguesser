@@ -1436,25 +1436,38 @@ a.rk:hover,
    guess missed by, with the row's width to itself. */
 .rk.round {
 	display: grid;
-	grid-template-columns: 14px minmax(0, 1fr) repeat(3, auto);
+	grid-template-columns: 14px minmax(0, max-content) 1fr repeat(3, auto);
 	row-gap: 1px;
 }
 
-.rk.round .spare {
+/* By the world's name when the guess named it. */
+.rk.round .ok {
 	grid-column: 3;
+	justify-self: start;
+	margin-left: -3px;
+	color: var(--good);
+}
+
+.rk.round .spare {
+	grid-column: 4;
 	font-size: 11.5px;
 }
 
 .rk.round .gain {
-	grid-column: 4;
+	grid-column: 5;
 }
 
 .rk.round .go {
-	grid-column: 5;
+	grid-column: 6;
 }
 
 .rk.round .miss {
 	grid-column: 2 / -1;
+}
+
+.rk.round .miss .off {
+	margin-right: 4px;
+	color: var(--bad);
 }
 
 /* A round that can be looked at by itself, and the one that is. */
