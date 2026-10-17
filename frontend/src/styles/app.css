@@ -1416,6 +1416,21 @@ input.code {
 	letter-spacing: -0.02em;
 }
 
+/* A check by a round's world when the guess named it, and a cross before the
+   world it named instead. */
+.ok {
+	color: var(--good);
+}
+
+.off {
+	margin-right: 4px;
+	color: var(--bad);
+}
+
+.world .ok {
+	margin-left: 5px;
+}
+
 .rounds {
 	display: flex;
 	flex-direction: column;
@@ -1475,12 +1490,11 @@ a.rk:hover,
 	row-gap: 1px;
 }
 
-/* By the world's name when the guess named it. */
+/* The check's column, by the world's name. */
 .rk.round .ok {
 	grid-column: 3;
 	justify-self: start;
 	margin-left: -3px;
-	color: var(--good);
 }
 
 .rk.round .spare {
@@ -1498,11 +1512,6 @@ a.rk:hover,
 
 .rk.round .miss {
 	grid-column: 2 / -1;
-}
-
-.rk.round .miss .off {
-	margin-right: 4px;
-	color: var(--bad);
 }
 
 /* A round that can be looked at by itself, and the one that is. */

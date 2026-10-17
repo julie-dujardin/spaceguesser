@@ -1,4 +1,4 @@
-import { Check, ExternalLink, X } from 'lucide-react';
+import { ExternalLink } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
 import { KIND_LABELS, describePast, formatDay, kindOf, type PastRun } from '../game/history';
@@ -10,7 +10,7 @@ import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 import { Recap, type RecapGuess } from './Recap';
-import { miss } from './RoundResult';
+import { Named, missed } from './RoundResult';
 
 interface Props {
 	space: Space | null;
@@ -133,9 +133,7 @@ export function FinalScore({
 						>
 							<span className="n">{index + 1}</span>
 							<span className="nm">{bodyName(round.truth.body)}</span>
-							{round.guess?.body === round.truth.body && (
-								<Check className="ok" size={14} role="img" aria-label={m.right_world()} />
-							)}
+							<Named played={round} />
 							{round.secondsLeft !== null && !round.timedOut && (
 								<span className="mono dim spare">
 									{m.time_left({ time: formatClock(round.secondsLeft) })}
@@ -189,18 +187,9 @@ export function FinalScore({
 	);
 }
 
-/** What a round's guess was, under its world, crossed out when it named
- *  another world. The right world with no place on it has its check, which
- *  says all there is. */
+/** What a round's guess was, under its world, when there is more to say of it
+ *  than the world's check. */
 function Guessed({ round }: { round: Played }) {
-	const { guess, truth, score } = round;
-	if (guess?.body === truth.body && score.groundKm === null) return null;
-	return (
-		<span className="mono mut miss">
-			{guess && guess.body !== truth.body && (
-				<X className="off" size={12} role="img" aria-label={m.wrong_world()} />
-			)}
-			{miss(round)}
-		</span>
-	);
+	const said = missed(round);
+	return said && <span className="mono mut miss">{said}</span>;
 }

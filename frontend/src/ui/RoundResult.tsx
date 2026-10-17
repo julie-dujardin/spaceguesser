@@ -1,3 +1,4 @@
+import { Check, X } from 'lucide-react';
 import { useMemo, type ReactNode } from 'react';
 import type { LonLat } from 'spacemap';
 import { bodyName, bodyOf } from '../game/bodies';
@@ -53,6 +54,27 @@ export function miss({ guess, score }: Played): string {
 	return bodyName(guess.body);
 }
 
+/** The check by a round's world, when the guess named it. */
+export function Named({ played }: { played: Played }) {
+	if (played.guess?.body !== played.truth.body) return null;
+	return <Check className="ok" size={14} role="img" aria-label={m.right_world()} />;
+}
+
+/** What a guess missed by, crossed out when it named another world. Null for
+ *  the right world with no place on it, whose check says all there is. */
+export function missed(played: Played): ReactNode {
+	const { guess, truth, score } = played;
+	if (guess?.body === truth.body && score.groundKm === null) return null;
+	return (
+		<>
+			{guess && guess.body !== truth.body && (
+				<X className="off" size={12} role="img" aria-label={m.wrong_world()} />
+			)}
+			{miss(played)}
+		</>
+	);
+}
+
 export function RoundResult({
 	space,
 	played,
@@ -64,6 +86,9 @@ export function RoundResult({
 	children
 }: Props) {
 	const { truth, guess, score, secondsLeft, timedOut } = played;
+	const said = missed(played);
+	const left =
+		!timedOut && secondsLeft !== null ? m.time_left({ time: formatClock(secondsLeft) }) : null;
 	// Stable, so the recap is set up once rather than on every render.
 	const recap = useMemo(() => {
 		const guesses: RecapGuess[] = [
@@ -79,7 +104,10 @@ export function RoundResult({
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">{m.actual_location()}</span>
-					<span style={{ fontSize: '13.5px' }}>{bodyName(truth.body)}</span>
+					<span className="world" style={{ fontSize: '13.5px' }}>
+						{bodyName(truth.body)}
+						<Named played={played} />
+					</span>
 					<span className="mono mut" style={{ fontSize: '11.5px' }}>
 						{describe(played.round)}
 					</span>
@@ -100,10 +128,8 @@ export function RoundResult({
 				<div className="score">
 					<b>+{formatNumber(score.points)}</b>
 					<span className="mono mut" style={{ fontSize: 12 }}>
-						{miss(played)}
-						{!timedOut &&
-							secondsLeft !== null &&
-							` · ${m.time_left({ time: formatClock(secondsLeft) })}`}
+						{said}
+						{left && (said ? ` · ${left}` : left)}
 					</span>
 				</div>
 				{timedOut && <span className="note">{guess ? m.timed_out_stood() : m.timed_out()}</span>}
