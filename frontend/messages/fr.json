@@ -218,6 +218,8 @@
 	"see_total": "Voir le total",
 	"finding_the_place": "recherche de l'endroit…",
 	"zoom": "Zoom",
+	"zoom_out": "Dézoomer",
+	"zoom_in": "Zoomer",
 	"run_complete": "partie terminée",
 	"tutorial_complete": "tutoriel terminé",
 	"tutorial_next_title": "la suite",

@@ -1310,6 +1310,29 @@ input.code {
 	cursor: pointer;
 }
 
+.zoomer button {
+	display: flex;
+	padding: 6px;
+	margin: -6px;
+	border: 0;
+	border-radius: 999px;
+	background: none;
+	color: inherit;
+	cursor: pointer;
+}
+
+.zoomer button:hover,
+.zoomer button:focus-visible {
+	background: rgb(255 255 255 / 0.1);
+	color: var(--fg);
+	outline: none;
+}
+
+.zoomer button[disabled] {
+	opacity: 0.35;
+	pointer-events: none;
+}
+
 .board .surface {
 	position: absolute;
 	inset: 0;

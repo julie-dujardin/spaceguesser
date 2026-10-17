@@ -65,6 +65,9 @@ const MIN_FLIGHT_MS = 1800;
 const MAX_FLIGHT_MS = 7000;
 /** Long enough to see where everything is before it starts to move. */
 const HOLD_MS = 900;
+/** What a click on either end of the slider moves it by, and how quickly. */
+const NUDGE = 0.1;
+const NUDGE_MS = 280;
 
 interface Flight {
 	body: string;
@@ -94,6 +97,8 @@ export function Recap({ space, rounds, focus }: Props) {
 	const [flight, setFlight] = useState<Flight | null>(null);
 	const [error, setError] = useState<string | null>(null);
 	const flying = useRef<number | null>(null);
+	/** Where a nudge is headed, so that clicks in quick succession add up. */
+	const heading = useRef<number | null>(null);
 	// A lobby hands the same rounds over as new objects on every snapshot.
 	const key = JSON.stringify(rounds);
 	const shown = useRef(rounds);
@@ -113,6 +118,22 @@ export function Recap({ space, rounds, focus }: Props) {
 	const land = () => {
 		if (flying.current !== null) cancelAnimationFrame(flying.current);
 		flying.current = null;
+		heading.current = null;
+	};
+
+	const nudge = (by: number) => {
+		const to = Math.min(1, Math.max(0, (heading.current ?? zoom) + by));
+		land();
+		heading.current = to;
+		const from = zoom;
+		const start = performance.now();
+		const step = (now: number) => {
+			const t = Math.min(1, (now - start) / NUDGE_MS);
+			setZoom(from + (to - from) * ease(t));
+			flying.current = t < 1 ? requestAnimationFrame(step) : null;
+			if (t === 1) heading.current = null;
+		};
+		flying.current = requestAnimationFrame(step);
 	};
 
 	// The next round gets the map back as a round has it: the whole sky,
@@ -336,8 +357,16 @@ export function Recap({ space, rounds, focus }: Props) {
 			{space && !flight && !error && <div className="stage-note">{m.finding_the_place()}</div>}
 			{error && !mapped && <div className="stage-note">{error}</div>}
 			{flight && (
-				<label className="zoomer glass">
-					<Minus size={16} />
+				<div className="zoomer glass">
+					<button
+						type="button"
+						title={m.zoom_out()}
+						aria-label={m.zoom_out()}
+						disabled={zoom <= 0}
+						onClick={() => nudge(-NUDGE)}
+					>
+						<Minus size={16} />
+					</button>
 					<input
 						type="range"
 						min={0}
@@ -351,8 +380,16 @@ export function Recap({ space, rounds, focus }: Props) {
 							setZoom(Number(event.target.value) / 1000);
 						}}
 					/>
-					<Plus size={16} />
-				</label>
+					<button
+						type="button"
+						title={m.zoom_in()}
+						aria-label={m.zoom_in()}
+						disabled={zoom >= 1}
+						onClick={() => nudge(NUDGE)}
+					>
+						<Plus size={16} />
+					</button>
+				</div>
 			)}
 		</>
 	);
