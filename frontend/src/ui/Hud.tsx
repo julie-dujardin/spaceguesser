@@ -21,6 +21,8 @@ interface Props {
 	tutorial?: boolean;
 	/** A tip about the round, under the pills. */
 	tip?: ReactNode;
+	/** The reader reached for the tip, which is about the view. */
+	onTip?: () => void;
 	/** More pills for the top row. */
 	children?: ReactNode;
 }
@@ -35,6 +37,7 @@ export function Hud({
 	onQuit,
 	tutorial,
 	tip,
+	onTip,
 	children
 }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
@@ -76,7 +79,11 @@ export function Hud({
 					</span>
 				)}
 				{children}
-				{tip && <div className="tip-row">{tip}</div>}
+				{tip && (
+					<div className="tip-row" onPointerDown={onTip}>
+						{tip}
+					</div>
+				)}
 			</div>
 			<Quit onQuit={onQuit} />
 		</>

@@ -600,6 +600,7 @@ export default function App() {
 						onQuit={() => dispatch({ kind: 'home' })}
 						tutorial={run.tutorial}
 						tip={tip?.at === 'view' ? tipCard : undefined}
+						onTip={() => setMapOpen(false)}
 					/>
 					<GuessPanel
 						key={run.round}
