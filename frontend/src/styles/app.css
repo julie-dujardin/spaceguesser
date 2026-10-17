@@ -233,7 +233,7 @@ button {
 	gap: 8px;
 }
 
-.pick {
+.drag {
 	display: flex;
 	gap: 2px;
 	padding: 3px;
@@ -243,7 +243,7 @@ button {
 	border: 1px solid var(--gborder);
 }
 
-.pick button {
+.drag button {
 	display: inline-flex;
 	align-items: center;
 	gap: 7px;
@@ -259,11 +259,11 @@ button {
 	transition: all 150ms;
 }
 
-.pick button:hover {
+.drag button:hover {
 	color: var(--fg);
 }
 
-.pick button[aria-pressed='true'] {
+.drag button[aria-pressed='true'] {
 	background: var(--light);
 	color: var(--on-light);
 }
@@ -1980,7 +1980,7 @@ button.rk {
 	box-shadow: none;
 }
 
-.tools.ringed .pick {
+.tools.ringed .drag {
 	box-shadow:
 		0 0 0 2px rgb(255 255 255 / 0.95),
 		0 0 0 7px rgb(255 255 255 / 0.16);

@@ -242,7 +242,7 @@ export function Orbit({
 								<Icon d={LOCATE} />
 							</button>
 						)}
-						<div className="pick" role="group" aria-label={m.orbit_drag()}>
+						<div className="drag" role="group" aria-label={m.orbit_drag()}>
 							<button
 								type="button"
 								aria-pressed={hands === 'look'}
