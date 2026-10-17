@@ -1432,6 +1432,31 @@ a.rk:hover,
 	text-overflow: ellipsis;
 }
 
+/* A round of the tally: the world and its points, and under them what the
+   guess missed by, with the row's width to itself. */
+.rk.round {
+	display: grid;
+	grid-template-columns: 14px minmax(0, 1fr) repeat(3, auto);
+	row-gap: 1px;
+}
+
+.rk.round .spare {
+	grid-column: 3;
+	font-size: 11.5px;
+}
+
+.rk.round .gain {
+	grid-column: 4;
+}
+
+.rk.round .go {
+	grid-column: 5;
+}
+
+.rk.round .miss {
+	grid-column: 2 / -1;
+}
+
 /* A round that can be looked at by itself, and the one that is. */
 .rk.pick {
 	cursor: pointer;

@@ -116,7 +116,7 @@ export function FinalScore({
 				<div className="rounds">
 					{played.map((round, index) => (
 						<div
-							className={`rk pick${focus === index ? ' on' : ''}`}
+							className={`rk pick round${focus === index ? ' on' : ''}`}
 							key={index}
 							role="button"
 							tabIndex={0}
@@ -133,9 +133,8 @@ export function FinalScore({
 						>
 							<span className="n">{index + 1}</span>
 							<span className="nm">{bodyName(round.truth.body)}</span>
-							<span className="mono mut miss">{miss(round)}</span>
 							{round.secondsLeft !== null && !round.timedOut && (
-								<span className="mono dim" style={{ fontSize: '11.5px' }}>
+								<span className="mono dim spare">
 									{m.time_left({ time: formatClock(round.secondsLeft) })}
 								</span>
 							)}
@@ -151,6 +150,7 @@ export function FinalScore({
 							>
 								<ExternalLink size={12} />
 							</a>
+							<span className="mono mut miss">{miss(round)}</span>
 						</div>
 					))}
 				</div>
