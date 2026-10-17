@@ -1426,9 +1426,27 @@ input.code {
 	width: min(360px, calc(100% - 76px));
 }
 
+/* Stops short of the zoom slider, which a narrow window puts under it. */
+.board:has(> .zoomer) > .rpanel {
+	max-height: calc(100% - 90px);
+}
+
 /* Three buttons are more than the panel is wide. */
 .rpanel .acts {
 	flex-wrap: wrap;
+}
+
+/* A tutorial's text scrolls where the panel is short, so its button stays in
+   view. */
+.rpanel .lesson {
+	min-height: 0;
+}
+
+.rpanel .why {
+	min-height: 0;
+	overflow-y: auto;
+	scrollbar-width: thin;
+	scrollbar-color: rgb(255 255 255 / 0.25) transparent;
 }
 
 .score {
