@@ -1,7 +1,16 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
 import { BODIES, bodyOf, setTiled, viewDistance } from './bodies';
-import { altitudeKm, drawDate, drawRun, measuredAt, shownDate, spot, type Stop } from './rounds';
+import {
+	aim,
+	altitudeKm,
+	drawDate,
+	drawRun,
+	measuredAt,
+	shownDate,
+	spot,
+	type Stop
+} from './rounds';
 
 const RAD = Math.PI / 180;
 
@@ -46,6 +55,24 @@ describe('spot', () => {
 		const noon = { lat: 12, lon: -40 };
 		expect(apart(spot({ u: 0, v: 0.3 }, noon), noon)).toBeCloseTo(0, 6);
 		expect(apart(spot({ u: 1, v: 0.3 }, noon), noon)).toBeCloseTo(50, 6);
+	});
+});
+
+describe('aim', () => {
+	it('is undone by spot', () => {
+		const random = seeded(11);
+		for (let i = 0; i < 2000; i++) {
+			const noon = { lat: random() * 160 - 80, lon: random() * 360 - 180 };
+			const asked = { u: random(), v: random() };
+			const at = spot(asked, noon);
+			const found = aim(at, noon);
+			expect(found.u).toBeCloseTo(asked.u, 6);
+			expect(apart(spot(found, noon), at)).toBeLessThan(1e-5);
+		}
+	});
+
+	it('says where the Sun is too low', () => {
+		expect(aim({ lat: 0, lon: 60 }, { lat: 0, lon: 0 }).u).toBeGreaterThan(1);
 	});
 });
 

@@ -41,6 +41,7 @@ export interface Run {
 	/** Opened from the history: this browser's own run, looked at again. */
 	past: PastRun | null;
 	settings: RunSettings;
+	tutorial: boolean;
 	drawn: Round[];
 	round: number;
 	/** Where the reader is standing, which free movement lets them change. */
@@ -51,7 +52,7 @@ export interface Run {
 export type Action =
 	| { kind: 'home' }
 	| { kind: 'setup' }
-	| { kind: 'start'; settings: RunSettings; drawn: Round[] }
+	| { kind: 'start'; settings: RunSettings; drawn: Round[]; tutorial?: boolean }
 	/** A run someone shared, as its link told it, or one of the reader's own
 	 *  from the history. */
 	| { kind: 'visit'; played: Played[]; past?: PastRun }
@@ -66,6 +67,7 @@ export const INITIAL: Run = {
 	shared: false,
 	past: null,
 	settings: { rounds: 0, movement: 'free', timer: 0, modes: { ground: true, orbit: true } },
+	tutorial: false,
 	drawn: [],
 	round: 0,
 	standing: null,
@@ -84,6 +86,7 @@ export function reduce(run: Run, action: Action): Run {
 				shared: false,
 				past: null,
 				settings: action.settings,
+				tutorial: !!action.tutorial,
 				drawn: action.drawn,
 				round: 0,
 				standing: null,
@@ -96,6 +99,7 @@ export function reduce(run: Run, action: Action): Run {
 				shared: !action.past,
 				past: action.past ?? null,
 				settings: action.past?.settings ?? INITIAL.settings,
+				tutorial: !!action.past?.tutorial,
 				played: action.played
 			};
 		case 'stand':

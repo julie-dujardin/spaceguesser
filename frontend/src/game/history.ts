@@ -21,18 +21,22 @@ export interface PastRun {
 	/** Played with friends: where this player finished, and among how many. */
 	place?: number;
 	of?: number;
+	/** The tutorial, which its settings alone do not tell from a custom run. */
+	tutorial?: true;
 }
 
-export type RunKind = 'quick' | 'custom' | 'friends';
+export type RunKind = 'quick' | 'custom' | 'friends' | 'tutorial';
 
 export const KIND_LABELS: Record<RunKind, () => string> = {
 	quick: m.quick_play,
 	custom: m.custom_run,
-	friends: m.with_friends
+	friends: m.with_friends,
+	tutorial: m.tutorial
 };
 
 export function kindOf(run: PastRun): RunKind {
 	if (run.of !== undefined) return 'friends';
+	if (run.tutorial) return 'tutorial';
 	const { rounds, movement, timer, modes } = run.settings;
 	const quick =
 		rounds === QUICK_PLAY.rounds &&
@@ -66,14 +70,14 @@ export function formatDay(at: number, year = false): string {
 export function pastRun(
 	played: readonly Played[],
 	settings: RunSettings,
-	standing?: { place: number; of: number }
+	kind: Pick<PastRun, 'place' | 'of' | 'tutorial'> = {}
 ): PastRun {
 	return {
 		at: Date.now(),
 		settings,
 		total: played.reduce((sum, round) => sum + round.score.points, 0),
 		code: shareCode(played),
-		...standing
+		...kind
 	};
 }
 
@@ -92,7 +96,8 @@ function read(value: unknown): PastRun | null {
 		settings: settingsOf(run.settings),
 		total: run.total,
 		code: typeof run.code === 'string' ? run.code : null,
-		...(friends ? { place: run.place, of: run.of } : {})
+		...(friends ? { place: run.place, of: run.of } : {}),
+		...(run.tutorial === true ? { tutorial: true } : {})
 	};
 }
 

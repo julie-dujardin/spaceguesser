@@ -104,6 +104,23 @@ export function spot(round: Pick<OrbitRound, 'u' | 'v'>, noon: LonLat): LonLat {
 	return step(noon, round.v * 2 * Math.PI, reach);
 }
 
+/** The `u` and `v` that `spot` takes to `over` with the Sun overhead at
+ *  `noon`. A `u` past 1 is a place where the Sun stands too low. */
+export function aim(over: LonLat, noon: LonLat): Pick<OrbitRound, 'u' | 'v'> {
+	const lat0 = noon.lat * RAD;
+	const lat = over.lat * RAD;
+	const dlon = (over.lon - noon.lon) * RAD;
+	const cos = Math.sin(lat0) * Math.sin(lat) + Math.cos(lat0) * Math.cos(lat) * Math.cos(dlon);
+	const bearing = Math.atan2(
+		Math.sin(dlon) * Math.cos(lat),
+		Math.cos(lat0) * Math.sin(lat) - Math.sin(lat0) * Math.cos(lat) * Math.cos(dlon)
+	);
+	return {
+		u: (1 - cos) / (1 - Math.cos((90 - MIN_SUN_DEG) * RAD)),
+		v: (((bearing / (2 * Math.PI)) % 1) + 1) % 1
+	};
+}
+
 export interface Modes {
 	ground: boolean;
 	orbit: boolean;

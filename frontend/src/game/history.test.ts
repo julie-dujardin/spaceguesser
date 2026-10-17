@@ -89,8 +89,10 @@ describe('the kept history', () => {
 
 	it('reads back what it wrote', () => {
 		const friends = run({ code: 'friends', place: 2, of: 4 });
+		const tutorial = run({ code: 'tutorial', tutorial: true });
 		keepRun(friends);
-		expect(recallHistory()).toEqual([friends]);
+		keepRun(tutorial);
+		expect(recallHistory()).toEqual([tutorial, friends]);
 	});
 
 	it('drops what it did not write, and mends what it can', () => {
@@ -117,6 +119,7 @@ describe('a run in a row', () => {
 		expect(kindOf(run())).toBe('quick');
 		expect(kindOf(run({ settings: { ...QUICK_PLAY, timer: 60 } }))).toBe('custom');
 		expect(kindOf(run({ place: 1, of: 3 }))).toBe('friends');
+		expect(kindOf(run({ tutorial: true }))).toBe('tutorial');
 	});
 
 	it('says how long it was, or how it went', () => {
