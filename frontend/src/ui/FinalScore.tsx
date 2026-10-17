@@ -107,7 +107,7 @@ export function FinalScore({
 					</span>
 					<div className="score">
 						<b>{formatNumber(total)}</b>
-						<span className="mono mut" style={{ fontSize: 12 }}>
+						<span className="mono mut" style={{ fontSize: 13 }}>
 							{m.of_points({ best: formatNumber(best) })}
 						</span>
 					</div>

@@ -108,15 +108,15 @@ export function RoundResult({
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">{m.actual_location()}</span>
-					<span className="world" style={{ fontSize: '13.5px' }}>
+					<span className="world" style={{ fontSize: '14.5px' }}>
 						{bodyName(truth.body)}
 						<Named played={played} />
 					</span>
-					<span className="mono mut" style={{ fontSize: '11.5px' }}>
+					<span className="mono mut" style={{ fontSize: '12.5px' }}>
 						{describe(played.round)}
 					</span>
 					{bodyOf(truth.body)?.surface && (
-						<span className="mono dim" style={{ fontSize: '11.5px' }}>
+						<span className="mono dim" style={{ fontSize: '12.5px' }}>
 							{coordinates(truth)}
 						</span>
 					)}
@@ -131,7 +131,7 @@ export function RoundResult({
 				</div>
 				<div className="score">
 					<b>+{formatNumber(score.points)}</b>
-					<span className="mono mut" style={{ fontSize: 12 }}>
+					<span className="mono mut" style={{ fontSize: 13 }}>
 						{said}
 						{left && (said ? ` · ${left}` : left)}
 					</span>

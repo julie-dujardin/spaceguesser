@@ -2,17 +2,19 @@
 @import '@fontsource-variable/geist-mono';
 
 /* Space Map's tokens, dark only: the picture is the background, and there is
-   no light version of standing on Mars at night. */
+   no light version of standing on Mars at night. The greys and the glass are
+   lighter and denser than Space Map's, as the type here is small and sits on
+   a busy picture. */
 :root {
 	--font-sans: 'Geist Variable', ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'Geist Mono Variable', ui-monospace, SFMono-Regular, Menlo, monospace;
 	--fg: oklch(0.985 0 0);
-	--mut: oklch(0.708 0 0);
-	--dim: oklch(0.556 0 0);
+	--mut: oklch(0.82 0 0);
+	--dim: oklch(0.7 0 0);
 	--on-light: oklch(0.205 0 0);
 	--light: oklch(0.922 0 0);
 	--light-hover: oklch(0.87 0 0);
-	--glass: rgb(10 10 10 / 0.72);
+	--glass: rgb(10 10 10 / 0.8);
 	--gborder: rgb(255 255 255 / 0.1);
 	--good: #4ade80;
 	--bad: #ef4444;
@@ -34,7 +36,7 @@ body {
 	background: #000;
 	color: var(--fg);
 	font-family: var(--font-sans);
-	font-size: 13px;
+	font-size: 14px;
 	-webkit-font-smoothing: antialiased;
 	overflow: hidden;
 }
@@ -91,7 +93,7 @@ button {
 	background: var(--glass);
 	backdrop-filter: blur(12px);
 	border: 1px solid var(--gborder);
-	font-size: 12.5px;
+	font-size: 13.5px;
 	white-space: nowrap;
 }
 
@@ -117,7 +119,7 @@ button {
 	height: 32px;
 	padding: 0 14px;
 	border-radius: 8px;
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 500;
 	cursor: pointer;
 	border: 1px solid transparent;
@@ -142,7 +144,7 @@ button {
 .btn.lg {
 	height: 40px;
 	padding: 0 20px;
-	font-size: 14px;
+	font-size: 15px;
 }
 
 .btn.ghost {
@@ -269,7 +271,7 @@ button {
 	background: transparent;
 	color: var(--mut);
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	cursor: pointer;
 	transition: all 150ms;
 }
@@ -289,7 +291,7 @@ button {
 	display: grid;
 	place-items: center;
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	color: var(--mut);
 }
 
@@ -338,7 +340,7 @@ button {
 
 .clock .v {
 	font-family: var(--font-mono);
-	font-size: 15px;
+	font-size: 16px;
 	text-align: center;
 	font-variant-numeric: tabular-nums;
 }
@@ -430,7 +432,7 @@ button {
 	background: rgb(255 255 255 / 0.06);
 	color: var(--fg);
 	font: inherit;
-	font-size: 12px;
+	font-size: 13px;
 	outline: none;
 	transition: width 150ms;
 }
@@ -468,13 +470,13 @@ button {
 	border-radius: 7px;
 	background: none;
 	color: var(--fg);
-	font-size: 13px;
+	font-size: 14px;
 	text-align: left;
 	cursor: pointer;
 }
 
 .hits button span {
-	font-size: 10.5px;
+	font-size: 11.5px;
 	white-space: nowrap;
 }
 
@@ -540,7 +542,7 @@ button {
 	border: 1px solid var(--gborder);
 	background: rgb(255 255 255 / 0.05);
 	color: var(--fg);
-	font-size: 12px;
+	font-size: 13px;
 	white-space: nowrap;
 	cursor: pointer;
 }
@@ -612,7 +614,7 @@ button {
 	display: flex;
 	align-items: center;
 	gap: 6px;
-	font-size: 11.5px;
+	font-size: 12.5px;
 }
 
 .mapw .at input {
@@ -621,7 +623,7 @@ button {
 	padding: 0 8px;
 	border-radius: 7px;
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	font-variant-numeric: tabular-nums;
 }
 
@@ -671,7 +673,7 @@ button {
 	display: grid;
 	place-items: center;
 	font-family: var(--font-mono);
-	font-size: 10px;
+	font-size: 11px;
 	font-weight: 600;
 	color: var(--on-light);
 }
@@ -747,13 +749,13 @@ button {
 }
 
 .card h2 {
-	font-size: 15px;
+	font-size: 16px;
 	font-weight: 600;
 	margin: 0;
 }
 
 .lede {
-	font-size: 13.5px;
+	font-size: 14.5px;
 	color: var(--mut);
 	margin: 0;
 	max-width: 340px;
@@ -767,13 +769,13 @@ button {
 }
 
 .hd {
-	font-size: 11px;
+	font-size: 12px;
 	font-family: var(--font-mono);
 	color: var(--dim);
 }
 
 .note {
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--dim);
 	font-family: var(--font-mono);
 	line-height: 1.5;
@@ -816,7 +818,7 @@ button {
 	background: transparent;
 	color: var(--mut);
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 	cursor: pointer;
 	transition: all 150ms;
 }
@@ -925,7 +927,7 @@ button {
 }
 
 .mode .t {
-	font-size: 13px;
+	font-size: 14px;
 	font-weight: 500;
 }
 
@@ -934,7 +936,7 @@ button {
 }
 
 .mode .d {
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--mut);
 	font-family: var(--font-mono);
 }
@@ -967,7 +969,7 @@ button {
 }
 
 .start .t {
-	font-size: 16px;
+	font-size: 17px;
 	font-weight: 500;
 }
 
@@ -976,9 +978,9 @@ button {
 }
 
 .start .d {
-	font-size: 11.5px;
+	font-size: 12.5px;
 	font-family: var(--font-mono);
-	color: oklch(0.45 0 0);
+	color: oklch(0.4 0 0);
 }
 
 /* --- playing with friends ------------------------------------------------ */
@@ -992,7 +994,7 @@ input[type='text'] {
 	background: rgb(255 255 255 / 0.05);
 	color: var(--fg);
 	font-family: inherit;
-	font-size: 13px;
+	font-size: 14px;
 	outline: 0;
 }
 
@@ -1011,7 +1013,7 @@ input.code {
 }
 
 .code-tag {
-	font-size: 11px;
+	font-size: 12px;
 	letter-spacing: 0.08em;
 }
 
@@ -1050,7 +1052,7 @@ input.code {
 	align-items: center;
 	gap: 6px;
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: 12px;
 	color: var(--dim);
 }
 
@@ -1080,7 +1082,7 @@ input.code {
 	border: 1px solid var(--gborder);
 	background: rgb(255 255 255 / 0.05);
 	font-family: var(--font-mono);
-	font-size: 12px;
+	font-size: 13px;
 }
 
 .share .note {
@@ -1097,7 +1099,7 @@ input.code {
 	margin-left: auto;
 	height: 26px;
 	padding: 0 10px;
-	font-size: 12px;
+	font-size: 13px;
 }
 
 .rules {
@@ -1108,7 +1110,7 @@ input.code {
 
 .rules > * {
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: 12px;
 	color: var(--mut);
 	border: 1px solid var(--gborder);
 	border-radius: 9999px;
@@ -1143,7 +1145,7 @@ input.code {
 	display: flex;
 	align-items: center;
 	gap: 9px;
-	font-size: 13px;
+	font-size: 14px;
 }
 
 .pl.away .av,
@@ -1153,7 +1155,7 @@ input.code {
 
 .pl .tag {
 	margin-left: auto;
-	font-size: 10.5px;
+	font-size: 11.5px;
 	font-family: var(--font-mono);
 	color: var(--dim);
 	white-space: nowrap;
@@ -1231,12 +1233,12 @@ input.code {
 	padding: 10px 12px;
 	border: 1px solid var(--gborder);
 	border-radius: 10px;
-	font-size: 13px;
+	font-size: 14px;
 }
 
 .prev .tag {
 	margin-left: auto;
-	font-size: 10.5px;
+	font-size: 11.5px;
 	white-space: nowrap;
 }
 
@@ -1290,7 +1292,7 @@ input.code {
 	z-index: 6;
 	height: 28px;
 	font-family: var(--font-mono);
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--mut);
 }
 
@@ -1483,7 +1485,7 @@ input.code {
 	gap: 9px;
 	padding: 6px 8px;
 	border-radius: 8px;
-	font-size: 12.5px;
+	font-size: 13.5px;
 	color: inherit;
 	text-decoration: none;
 	transition: background 150ms;
@@ -1502,7 +1504,7 @@ a.rk:hover,
 
 .rk .miss {
 	min-width: 0;
-	font-size: 11.5px;
+	font-size: 12.5px;
 	white-space: nowrap;
 	overflow: hidden;
 	text-overflow: ellipsis;
@@ -1525,7 +1527,7 @@ a.rk:hover,
 
 .rk.round .spare {
 	grid-column: 4;
-	font-size: 11.5px;
+	font-size: 12.5px;
 }
 
 .rk.round .gain {
@@ -1557,7 +1559,7 @@ a.rk:hover,
 	margin-left: auto;
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--good);
 }
 
@@ -1589,7 +1591,7 @@ a.rk:hover,
 .out {
 	align-self: flex-start;
 	margin-top: 4px;
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--mut);
 	text-decoration: underline;
 	text-decoration-color: var(--gborder);
@@ -1605,7 +1607,7 @@ a.rk:hover,
 .rk .n {
 	width: 14px;
 	color: var(--dim);
-	font-size: 11px;
+	font-size: 12px;
 	font-family: var(--font-mono);
 }
 
@@ -1648,14 +1650,14 @@ a.rk:hover,
 
 .who .tag {
 	margin-left: auto;
-	font-size: 11px;
+	font-size: 12px;
 	white-space: nowrap;
 }
 
 .prev .btn {
 	height: 26px;
 	padding: 0 10px;
-	font-size: 12px;
+	font-size: 13px;
 }
 
 /* A line with something at each end of it. Where the two do not fit, the
@@ -1742,7 +1744,7 @@ button.day {
 	display: flex;
 	align-items: center;
 	gap: 4px;
-	font-size: 10.5px;
+	font-size: 11.5px;
 }
 
 .scale .day {
@@ -1759,7 +1761,7 @@ button.day {
 .heat .weekdays,
 .heat .month {
 	font-family: var(--font-mono);
-	font-size: 9.5px;
+	font-size: 10.5px;
 	color: var(--dim);
 }
 
@@ -1821,12 +1823,13 @@ button.rk {
 	text-align: left;
 }
 
+/* As wide as the longest short date, "18 sept.". */
 .rk .when {
 	flex: none;
-	width: 52px;
+	width: 8ch;
 	white-space: nowrap;
 	color: var(--dim);
-	font-size: 11px;
+	font-size: 12px;
 	font-family: var(--font-mono);
 }
 
@@ -1873,7 +1876,7 @@ button.rk {
 .about article {
 	max-width: 620px;
 	margin: 0 auto;
-	font-size: 14.5px;
+	font-size: 15.5px;
 	line-height: 1.65;
 	color: var(--mut);
 }
@@ -1884,12 +1887,12 @@ button.rk {
 	gap: 16px;
 	margin-bottom: 56px;
 	font-family: var(--font-mono);
-	font-size: 12.5px;
+	font-size: 13.5px;
 }
 
 .about header .mark {
 	margin-right: auto;
-	font-size: 14px;
+	font-size: 15px;
 	color: var(--fg);
 	text-decoration: none;
 }
@@ -1921,7 +1924,7 @@ button.rk {
 
 .about h2 {
 	margin: 36px 0 8px;
-	font-size: 15px;
+	font-size: 16px;
 	font-weight: 600;
 	color: var(--fg);
 }
@@ -1933,7 +1936,7 @@ button.rk {
 
 .about .lede {
 	max-width: none;
-	font-size: 16px;
+	font-size: 17px;
 	line-height: 1.55;
 	text-wrap: pretty;
 }
@@ -1988,14 +1991,14 @@ button.rk {
 
 .tip p {
 	margin: 0;
-	font-size: 13.5px;
+	font-size: 14.5px;
 	line-height: 1.5;
 	text-wrap: pretty;
 }
 
 .tip p + p {
 	color: var(--mut);
-	font-size: 13px;
+	font-size: 14px;
 }
 
 .tip .steps {
@@ -2035,12 +2038,12 @@ button.rk {
 .tip .btn {
 	height: 28px;
 	padding: 0 12px;
-	font-size: 12.5px;
+	font-size: 13.5px;
 }
 
 .tip .quiet {
 	font-family: var(--font-mono);
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--dim);
 }
 
@@ -2162,7 +2165,7 @@ button.rk {
 
 .split .k {
 	font-family: var(--font-mono);
-	font-size: 11px;
+	font-size: 12px;
 	color: var(--dim);
 }
 
@@ -2182,7 +2185,7 @@ button.rk {
 .split .v {
 	font-family: var(--font-mono);
 	font-variant-numeric: tabular-nums;
-	font-size: 11.5px;
+	font-size: 12.5px;
 	color: var(--mut);
 	text-align: right;
 }
@@ -2202,7 +2205,7 @@ button.rk {
 
 .why p {
 	margin: 0;
-	font-size: 13px;
+	font-size: 14px;
 	line-height: 1.55;
 	color: var(--mut);
 	text-wrap: pretty;

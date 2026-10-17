@@ -400,7 +400,7 @@ export function GuessPanel({
 			</div>
 			<div className="foot">
 				{info?.surface && <Coordinates key={body} at={at} disabled={locked} onPick={place} />}
-				<span className="mono mut" style={{ flex: 1, fontSize: '11.5px' }}>
+				<span className="mono mut" style={{ flex: 1, fontSize: '12.5px' }}>
 					{waiting ?? hint}
 				</span>
 				{waiting === undefined ? (
