@@ -1353,7 +1353,7 @@ input.code {
 	position: absolute;
 	left: 16px;
 	top: 16px;
-	width: min(320px, calc(100% - 32px));
+	width: min(360px, calc(100% - 32px));
 	max-height: calc(100% - 32px);
 	padding: 18px;
 	border-radius: 12px;
@@ -2074,11 +2074,6 @@ button.rk {
 
 .status .lesson {
 	color: var(--fg);
-}
-
-/* A tutorial's recap has more to say than a round's score. */
-.rpanel:has(.lesson) {
-	width: min(360px, calc(100% - 32px));
 }
 
 .lesson {
