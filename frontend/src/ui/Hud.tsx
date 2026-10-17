@@ -15,11 +15,27 @@ interface Props {
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
+	/** The tutorial's run, named where the movement would be: the reader did
+	 *  not pick that one. */
+	tutorial?: boolean;
+	/** A tip about the round, under the pills. */
+	tip?: ReactNode;
 	/** More pills for the top row. */
 	children?: ReactNode;
 }
 
-export function Hud({ settings, round, rounds, when, altitude, left, onQuit, children }: Props) {
+export function Hud({
+	settings,
+	round,
+	rounds,
+	when,
+	altitude,
+	left,
+	onQuit,
+	tutorial,
+	tip,
+	children
+}: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
 	return (
 		<>
@@ -29,7 +45,11 @@ export function Hud({ settings, round, rounds, when, altitude, left, onQuit, chi
 					<span className="sep" />
 					<span className="mono mut">{m.hud_round({ round: round + 1, rounds })}</span>
 					<span className="sep" />
-					<span className="mono mut move">{movementName(settings.movement)}</span>
+					{tutorial ? (
+						<span className="mono lesson">{m.hud_tutorial()}</span>
+					) : (
+						<span className="mono mut move">{movementName(settings.movement)}</span>
+					)}
 				</span>
 				{(altitude !== null || when !== null) && (
 					<span className="pill status view">
@@ -55,6 +75,7 @@ export function Hud({ settings, round, rounds, when, altitude, left, onQuit, chi
 					</span>
 				)}
 				{children}
+				{tip && <div className="tip-row">{tip}</div>}
 			</div>
 			<div className="hud-topr">
 				<button type="button" className="btn glassy ico" title={m.leave_run()} onClick={onQuit}>

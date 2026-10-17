@@ -219,6 +219,11 @@ button {
 	position: fixed;
 	left: 16px;
 	bottom: 46px;
+	/* A tip about them goes on top. */
+	display: flex;
+	flex-direction: column-reverse;
+	align-items: flex-start;
+	gap: 14px;
 }
 
 .hands {
@@ -849,6 +854,11 @@ button {
 
 .mode:hover {
 	background: rgb(255 255 255 / 0.09);
+}
+
+.mode[disabled] {
+	opacity: 0.5;
+	pointer-events: none;
 }
 
 .mode.framed {
@@ -1812,6 +1822,269 @@ button.rk {
 	border-top: 1px solid var(--gborder);
 }
 
+/* --- the tutorial -------------------------------------------------------- */
+
+/* The teacher's voice: a shade more solid than the game's glass, so it reads
+   as said to the reader rather than as part of the view. */
+.tip {
+	width: min(300px, calc(100vw - 32px));
+	padding: 14px 16px 12px;
+	display: flex;
+	flex-direction: column;
+	gap: 10px;
+	background: rgb(22 22 22 / 0.9);
+	backdrop-filter: blur(12px);
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-radius: 12px;
+	box-shadow: 0 12px 32px rgb(0 0 0 / 0.5);
+	white-space: normal;
+}
+
+.tip .top {
+	display: flex;
+	align-items: center;
+	justify-content: space-between;
+	gap: 10px;
+}
+
+.tip p {
+	margin: 0;
+	font-size: 13.5px;
+	line-height: 1.5;
+	text-wrap: pretty;
+}
+
+.tip p + p {
+	color: var(--mut);
+	font-size: 13px;
+}
+
+.tip .steps {
+	display: block;
+	flex: none;
+	fill: rgb(255 255 255 / 0.2);
+}
+
+.tip .steps .on {
+	fill: var(--fg);
+}
+
+/* The next step fills in as the wait for it runs out. */
+.tip .steps .fill {
+	fill: var(--fg);
+	transform-box: fill-box;
+	transform-origin: left;
+	animation: fill-step linear both;
+}
+
+@keyframes fill-step {
+	from {
+		transform: scaleX(0);
+	}
+
+	to {
+		transform: scaleX(1);
+	}
+}
+
+.tip .acts {
+	padding-top: 0;
+	justify-content: space-between;
+	align-items: center;
+}
+
+.tip .btn {
+	height: 28px;
+	padding: 0 12px;
+	font-size: 12.5px;
+}
+
+.tip .quiet {
+	font-family: var(--font-mono);
+	font-size: 11.5px;
+	color: var(--dim);
+}
+
+/* Under the pills, on a line of its own however they wrap. Only the tip takes
+   the pointer: the rest of the line is the view's to drag. */
+.tip-row {
+	flex-basis: 100%;
+	pointer-events: none;
+}
+
+.tip-row > .tip {
+	pointer-events: auto;
+}
+
+.hud-top:has(> .tip-row) {
+	pointer-events: none;
+}
+
+.hud-top:has(> .tip-row) > :not(.tip-row) {
+	pointer-events: auto;
+}
+
+/* Beside the guess panel, level with its foot, and pointing at it. */
+.mapw > .tip {
+	position: absolute;
+	right: calc(100% + 14px);
+	bottom: 0;
+}
+
+.mapw > .tip::after {
+	content: '';
+	position: absolute;
+	right: -6px;
+	bottom: 22px;
+	width: 10px;
+	height: 10px;
+	background: rgb(22 22 22);
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-left: 0;
+	border-bottom: 0;
+	transform: rotate(45deg);
+}
+
+/* Over the view's own controls, pointing down at them. */
+.tools > .tip {
+	position: relative;
+}
+
+.tools > .tip::after {
+	content: '';
+	position: absolute;
+	left: 28px;
+	bottom: -6px;
+	width: 10px;
+	height: 10px;
+	background: rgb(22 22 22);
+	border: 1px solid rgb(255 255 255 / 0.16);
+	border-left: 0;
+	border-bottom: 0;
+	transform: rotate(135deg);
+}
+
+/* What a tip is about. */
+.ringed {
+	box-shadow:
+		0 0 0 2px rgb(255 255 255 / 0.95),
+		0 0 0 7px rgb(255 255 255 / 0.16);
+}
+
+.mapw.ringed {
+	border-radius: 12px;
+}
+
+/* The switch, not the column it is in. */
+.tools.ringed {
+	box-shadow: none;
+}
+
+.tools.ringed .pick {
+	box-shadow:
+		0 0 0 2px rgb(255 255 255 / 0.95),
+		0 0 0 7px rgb(255 255 255 / 0.16);
+}
+
+/* The map's own edge is under the panel's head and foot: its ring goes inside,
+   over the map and under the head's list of names found. */
+.mapw .surface.ringed {
+	box-shadow: none;
+}
+
+.mapw .surface.ringed::after {
+	content: '';
+	position: absolute;
+	inset: 0;
+	z-index: 1;
+	pointer-events: none;
+	box-shadow:
+		inset 0 0 0 2px rgb(255 255 255 / 0.95),
+		inset 0 0 0 7px rgb(255 255 255 / 0.16);
+}
+
+.status .lesson {
+	color: var(--fg);
+}
+
+/* A tutorial's recap has more to say than a round's score. */
+.rpanel:has(.lesson) {
+	width: min(360px, calc(100% - 32px));
+}
+
+.lesson {
+	display: flex;
+	flex-direction: column;
+	gap: 14px;
+}
+
+/* The three parts a round is scored in, which the tutorial spells out. */
+.split {
+	display: grid;
+	grid-template-columns: 52px 1fr auto;
+	align-items: center;
+	gap: 7px 10px;
+}
+
+.split .k {
+	font-family: var(--font-mono);
+	font-size: 11px;
+	color: var(--dim);
+}
+
+.split .meter {
+	height: 4px;
+	border-radius: 2px;
+	background: rgb(255 255 255 / 0.12);
+	overflow: hidden;
+}
+
+.split .meter i {
+	display: block;
+	height: 100%;
+	background: var(--good);
+}
+
+.split .v {
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 11.5px;
+	color: var(--mut);
+	text-align: right;
+}
+
+.split .v b {
+	color: var(--fg);
+	font-weight: 500;
+}
+
+.why {
+	display: flex;
+	flex-direction: column;
+	gap: 8px;
+	padding-top: 12px;
+	border-top: 1px solid var(--gborder);
+}
+
+.why p {
+	margin: 0;
+	font-size: 13px;
+	line-height: 1.55;
+	color: var(--mut);
+	text-wrap: pretty;
+}
+
+.why a {
+	color: var(--fg);
+	text-decoration: underline;
+	text-decoration-color: var(--gborder);
+	text-underline-offset: 3px;
+}
+
+.why a:hover {
+	text-decoration-color: currentColor;
+}
+
 /* --- small screens ------------------------------------------------------- */
 
 /* Two columns need the room: under it the side column goes below. */
@@ -1923,11 +2196,36 @@ button.rk {
 		left: 0;
 		bottom: calc(100% + 8px);
 	}
+
+	.mapw > .tip {
+		right: 0;
+		bottom: calc(100% + 14px);
+	}
+
+	.mapw > .tip::after {
+		right: 28px;
+		bottom: -6px;
+		transform: rotate(135deg);
+	}
 }
 
 /* On a phone the closed map is a peek at where you are, not a workspace: it
    gives the panorama its screen back until it is tapped. */
 @media (max-width: 620px) {
+	/* Over the closed panel's peek, a tip about the switch would run off the
+	   screen: it takes the peek's right edge, and points back at the switch. */
+	.mapw:not(.wide) .tools {
+		right: 0;
+	}
+
+	.mapw:not(.wide) .tools > .tip {
+		align-self: flex-end;
+	}
+
+	.mapw:not(.wide) .tools > .tip::after {
+		left: calc(100% - 212px + 28px);
+	}
+
 	/* A recap's slider runs the width of the line the links go up to. */
 	#root:has(.zoomer) .legal {
 		display: none;

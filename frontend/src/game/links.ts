@@ -8,7 +8,7 @@ import { bodyOf, viewDistance } from './bodies';
 import type { OrbitRound, Place, Round } from './rounds';
 import { AU_KM } from './rules';
 
-const SITE = 'https://spacemap.co';
+export const SITE = 'https://spacemap.co';
 
 export const REPO = 'https://github.com/julie-dujardin/spaceguesser';
 

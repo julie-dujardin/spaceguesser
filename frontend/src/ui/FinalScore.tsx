@@ -27,6 +27,10 @@ interface Props {
 	past?: PastRun;
 	/** Absent for a player who is not the one starting the next game. */
 	onAgain?: () => void;
+	/** The tutorial, which leads on to a quick play rather than to itself. */
+	tutorial?: boolean;
+	/** Over the buttons: what the first of them leads to. */
+	ahead?: ReactNode;
 	onHome: () => void;
 	/** Goes under the total: the standings, in a game that has them. */
 	children?: ReactNode;
@@ -41,6 +45,8 @@ export function FinalScore({
 	shared,
 	past,
 	onAgain,
+	tutorial,
+	ahead,
 	onHome,
 	children
 }: Props) {
@@ -93,7 +99,11 @@ export function FinalScore({
 			{recap.length > 0 && <Recap space={space} rounds={recap} focus={focus} />}
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">{shared ? m.shared_run() : (then ?? m.run_complete())}</span>
+					<span className="hd">
+						{shared
+							? m.shared_run()
+							: (then ?? (tutorial ? m.tutorial_complete() : m.run_complete()))}
+					</span>
 					<div className="score">
 						<b>{formatNumber(total)}</b>
 						<span className="mono mut" style={{ fontSize: 12 }}>
@@ -143,6 +153,7 @@ export function FinalScore({
 						</div>
 					))}
 				</div>
+				{ahead}
 				<div className="acts">
 					{onAgain && (
 						<button
@@ -152,7 +163,7 @@ export function FinalScore({
 							style={{ flex: share ? '1 0 100%' : 1 }}
 							onClick={onAgain}
 						>
-							{m.play_again()}
+							{tutorial ? m.quick_play() : m.play_again()}
 						</button>
 					)}
 					{share && (

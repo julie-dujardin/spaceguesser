@@ -4,7 +4,14 @@
  * the body's own map where it has one.
  */
 
-import { useContext, useEffect, useRef, useState, type ReactNode } from 'react';
+import {
+	useContext,
+	useEffect,
+	useRef,
+	useState,
+	type ReactNode,
+	type SyntheticEvent
+} from 'react';
 import {
 	createSystemMap,
 	type FlatMarker,
@@ -17,6 +24,7 @@ import { bodyName, bodyOf } from '../game/bodies';
 import { HOST } from '../game/host';
 import { PICKER, ROOT, intoSystem, levelTitle, search, trailTo, type Level } from '../game/picker';
 import type { Guess } from '../game/scoring';
+import type { Highlight } from '../game/tutorial';
 import * as m from '../paraglide/messages.js';
 import { ToolSlot } from './tools';
 import { pin, useFlatMap } from './useFlatMap';
@@ -35,6 +43,12 @@ interface Props {
 	waiting?: string;
 	/** Stands where the Guess button was while waiting. */
 	action?: ReactNode;
+	/** The part a tip is about, ringed. */
+	highlight?: Highlight | null;
+	/** A tip about the panel, beside it. */
+	tip?: ReactNode;
+	/** A tip about the view's own controls, over them. */
+	toolsTip?: ReactNode;
 }
 
 type MapLevel = Exclude<Level, { kind: 'body' }>;
@@ -284,7 +298,10 @@ export function GuessPanel({
 	onPick,
 	onGuess,
 	waiting,
-	action
+	action,
+	highlight,
+	tip,
+	toolsTip
 }: Props) {
 	const [trail, setTrail] = useState<Level[]>(ROOT);
 	const [query, setQuery] = useState('');
@@ -295,6 +312,9 @@ export function GuessPanel({
 	const { setSlot } = useContext(ToolSlot);
 	const level = trail[trail.length - 1];
 	const locked = waiting !== undefined;
+	const ring = (part: Highlight) => (highlight === part ? ' ringed' : '');
+	// The tip only hangs off the panel: reaching for it is not turning to it.
+	const turned = (event: SyntheticEvent) => !(event.target as Element).closest('.tip');
 	/** Whether the panel was already open when the gesture began: the tap that
 	 *  opens it also lands as a click, on a box that has grown since, and a
 	 *  pick from it would be nowhere the reader aimed. A key is pressed on what
@@ -335,16 +355,21 @@ export function GuessPanel({
 
 	return (
 		<div
-			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}`}
-			onPointerEnter={onOpen}
-			onPointerDown={() => {
+			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}${ring('panel')}`}
+			onPointerEnter={(event) => turned(event) && onOpen()}
+			onPointerDown={(event) => {
+				if (!turned(event)) return;
 				taking.current = wide;
 				onOpen();
 			}}
 			onKeyDownCapture={() => (taking.current = true)}
-			onFocusCapture={onOpen}
+			onFocusCapture={(event) => turned(event) && onOpen()}
 		>
-			<div className="tools" ref={setSlot} />
+			<div className={`tools${ring('tools')}`}>
+				<div ref={setSlot} />
+				{toolsTip}
+			</div>
+			{tip}
 			<div className="head">
 				{trail.length > 1 && (
 					<button
@@ -385,7 +410,7 @@ export function GuessPanel({
 					)}
 				</div>
 			</div>
-			<div className="surface">
+			<div className={`surface${ring('surface')}`}>
 				{level.kind !== 'body' ? (
 					<Chart level={level} onSelect={select} />
 				) : info?.surface ? (
@@ -404,7 +429,7 @@ export function GuessPanel({
 				{waiting === undefined ? (
 					<button
 						type="button"
-						className="btn"
+						className={`btn${ring('guess')}`}
 						style={{ width: 120 }}
 						disabled={!placed || !complete}
 						onClick={onGuess}

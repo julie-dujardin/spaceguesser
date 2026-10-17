@@ -21,9 +21,21 @@ import { INITIAL, play, reduce } from './game/run';
 import { measure } from './game/measure';
 import type { Guess } from './game/scoring';
 import { openShared, sharePath, sharedCode } from './game/share';
+import {
+	TUTORIAL,
+	UNSEEN,
+	backward,
+	countdown,
+	nextEnd,
+	onward,
+	shownTip,
+	tutorialRun,
+	type Lesson
+} from './game/tutorial';
 import { MULTIPLAYER, useLobby } from './game/useLobby';
 import * as m from './paraglide/messages.js';
 import { CustomSetup } from './ui/CustomSetup';
+import { Explanation, Onward } from './ui/Explanation';
 import { FinalScore } from './ui/FinalScore';
 import { Friends } from './ui/Friends';
 import { GuessPanel } from './ui/GuessPanel';
@@ -36,6 +48,7 @@ import { Panorama } from './ui/Panorama';
 import { Party } from './ui/Party';
 import { ProfileSetup } from './ui/ProfileSetup';
 import { RoundResult } from './ui/RoundResult';
+import { TipCard } from './ui/Tip';
 import { useSpace } from './ui/useSpace';
 
 /** Earth has panoramas of its own in the export, and is not in play. */
@@ -53,6 +66,9 @@ type Door =
 	/** Changing the face, from the history. */
 	| { at: 'face' }
 	| null;
+
+/** A round of the tutorial before the reader has done anything in it. */
+const FRESH = { dragged: null as number | null, opened: null as number | null, ...UNSEEN };
 
 /** Read once: the page is opened on an invite or it is not. */
 const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
@@ -104,6 +120,14 @@ export default function App() {
 	 *  gives it back when they turn to the view again. */
 	const [mapOpen, setMapOpen] = useState(false);
 	const [heading, setHeading] = useState(0);
+	/** The tutorial as it was drawn: its rounds, and a lesson for each. */
+	const [taught, setTaught] = useState<{ rounds: Round[]; lessons: Lesson[] } | null>(null);
+	/** What the reader has done in the round, which moves the tips on. */
+	const [progress, setProgress] = useState(FRESH);
+	/** What the tips' waits are read against, moved on as each runs out. */
+	const [now, setNow] = useState(Date.now);
+	/** No more tips this run. */
+	const [tipsOff, setTipsOff] = useState(false);
 	const [left, setLeft] = useState<number | null>(null);
 	// Read when a guess lands, so committing does not depend on the tick.
 	const remaining = useRef<number | null>(null);
@@ -177,6 +201,7 @@ export default function App() {
 			if (!stops || !opener) return;
 			setGuess(null);
 			setMapOpen(false);
+			setProgress(FRESH);
 			const modes = modesFor(settings.modes);
 			// The opener is the first round only when the run plays its kind. Its
 			// date is the run's either way: that sky is the one already read.
@@ -197,14 +222,26 @@ export default function App() {
 		[stops, opener, modesFor]
 	);
 
+	// The opener stays for the run after it: the tutorial's places are its own.
+	const startTutorial = useCallback(() => {
+		if (!stops) return;
+		const drawn = tutorialRun(stops, canOrbit);
+		setGuess(null);
+		setMapOpen(false);
+		setProgress(FRESH);
+		setTipsOff(false);
+		setTaught(drawn);
+		dispatch({ kind: 'start', settings: TUTORIAL, drawn: drawn.rounds, tutorial: true });
+	}, [stops, canOrbit]);
+
 	const { lobby } = party;
 
 	// A run played here to its end goes in the history: not one come for from a
 	// link, nor one the history is showing again.
 	useEffect(() => {
 		if (run.phase !== 'final' || run.shared || run.past) return;
-		setKept(keepRun(pastRun(run.played, run.settings)));
-	}, [run.phase, run.shared, run.past, run.played, run.settings]);
+		setKept(keepRun(pastRun(run.played, run.settings, run.tutorial ? { tutorial: true } : {})));
+	}, [run.phase, run.shared, run.past, run.played, run.settings, run.tutorial]);
 	// And so does a game with friends, once: each snapshot of its final screen
 	// is a new lobby.
 	const finished = lobby?.phase === 'final';
@@ -321,8 +358,48 @@ export default function App() {
 	const next = useCallback(() => {
 		setGuess(null);
 		setMapOpen(false);
+		setProgress(FRESH);
 		dispatch({ kind: 'next' });
 	}, []);
+
+	const engage = useCallback(() => {
+		setMapOpen(false);
+		setProgress((done) => (done.dragged !== null ? done : { ...done, dragged: Date.now() }));
+	}, []);
+	useEffect(() => {
+		if (!mapOpen) return;
+		setProgress((done) => (done.opened !== null ? done : { ...done, opened: Date.now() }));
+	}, [mapOpen]);
+
+	/** A tutorial round's lesson. A round the map could not reach was swapped
+	 *  for another, which has none. */
+	const lessonOf = (index: number): Lesson | null =>
+		run.tutorial && taught?.rounds[index] === run.drawn[index]
+			? (taught.lessons[index] ?? null)
+			: null;
+	const lesson = !lobby && run.phase === 'playing' ? lessonOf(run.round) : null;
+	const recapped = !lobby && run.phase === 'result' ? lessonOf(run.round) : null;
+	const tips = lesson && !tipsOff ? lesson.tips : [];
+	const known = { ...progress, picked: guess?.body ?? null, placed: !!guess?.at, now };
+	const wake = nextEnd(tips, known);
+	useEffect(() => {
+		if (wake === null) return;
+		const timer = setTimeout(() => setNow(Date.now()), wake - Date.now());
+		return () => clearTimeout(timer);
+	}, [wake]);
+	const tipAt = shownTip(tips, known, progress);
+	const tip = tips[tipAt] ?? null;
+	const tipCard = tip && (
+		<TipCard
+			tip={tip}
+			index={tipAt}
+			count={tips.length}
+			countdown={countdown(tips, tipAt, known)}
+			onDone={() => setProgress((done) => ({ ...done, ...onward(tips, known, done) }))}
+			onBack={() => setProgress((done) => ({ ...done, ...backward(tips, known, done) }))}
+			onHide={() => setTipsOff(true)}
+		/>
+	);
 
 	// A seat taken ends whatever else was on screen, and the address becomes the
 	// invite, so the bar can be copied as one and a reload lands back here.
@@ -393,7 +470,7 @@ export default function App() {
 						if (!lobby) dispatch({ kind: 'stand', entry: placed });
 					}}
 					onHeading={setHeading}
-					onEngage={() => setMapOpen(false)}
+					onEngage={engage}
 					dimmed={dimmed}
 				/>
 			)}
@@ -407,7 +484,7 @@ export default function App() {
 					onPlace={setOver}
 					onLost={redraw}
 					onHeading={setHeading}
-					onEngage={() => setMapOpen(false)}
+					onEngage={engage}
 					dimmed={dimmed}
 				/>
 			)}
@@ -521,6 +598,8 @@ export default function App() {
 						altitude={altitudeKm(round)}
 						left={left}
 						onQuit={() => dispatch({ kind: 'home' })}
+						tutorial={run.tutorial}
+						tip={tip?.at === 'view' ? tipCard : undefined}
 					/>
 					<GuessPanel
 						key={run.round}
@@ -532,6 +611,9 @@ export default function App() {
 						onGuess={() => void commit(guess, false)}
 						placed={!!truth}
 						waiting={measuring ? m.measuring() : undefined}
+						highlight={tip?.ring?.(known)}
+						tip={tip?.at === 'panel' ? tipCard : undefined}
+						toolsTip={tip?.at === 'tools' ? tipCard : undefined}
 					/>
 				</div>
 			)}
@@ -540,6 +622,7 @@ export default function App() {
 				<Home
 					ready={ready && !!opener}
 					onQuickPlay={() => start(QUICK_PLAY)}
+					onTutorial={startTutorial}
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
 					runs={kept.length}
@@ -578,7 +661,9 @@ export default function App() {
 					round={run.round + 1}
 					rounds={run.drawn.length}
 					onNext={next}
-				/>
+				>
+					{recapped && <Explanation score={last.score} lines={recapped.recap} />}
+				</RoundResult>
 			)}
 
 			{solo && run.phase === 'final' && (
@@ -588,7 +673,9 @@ export default function App() {
 					share={share ?? undefined}
 					shared={run.shared}
 					past={run.past ?? undefined}
-					onAgain={run.shared ? undefined : () => start(run.settings)}
+					onAgain={run.shared ? undefined : () => start(run.tutorial ? QUICK_PLAY : run.settings)}
+					tutorial={run.tutorial}
+					ahead={run.tutorial && !run.past && <Onward panoramas={stops?.length ?? 0} />}
 					onHome={() => {
 						// A run come for from the history goes back to it.
 						if (run.past) enter({ at: 'history' });
