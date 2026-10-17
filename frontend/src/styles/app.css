@@ -665,6 +665,41 @@ button {
 	color: var(--on-light);
 }
 
+/* Rows that would land on one another, shown together in one box over the
+   map instead. The layer is the board's, under the panel. */
+.crowds {
+	position: absolute;
+	inset: 0;
+	overflow: hidden;
+	pointer-events: none;
+}
+
+.pins.merged {
+	visibility: hidden;
+}
+
+.crowd {
+	position: absolute;
+	left: 0;
+	top: 0;
+	display: grid;
+	grid-template-columns: repeat(var(--across), auto);
+	gap: 7px;
+	padding: 8px;
+	border-radius: 14px;
+	background: var(--glass);
+	border: 1px solid var(--gborder);
+}
+
+.crowd-leader {
+	position: absolute;
+	left: 0;
+	top: 0;
+	height: 1px;
+	background: rgb(255 255 255 / 0.5);
+	transform-origin: 0 50%;
+}
+
 /* --- overlays ------------------------------------------------------------ */
 
 /* Only a place to put the card: the dimming is the stage's, so that the map's

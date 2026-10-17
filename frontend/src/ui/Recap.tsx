@@ -15,6 +15,7 @@ import { AU_KM } from '../game/rules';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
+import { declutter } from './crowds';
 import { Legal } from './Legal';
 import { ResultMap, type Placement } from './ResultMap';
 import { MISS, OTHER_MISS, OWN_MISS, face, pin, pins } from './useFlatMap';
@@ -99,6 +100,8 @@ export function Recap({ space, rounds, focus }: Props) {
 	const flying = useRef<number | null>(null);
 	/** Where a nudge is headed, so that clicks in quick succession add up. */
 	const heading = useRef<number | null>(null);
+	/** Over the map: the boxes the whole run's crowded pins go into. */
+	const crowded = useRef<HTMLDivElement>(null);
 	// A lobby hands the same rounds over as new objects on every snapshot.
 	const key = JSON.stringify(rounds);
 	const shown = useRef(rounds);
@@ -261,7 +264,12 @@ export function Recap({ space, rounds, focus }: Props) {
 					const [from, to] = [systemOf(truth.body), systemOf(own.body)];
 					if (from !== to) join({ body: from }, { body: to });
 				});
-				for (const [system, row] of rows) mark(system, null, pins(row, true), true);
+				const heaps = [...rows].map(([system, row]) => {
+					const element = pins(row, true);
+					mark(system, null, element, true);
+					return element;
+				});
+				if (crowded.current) drawn.push({ remove: declutter(heaps, crowded.current) });
 				const fit = Math.min(RUN_FAR_KM, Math.max(RUN_NEAR_KM, reach * HOLD));
 				next = {
 					body: SUN,
@@ -345,6 +353,7 @@ export function Recap({ space, rounds, focus }: Props) {
 
 	return (
 		<>
+			<div className="crowds" ref={crowded} />
 			{one && mapped && (
 				<div
 					className="recap-flat"
