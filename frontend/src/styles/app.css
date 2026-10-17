@@ -496,7 +496,8 @@ button {
 /* A level's map with the same targets under it by name. The diagram is three
    times as wide as it is tall, so the names get whatever height is left. */
 .chart {
-	height: 100%;
+	position: absolute;
+	inset: 0;
 	display: flex;
 	flex-direction: column;
 	--sm-system-map-background: transparent;
@@ -567,6 +568,13 @@ button {
 
 .mapw.max .surface {
 	height: var(--tall);
+}
+
+/* With no map, there is no place to type: the surface takes the row of
+   numbers' height, so the panel's top, and the way back, stay put. */
+.mapw.placeless .surface {
+	box-sizing: content-box;
+	padding-bottom: 36px;
 }
 
 .mapw .foot {
@@ -2276,6 +2284,10 @@ button.rk {
 	.mapw:not(.wide) .find,
 	.mapw:not(.wide) .at {
 		display: none;
+	}
+
+	.mapw.placeless:not(.wide) .surface {
+		padding-bottom: 0;
 	}
 
 	.mapw.wide {

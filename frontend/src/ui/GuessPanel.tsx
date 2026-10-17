@@ -332,7 +332,7 @@ export function GuessPanel({
 
 	return (
 		<div
-			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}${ring('panel')}`}
+			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}${info?.surface ? '' : ' placeless'}${ring('panel')}`}
 			onPointerEnter={(event) => turned(event) && onOpen()}
 			onPointerDown={(event) => {
 				if (!turned(event)) return;
@@ -399,7 +399,7 @@ export function GuessPanel({
 				)}
 			</div>
 			<div className="foot">
-				<Coordinates key={body} at={at} disabled={locked || !info?.surface} onPick={place} />
+				{info?.surface && <Coordinates key={body} at={at} disabled={locked} onPick={place} />}
 				<span className="mono mut" style={{ flex: 1, fontSize: '11.5px' }}>
 					{waiting ?? hint}
 				</span>
