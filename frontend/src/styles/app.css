@@ -2305,11 +2305,25 @@ button.rk {
 		width: calc(100% - 32px);
 	}
 
-	/* The panel leaves no room beside it here: they ride on top of it. */
+	/* The panel leaves no room beside it here: they ride on top of it, at the
+	   end that stays put as it opens. */
 	.tools {
 		position: absolute;
-		left: 0;
+		left: auto;
+		right: 0;
 		bottom: calc(100% + 8px);
+		align-items: flex-end;
+	}
+
+	.tools > .tip::after {
+		left: auto;
+		right: 28px;
+	}
+
+	/* A row, so the way back shows up beside the switch without moving it. */
+	.hands {
+		flex-direction: row;
+		align-items: center;
 	}
 
 	.mapw > .tip {
@@ -2327,20 +2341,6 @@ button.rk {
 /* On a phone the closed map is a peek at where you are, not a workspace: it
    gives the panorama its screen back until it is tapped. */
 @media (max-width: 620px) {
-	/* Over the closed panel's peek, a tip about the switch would run off the
-	   screen: it takes the peek's right edge, and points back at the switch. */
-	.mapw:not(.wide) .tools {
-		right: 0;
-	}
-
-	.mapw:not(.wide) .tools > .tip {
-		align-self: flex-end;
-	}
-
-	.mapw:not(.wide) .tools > .tip::after {
-		left: calc(100% - 212px + 28px);
-	}
-
 	/* A recap's slider runs the width of the line the links go up to. */
 	#root:has(.zoomer) .legal {
 		display: none;
