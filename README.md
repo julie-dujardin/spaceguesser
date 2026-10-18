@@ -126,6 +126,10 @@ wherever the player walked to; a multiplayer guess is scored against where the
 round opened, so that everyone is ranked on one question and the recap has one
 place to show. A round from orbit is the same question for everyone already.
 
+The host can observe instead, picked in the lobby: they see each round, and
+everyone's guesses once it closes, without playing or being on the scoreboard.
+Nobody else can, and a game with nobody playing it does not start.
+
 The link goes on working while a game is played: someone late takes a seat at
 the round it is on, with nothing for the rounds gone by, and everyone seated
 stays on the scoreboard to the end, whatever they answered. Someone who comes

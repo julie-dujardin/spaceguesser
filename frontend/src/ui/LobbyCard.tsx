@@ -5,6 +5,7 @@ import { profileOf } from '../game/players';
 import { describeRun } from '../game/rules';
 import * as m from '../paraglide/messages.js';
 import { Avatar } from './Avatar';
+import { Seg } from './CustomSetup';
 import { Qr } from './Qr';
 
 interface Props {
@@ -14,14 +15,19 @@ interface Props {
 	ready: boolean;
 	onStart: () => void;
 	onEdit: () => void;
+	/** The host's own seat: playing the game, or watching it. */
+	onObserve: (observing: boolean) => void;
 	onLeave: () => void;
 }
 
-export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props) {
+export function LobbyCard({ lobby, you, ready, onStart, onEdit, onObserve, onLeave }: Props) {
 	const [copied, setCopied] = useState(false);
 	const url = location.origin + invitePath(lobby.code);
 	const hosting = lobby.host === you;
 	const host = lobby.players.find((seat) => seat.id === lobby.host);
+	const observing = !!host?.observing;
+	// A game nobody plays has nothing to watch: its rounds would close as they open.
+	const anyPlayer = lobby.players.some((seat) => !seat.observing);
 
 	const copy = () => {
 		void navigator.clipboard?.writeText(url).then(() => {
@@ -69,9 +75,28 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 							)}
 						</div>
 					</div>
+					{hosting && (
+						<div className="field">
+							<span className="hd">{m.seat_part()}</span>
+							<Seg
+								value={observing}
+								onChange={(next) => next !== observing && onObserve(next)}
+								options={[
+									{ value: false, label: m.seat_play() },
+									{ value: true, label: m.seat_observe() }
+								]}
+							/>
+							{observing && !anyPlayer && <span className="note">{m.observe_nobody()}</span>}
+						</div>
+					)}
 					<div className="acts">
 						{hosting ? (
-							<button type="button" className="btn lg" disabled={!ready} onClick={onStart}>
+							<button
+								type="button"
+								className="btn lg"
+								disabled={!ready || !anyPlayer}
+								onClick={onStart}
+							>
 								{!ready && <LoaderCircle className="spin" size="1em" />}
 								{m.start_run()}
 							</button>
@@ -97,7 +122,8 @@ export function LobbyCard({ lobby, you, ready, onStart, onEdit, onLeave }: Props
 								<span className="tag">
 									{[
 										seat.id === you && m.tag_you(),
-										seat.id === lobby.host && m.tag_host(),
+										// Only the host observes, so saying so says who hosts.
+										seat.id === lobby.host && (seat.observing ? m.tag_observing() : m.tag_host()),
 										!seat.connected && m.tag_away()
 									]
 										.filter(Boolean)

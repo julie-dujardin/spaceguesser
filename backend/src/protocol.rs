@@ -50,6 +50,9 @@ pub enum ClientMsg {
 	Settings {
 		settings: Value,
 	},
+	Observe {
+		observing: bool,
+	},
 	Start {
 		settings: Value,
 		rounds: Vec<Value>,

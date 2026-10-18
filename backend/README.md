@@ -46,6 +46,7 @@ Then, in the lobby:
 | message | who | |
 | --- | --- | --- |
 | `settings {settings}` | host | shows the others the mode being picked |
+| `observe {observing}` | host | before the first game: the host watches the games rather than playing them |
 | `start {settings, rounds}` | host | `rounds` is one JSON value per round; `settings.timer` is seconds per round, 0 for none |
 | `ready {round}` | anyone | the round is on screen, which a timed round's clock waits for |
 | `guess {round, result}` | anyone | once per round |
@@ -72,7 +73,7 @@ The server sends four things:
     "code": "QBJMQ2",
     "phase": "lobby | playing | result | final",
     "host": "<player id>",
-    "players": [{ "id": "…", "name": "…", "connected": true }],
+    "players": [{ "id": "…", "name": "…", "connected": true, "observing": false }],
     "settings": {},
     "round": { "index": 0, "total": 5, "entry": {}, "ends_at": null, "guessed": ["<player id>"] },
     "finished": 0
@@ -138,6 +139,9 @@ other close, 1000 included, is one to `rejoin` after.
   up that long at most.
 - A round closes when everyone has guessed, when its timer runs out (plus two
   seconds for a last guess in flight), or when the host closes it.
+- A host who observes is not waited on, for their screen or their guess, and
+  their guess is refused, `bad_request`. One who hands the hosting on during a
+  game sat that one out, and plays the next.
 - A dropped socket keeps its seat, and for 20 seconds its round waits for it
   and its hosting stays with it. After that the round closes without it and
   the next player in hosts. A restart starts that clock afresh for everyone.

@@ -105,7 +105,12 @@
 	"tag_you": "you",
 	"tag_host": "host",
 	"tag_away": "away",
+	"tag_observing": "observing",
 	"host_starts": "host starts the game",
+	"seat_part": "you",
+	"seat_play": "Play",
+	"seat_observe": "Observe",
+	"observe_nobody": "nobody is playing yet: share the link",
 	"hud_round": "round {round} / {rounds}",
 	"hud_date_title": "the date of this round",
 	"hud_altitude": "altitude {altitude}",
@@ -162,6 +167,17 @@
 		}
 	],
 	"end_round": "End round",
+	"observing": "observing",
+	"observing_waiting": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "observing · waiting for {count} guess",
+				"countPlural=other": "observing · waiting for {count} guesses"
+			}
+		}
+	],
 	"actual_location": "actual location",
 	"show_in_spacemap": "show in spacemap",
 	"recap_gave_away": "what gave it away",

@@ -70,7 +70,7 @@ function told(finished: number): ToldLobby {
 		code: 'ABCDEF',
 		phase: 'final',
 		host: 'ann',
-		players: ['ann', 'bob'].map((id) => ({ id, name: id, connected: true })),
+		players: ['ann', 'bob'].map((id) => ({ id, name: id, connected: true, observing: false })),
 		settings: {},
 		round: null,
 		finished
@@ -125,6 +125,14 @@ describe('lobbyOf', () => {
 			]);
 			expect(playedBy(read, 'bob')).toHaveLength(1);
 		}
+	});
+});
+
+describe('standings', () => {
+	it('leaves out the host observing', () => {
+		const read = lobby([{ bob: ON_MARS }]);
+		read.players[0].observing = true;
+		expect(standings(read).map(({ seat }) => seat.id)).toEqual(['bob']);
 	});
 });
 

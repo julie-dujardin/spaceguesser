@@ -24,6 +24,8 @@ interface Props {
 	/** Multiplayer: the face on the reader's guess, and the other guesses. */
 	avatar?: Profile;
 	others?: { guess: Guess; avatar: Profile }[];
+	/** Multiplayer: the reader watched the round, and has no score in it. */
+	observing?: boolean;
 	/** Goes under the score: the standings, in a game that has them. */
 	children?: ReactNode;
 }
@@ -86,6 +88,7 @@ export function RoundResult({
 	onQuit,
 	avatar,
 	others,
+	observing,
 	children
 }: Props) {
 	const { truth, guess, score, secondsLeft, timedOut } = played;
@@ -129,13 +132,15 @@ export function RoundResult({
 						{m.show_in_spacemap()}
 					</a>
 				</div>
-				<div className="score">
-					<b>+{formatNumber(score.points)}</b>
-					<span className="mono mut" style={{ fontSize: 13 }}>
-						{said}
-						{left && (said ? ` · ${left}` : left)}
-					</span>
-				</div>
+				{!observing && (
+					<div className="score">
+						<b>+{formatNumber(score.points)}</b>
+						<span className="mono mut" style={{ fontSize: 13 }}>
+							{said}
+							{left && (said ? ` · ${left}` : left)}
+						</span>
+					</div>
+				)}
 				{timedOut && <span className="note">{guess ? m.timed_out_stood() : m.timed_out()}</span>}
 				{children}
 				<span className="note">

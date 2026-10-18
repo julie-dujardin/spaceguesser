@@ -374,6 +374,29 @@ button {
 
 /* --- the guess panel ----------------------------------------------------- */
 
+/* What the host observing has in the panel's place. The glass is on the bar
+   alone: a backdrop filter around the view's controls would pin them to it. */
+.watching {
+	position: absolute;
+	right: 16px;
+	bottom: 46px;
+	max-width: calc(100% - 32px);
+}
+
+.watching > .glass {
+	display: flex;
+	align-items: center;
+	gap: 14px;
+	min-height: 52px;
+	padding: 10px 10px 10px 16px;
+	font-size: 12.5px;
+}
+
+.watching .btn {
+	flex: none;
+	white-space: nowrap;
+}
+
 .mapw {
 	position: absolute;
 	right: 16px;

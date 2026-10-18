@@ -105,7 +105,12 @@
 	"tag_you": "vous",
 	"tag_host": "hôte",
 	"tag_away": "absent",
+	"tag_observing": "observe",
 	"host_starts": "l'hôte lance la partie",
+	"seat_part": "vous",
+	"seat_play": "Jouer",
+	"seat_observe": "Observer",
+	"observe_nobody": "personne ne joue encore : partagez le lien",
 	"hud_round": "manche {round} / {rounds}",
 	"hud_date_title": "la date de cette manche",
 	"hud_altitude": "altitude {altitude}",
@@ -172,6 +177,17 @@
 		}
 	],
 	"end_round": "Terminer la manche",
+	"observing": "vous observez",
+	"observing_waiting": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "vous observez · en attente d'une réponse",
+				"countPlural=other": "vous observez · en attente de {count} réponses"
+			}
+		}
+	],
 	"actual_location": "position réelle",
 	"show_in_spacemap": "voir dans spacemap",
 	"recap_gave_away": "ce qui l'a trahi",

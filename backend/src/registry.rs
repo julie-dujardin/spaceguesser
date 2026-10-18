@@ -225,6 +225,7 @@ fn handle(lobby: &mut Lobby, conns: &mut HashMap<String, Conn>, owed: &mut Owed,
 			};
 			let done = match msg {
 				ClientMsg::Settings { settings } => lobby.set_settings(&player, settings),
+				ClientMsg::Observe { observing } => lobby.observe(&player, observing),
 				ClientMsg::Start { settings, rounds } => lobby.start(&player, settings, rounds, now).map(|rounds| {
 					// The store drops the last game's guesses with this, taken or not.
 					*owed = Owed {

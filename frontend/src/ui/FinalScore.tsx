@@ -20,6 +20,8 @@ interface Props {
 	others?: (round: number) => RecapGuess[];
 	/** The face on the reader's own guesses. */
 	avatar?: RecapGuess['avatar'];
+	/** Multiplayer: the reader watched the game, and has no score in it. */
+	observing?: boolean;
 	/** The path of the link to this run, where it has one to hand out. */
 	share?: string;
 	/** Someone's run, looked at from its link. */
@@ -42,6 +44,7 @@ export function FinalScore({
 	played,
 	others,
 	avatar,
+	observing,
 	share,
 	shared,
 	past,
@@ -105,12 +108,14 @@ export function FinalScore({
 							? m.shared_run()
 							: (then ?? (tutorial ? m.tutorial_complete() : m.run_complete()))}
 					</span>
-					<div className="score">
-						<b>{formatNumber(total)}</b>
-						<span className="mono mut" style={{ fontSize: 13 }}>
-							{m.of_points({ best: formatNumber(best) })}
-						</span>
-					</div>
+					{!observing && (
+						<div className="score">
+							<b>{formatNumber(total)}</b>
+							<span className="mono mut" style={{ fontSize: 13 }}>
+								{m.of_points({ best: formatNumber(best) })}
+							</span>
+						</div>
+					)}
 				</div>
 				{children}
 				<div className="rounds">
@@ -139,7 +144,7 @@ export function FinalScore({
 									{m.time_left({ time: formatClock(round.secondsLeft) })}
 								</span>
 							)}
-							<span className="gain">{formatNumber(round.score.points)}</span>
+							{!observing && <span className="gain">{formatNumber(round.score.points)}</span>}
 							<a
 								className="go"
 								href={roundUrl(round.round, round.truth)}
@@ -151,7 +156,7 @@ export function FinalScore({
 							>
 								<ExternalLink size={12} />
 							</a>
-							<Guessed round={round} />
+							{!observing && <Guessed round={round} />}
 						</div>
 					))}
 				</div>

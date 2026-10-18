@@ -21,6 +21,8 @@ export interface Seat {
 	id: string;
 	name: string;
 	connected: boolean;
+	/** The host watching the game rather than playing it. */
+	observing: boolean;
 }
 
 export interface LobbyRound {
@@ -80,6 +82,7 @@ export type ClientMessage =
 	| { type: 'join'; code: string; name: string; identity: string; proof?: string }
 	| { type: 'rejoin'; code: string; token: string }
 	| { type: 'settings'; settings: RunSettings }
+	| { type: 'observe'; observing: boolean }
 	| { type: 'start'; settings: RunSettings; rounds: Round[] }
 	// These name the round they mean, so a second click or a late guess moves
 	// nothing.
@@ -227,10 +230,11 @@ export interface Standing {
 	last: Played | undefined;
 }
 
-/** Everyone seated, best total first. */
+/** Everyone seated to play, best total first. */
 export function standings(lobby: Lobby): Standing[] {
 	const latest = lobby.history[lobby.history.length - 1];
 	return lobby.players
+		.filter((seat) => !seat.observing)
 		.map((seat) => ({
 			seat,
 			profile: profileOf(seat.name),

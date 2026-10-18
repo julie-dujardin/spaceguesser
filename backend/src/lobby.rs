@@ -125,6 +125,9 @@ struct Player {
 	in_game: bool,
 	/// Left the game it was in, until its player's return.
 	left: bool,
+	/// The host watching the game rather than playing it: no round waits on
+	/// their guess or their screen.
+	observing: bool,
 	#[serde(skip)]
 	connected: bool,
 	/// Unset on a seat read back from the store, which the next tick starts
@@ -194,6 +197,7 @@ struct PlayerView<'a> {
 	id: &'a str,
 	name: &'a str,
 	connected: bool,
+	observing: bool,
 }
 
 #[derive(Serialize)]
@@ -252,6 +256,7 @@ fn seat(name: &str, identity: &str) -> Result<Player, Error> {
 		name: clean_name(name)?,
 		in_game: false,
 		left: false,
+		observing: false,
 		connected: false,
 		gone_since: None,
 	})
@@ -359,6 +364,19 @@ impl Lobby {
 		Ok(())
 	}
 
+	/// The host sitting the games out to watch them, or playing them again.
+	/// Picked before the first: from then on it holds who is on the scoreboard.
+	pub fn observe(&mut self, by: &str, observing: bool) -> Result<(), Error> {
+		self.host_only(by)?;
+		if self.phase != Phase::Lobby {
+			return Err(Error::BadPhase);
+		}
+		if let Some(host) = self.players.iter_mut().find(|p| p.id == by) {
+			host.observing = observing;
+		}
+		Ok(())
+	}
+
 	/// Begins a game with whoever is here: seats left or long gone are cleared.
 	/// Returns its rounds, for the store.
 	pub fn start(
@@ -377,6 +395,9 @@ impl Lobby {
 		self.players.retain(|p| p.awaited(now));
 		for player in &mut self.players {
 			player.in_game = true;
+			// Only the host observes: one who handed the hosting on during the
+			// last game sat that one out, and plays this one.
+			player.observing &= player.id == self.host;
 		}
 		self.total = rounds.len();
 		self.begin_round(0);
@@ -385,7 +406,7 @@ impl Lobby {
 	}
 
 	/// `by` has round `round` on screen. True when that started its clock: a
-	/// timed round's waits for everyone here to.
+	/// timed round's waits for every player here to.
 	pub fn loaded(&mut self, by: &str, round: usize, now: u64) -> Result<bool, Error> {
 		if self.phase != Phase::Playing || round != self.round {
 			return Err(Error::BadPhase);
@@ -404,6 +425,9 @@ impl Lobby {
 			return Err(Error::BadPhase);
 		}
 		let result = kept(&result, MAX_GUESS_BYTES).ok_or(Error::BadRequest)?;
+		if self.player(by).is_some_and(|p| p.observing) {
+			return Err(Error::BadRequest);
+		}
 		if self.guessed.iter().any(|id| id == by) {
 			return Err(Error::AlreadyGuessed);
 		}
@@ -533,6 +557,7 @@ impl Lobby {
 					id: &p.id,
 					name: &p.name,
 					connected: p.connected,
+					observing: p.observing,
 				})
 				.collect(),
 			settings: &self.settings,
@@ -584,15 +609,19 @@ impl Lobby {
 		self.phase = Phase::Playing;
 	}
 
-	/// Starts a waiting clock once everyone here has the round on screen, or
-	/// has had long enough to, and says so. A device that loads it first must
-	/// not get the time a slower one spends on it. With nobody connected it
-	/// waits, as `settle` does.
+	/// Starts a waiting clock once every player here has the round on screen,
+	/// or has had long enough to, and says so. A device that loads it first
+	/// must not get the time a slower one spends on it. With no player
+	/// connected it waits, as `settle` does.
 	fn start_clock(&mut self, now: u64) -> bool {
 		let Some(timer) = self.timer_ms().filter(|_| self.loading()) else {
 			return false;
 		};
-		let mut here = self.players.iter().filter(|p| p.connected && !p.left).peekable();
+		let mut here = self
+			.players
+			.iter()
+			.filter(|p| p.connected && !p.left && !p.observing)
+			.peekable();
 		if here.peek().is_none() {
 			return false;
 		}
@@ -611,7 +640,7 @@ impl Lobby {
 		self.ends_at = None;
 	}
 
-	/// Closes the round once everyone still awaited has guessed, and says so.
+	/// Closes the round once every player still awaited has guessed, and says so.
 	/// With nobody connected it waits instead: whoever comes back should find
 	/// their round open.
 	fn settle(&mut self, now: u64) -> bool {
@@ -622,7 +651,7 @@ impl Lobby {
 		let all_in = self
 			.players
 			.iter()
-			.filter(|p| p.awaited(now))
+			.filter(|p| !p.observing && p.awaited(now))
 			.all(|p| self.guessed.contains(&p.id));
 		if anyone_here && all_in {
 			self.end_round();
@@ -863,6 +892,62 @@ mod tests {
 		assert_eq!(lobby.guess(&ids[1], 0, json!(1), 0).err(), Some(Error::BadPhase));
 		assert_eq!(view(&lobby)["round"]["guessed"], json!([]));
 		lobby.guess(&ids[1], 1, json!(2), 0).unwrap();
+	}
+
+	#[test]
+	fn only_the_host_observes_and_picks_to_before_the_first_game() {
+		let (mut lobby, ids) = lobby_of(&["ann", "bob"]);
+		assert_eq!(lobby.observe(&ids[1], true), Err(Error::NotHost));
+		lobby.observe(&ids[0], true).unwrap();
+		assert_eq!(view(&lobby)["players"][0]["observing"], json!(true));
+		assert_eq!(view(&lobby)["players"][1]["observing"], json!(false));
+
+		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
+		assert_eq!(lobby.observe(&ids[0], false), Err(Error::BadPhase));
+		lobby.close_round(&ids[0], 0).unwrap();
+		next(&mut lobby, &ids[0], 0).unwrap();
+		// The scoreboard of the game over leaves the host off.
+		assert_eq!(lobby.observe(&ids[0], false), Err(Error::BadPhase));
+		assert_eq!(view(&lobby)["players"][0]["observing"], json!(true));
+	}
+
+	#[test]
+	fn a_round_waits_on_its_players_and_not_on_the_host_observing() {
+		let (mut lobby, ids) = lobby_of(&["ann", "bob", "cat"]);
+		lobby.observe(&ids[0], true).unwrap();
+		lobby
+			.start(&ids[0], json!({ "timer": 60 }), vec![json!(1)], 1_000)
+			.unwrap();
+		assert_eq!(lobby.loaded(&ids[1], 0, 2_000), Ok(false));
+		assert_eq!(lobby.loaded(&ids[2], 0, 3_000), Ok(true));
+		assert_eq!(lobby.guess(&ids[0], 0, json!(1), 3_000).err(), Some(Error::BadRequest));
+		lobby.guess(&ids[1], 0, json!(1), 3_000).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("playing"));
+		lobby.guess(&ids[2], 0, json!(1), 3_000).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("result"));
+	}
+
+	#[test]
+	fn a_host_who_hands_over_mid_game_sits_it_out_and_plays_the_next() {
+		let (mut lobby, ids) = lobby_of(&["ann", "bob"]);
+		lobby.observe(&ids[0], true).unwrap();
+		lobby.start(&ids[0], json!({}), vec![json!(1)], 0).unwrap();
+		let token = lobby.token(&ids[0]).unwrap().to_owned();
+		lobby.disconnect(&ids[0], 1_000);
+		lobby.tick(1_000 + AWAY_GRACE_MS);
+		assert_eq!(view(&lobby)["host"], json!(ids[1]));
+
+		lobby.rejoin(&token).unwrap();
+		assert_eq!(lobby.guess(&ids[0], 0, json!(1), 0).err(), Some(Error::BadRequest));
+		lobby.guess(&ids[1], 0, json!(1), 0).unwrap();
+		next(&mut lobby, &ids[1], 0).unwrap();
+
+		lobby.start(&ids[1], json!({}), vec![json!(1)], 0).unwrap();
+		assert_eq!(view(&lobby)["players"][0]["observing"], json!(false));
+		lobby.guess(&ids[1], 0, json!(1), 0).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("playing"));
+		lobby.guess(&ids[0], 0, json!(1), 0).unwrap();
+		assert_eq!(view(&lobby)["phase"], json!("result"));
 	}
 
 	#[test]

@@ -20,7 +20,7 @@ interface Props {
 	ready: boolean;
 }
 
-function Seg<T extends number | string>({
+export function Seg<T extends number | string | boolean>({
 	options,
 	value,
 	onChange

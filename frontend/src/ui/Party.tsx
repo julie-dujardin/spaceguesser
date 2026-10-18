@@ -1,6 +1,6 @@
 /** A multiplayer game: the same screens as a solo run, moved on by the server. */
 
-import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
+import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { bodyOf } from '../game/bodies';
 import { shadedOn } from '../game/eclipse';
 import {
@@ -38,6 +38,7 @@ import { Hud, Quit } from './Hud';
 import { LobbyCard } from './LobbyCard';
 import { RoundResult } from './RoundResult';
 import { Standings } from './Standings';
+import { ToolSlot } from './tools';
 
 interface Props {
 	session: LobbySession;
@@ -81,6 +82,8 @@ export function Party({
 	const settings = settingsOf(lobby.settings);
 	const table = useMemo(() => standings(lobby), [lobby]);
 	const played = useMemo(() => playedBy(lobby, you ?? ''), [lobby, you]);
+	const me = lobby.players.find((seat) => seat.id === you);
+	const observing = !!me?.observing;
 
 	const start =
 		stops && opener
@@ -111,7 +114,6 @@ export function Party({
 		},
 		[told, you]
 	);
-	const me = lobby.players.find((seat) => seat.id === you);
 	const mine = useMemo(() => (me ? profileOf(me.name) : undefined), [me?.name]);
 	const { round } = lobby;
 	const act = (type: 'close_round' | 'next') =>
@@ -142,6 +144,7 @@ export function Party({
 						ready={!!start}
 						onStart={() => start?.()}
 						onEdit={() => setEditing(true)}
+						onObserve={(observing) => session.send({ type: 'observe', observing })}
 						onLeave={session.leave}
 					/>
 				))}
@@ -153,6 +156,7 @@ export function Party({
 					lobby={lobby}
 					round={round}
 					settings={settings}
+					observing={observing}
 					truth={truth}
 					up={up}
 					heading={heading}
@@ -168,6 +172,7 @@ export function Party({
 					lobby={lobby}
 					round={round}
 					you={you}
+					observing={observing}
 					onNext={act('next')}
 					onQuit={session.leave}
 				>
@@ -181,6 +186,7 @@ export function Party({
 					played={played}
 					others={everyoneElse}
 					avatar={mine}
+					observing={observing}
 					onAgain={hosting ? start : undefined}
 					onHome={session.leave}
 				>
@@ -239,6 +245,8 @@ interface RoundProps {
 	lobby: Lobby;
 	round: LobbyRound;
 	settings: RunSettings;
+	/** The host watching: nothing to guess here, and no guess waited on. */
+	observing: boolean;
 	truth: Place | null;
 	up: boolean;
 	heading: number;
@@ -253,6 +261,7 @@ function Round({
 	lobby,
 	round,
 	settings,
+	observing,
 	truth,
 	up,
 	heading,
@@ -287,8 +296,8 @@ function Round({
 	expire.current = () => void commit(guess, true);
 	const placed = !!truth;
 	useEffect(() => {
-		if (left === 0 && !answered && placed) expire.current();
-	}, [left, answered, placed]);
+		if (left === 0 && !answered && placed && !observing) expire.current();
+	}, [left, answered, placed, observing]);
 
 	// Again on each new socket: a guess made while the line was down still has
 	// to arrive, and one the server already has, or whose round has gone by, is
@@ -306,9 +315,15 @@ function Round({
 		if (up && waiting) post.current({ type: 'ready', round: round.index });
 	}, [up, waiting, connection, round.index]);
 
-	const out = lobby.players.filter(
+	const players = lobby.players.filter((seat) => !seat.observing);
+	const out = players.filter(
 		(seat) => seat.connected && seat.id !== you && !round.guessed.includes(seat.id)
 	).length;
+	const end = onEnd && (
+		<button type="button" className="btn ghost" onClick={onEnd}>
+			{m.end_round()}
+		</button>
+	);
 
 	return (
 		<div className="hud">
@@ -323,7 +338,7 @@ function Round({
 				onQuit={session.leave}
 			>
 				<span className="pill party">
-					{lobby.players.map((seat) => (
+					{players.map((seat) => (
 						<span
 							key={seat.id}
 							className={round.guessed.includes(seat.id) ? 'in' : undefined}
@@ -334,7 +349,10 @@ function Round({
 					))}
 				</span>
 			</Hud>
-			{!waiting && (
+			{!waiting && observing && (
+				<Watching note={out ? m.observing_waiting({ count: out }) : m.observing()} action={end} />
+			)}
+			{!waiting && !observing && (
 				<GuessPanel
 					placed={placed}
 					guess={guess}
@@ -352,15 +370,26 @@ function Round({
 									: m.guess_in()
 								: undefined
 					}
-					action={
-						onEnd && (
-							<button type="button" className="btn ghost" onClick={onEnd}>
-								{m.end_round()}
-							</button>
-						)
-					}
+					action={end}
 				/>
 			)}
+		</div>
+	);
+}
+
+/** The guess panel's corner, for the host observing: how the round is going,
+ *  the view's own controls, and the way to close it. */
+function Watching({ note, action }: { note: string; action?: ReactNode }) {
+	const { setSlot } = useContext(ToolSlot);
+	return (
+		<div className="watching">
+			<div className="tools">
+				<div ref={setSlot} />
+			</div>
+			<div className="glass">
+				<span className="mono mut">{note}</span>
+				{action}
+			</div>
 		</div>
 	);
 }
@@ -370,12 +399,13 @@ interface ResultProps {
 	lobby: Lobby;
 	round: LobbyRound;
 	you: string | null;
+	observing: boolean;
 	onNext?: () => void;
 	onQuit: () => void;
 	children: ReactNode;
 }
 
-function Result({ space, lobby, round, you, onNext, onQuit, children }: ResultProps) {
+function Result({ space, lobby, round, you, observing, onNext, onQuit, children }: ResultProps) {
 	const guesses = lobby.history[round.index];
 	const mine = guesses?.[you ?? ''];
 	const me = lobby.players.find((seat) => seat.id === you);
@@ -421,6 +451,7 @@ function Result({ space, lobby, round, you, onNext, onQuit, children }: ResultPr
 			others={drawn.others}
 			round={round.index + 1}
 			rounds={round.total}
+			observing={observing}
 			onNext={onNext}
 			onQuit={onQuit}
 		>

@@ -273,6 +273,36 @@ async fn the_host_closes_a_round_nobody_is_finishing() {
 }
 
 #[tokio::test]
+async fn a_host_who_observes_is_not_waited_on() {
+	let server = serve(None, vec![]).await;
+	let mut ann = Client::open(
+		&server,
+		json!({ "type": "create", "name": "Ann", "identity": who("Ann") }),
+	)
+	.await;
+	ann.joined().await;
+	let code = ann.lobby(|_| true).await["code"].clone();
+	let mut bob = Client::open(
+		&server,
+		json!({ "type": "join", "code": code, "name": "Bob", "identity": who("Bob") }),
+	)
+	.await;
+	let (bob_id, _) = bob.joined().await;
+
+	bob.send(json!({ "type": "observe", "observing": true })).await;
+	assert_eq!(bob.error().await, "not_host");
+	ann.send(json!({ "type": "observe", "observing": true })).await;
+	bob.lobby(|l| l["players"][0]["observing"] == true).await;
+
+	ann.send(json!({ "type": "start", "settings": {}, "rounds": [1] }))
+		.await;
+	bob.lobby(|l| l["phase"] == "playing").await;
+	bob.send(json!({ "type": "guess", "round": 0, "result": 1 })).await;
+	let result = ann.lobby(|l| l["phase"] == "result").await;
+	assert_eq!(result["round"]["guessed"], json!([bob_id]));
+}
+
+#[tokio::test]
 async fn a_lobby_everyone_left_is_gone_and_a_nameless_one_never_was() {
 	let server = serve(None, vec![]).await;
 	let mut ann = Client::open(
