@@ -23,6 +23,9 @@ const SPIN_TIMEOUT_MS = 20_000;
 const KNOWN_TIMEOUT_MS = 3_000;
 /** A flight lands in a few seconds or not at all. */
 const FLIGHT_TIMEOUT_MS = 8_000;
+/** A view still loading by now is played as it stands: on a slow line the
+ *  rest of it can take a minute. */
+const DRAWN_TIMEOUT_MS = 5_000;
 
 /** Which way the reader is looking from where they hang: clockwise from north
  *  and up from the horizon, so straight down is a pitch of −90. */
@@ -292,6 +295,22 @@ export class Space {
 			position,
 			target: { body: place.body, ...at(toward) },
 			up: tilt as OffsetKm
+		});
+	}
+
+	/** Until the map has all of what it shows loaded and drawn, or has taken too
+	 *  long to. Asked right after a move: a map already at rest says so again
+	 *  only after the next one. */
+	drawn(): Promise<void> {
+		return new Promise((resolve) => {
+			const timer = setTimeout(() => {
+				off();
+				resolve();
+			}, DRAWN_TIMEOUT_MS);
+			const off = this.map.once('idle', () => {
+				clearTimeout(timer);
+				resolve();
+			});
 		});
 	}
 

@@ -22,7 +22,7 @@ interface Props {
 	onHeading: (deg: number) => void;
 	/** The map could not get there: the round cannot be played. */
 	onLost: () => void;
-	/** The view is over the place, or will not be: the round can begin. */
+	/** The view of the place is drawn, or will not be: the round can begin. */
 	onReady: () => void;
 	/** The reader has turned back to the view. */
 	onEngage: () => void;
@@ -69,6 +69,8 @@ export function Orbit({
 	veiled
 }: Props) {
 	const [place, setPlace] = useState<Place | null>(null);
+	// The view of `place` is all there: nobody plays on a blur still sharpening.
+	const [drawn, setDrawn] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 	const [hands, setHands] = useState<Hands>('look');
 	const [moved, setMoved] = useState(false);
@@ -94,6 +96,7 @@ export function Orbit({
 		if (!space) return;
 		let dropped = false;
 		setPlace(null);
+		setDrawn(false);
 		setError(null);
 		setHands('look');
 		setMoved(false);
@@ -107,7 +110,11 @@ export function Orbit({
 				heading.current(0);
 				setPlace(found);
 				placed.current(found);
-				ready.current();
+				return space.drawn().then(() => {
+					if (dropped) return;
+					setDrawn(true);
+					ready.current();
+				});
 			})
 			.catch((cause: unknown) => {
 				if (dropped) return;
@@ -128,7 +135,8 @@ export function Orbit({
 
 	// Frozen is the view straight down and nothing else; free moves the camera
 	// as well as turning it.
-	const active = !dimmed && !veiled && !!place;
+	const shown = !!place && drawn;
+	const active = !dimmed && !veiled && shown;
 	const turning = movement !== 'frozen' && active;
 	const roaming = movement === 'free' && active;
 	const last = useRef<{ x: number; y: number } | null>(null);
@@ -206,11 +214,11 @@ export function Orbit({
 	};
 
 	const note =
-		error ?? unavailable ?? (!place ? m.dropping_in() : veiled ? m.waiting_for_others() : null);
+		error ?? unavailable ?? (!shown ? m.dropping_in() : veiled ? m.waiting_for_others() : null);
 	return (
 		<>
 			<div
-				className={`stage-over${turning ? ' turning' : ''}${place && !veiled ? '' : ' veiled'}`}
+				className={`stage-over${turning ? ' turning' : ''}${shown && !veiled ? '' : ' veiled'}`}
 				onPointerDown={(event) => {
 					onEngage();
 					if (!turning) return;
