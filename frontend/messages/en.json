@@ -94,7 +94,7 @@
 	"trouble_unverified": "Could not check that you are human — try again, or switch off whatever blocks Cloudflare's check",
 	"lobby": "Lobby",
 	"invite_link": "invite link",
-	"invite_note": "Anyone with the link can join until the host starts",
+	"invite_note": "Anyone with the link can join",
 	"qr_label": "QR code for {text}",
 	"run_settings": "run settings",
 	"change": "change",

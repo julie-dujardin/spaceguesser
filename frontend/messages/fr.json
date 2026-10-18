@@ -94,7 +94,7 @@
 	"trouble_unverified": "Impossible de vérifier que vous êtes humain — réessayez, ou désactivez ce qui bloque la vérification de Cloudflare",
 	"lobby": "Salon",
 	"invite_link": "lien d'invitation",
-	"invite_note": "Quiconque a le lien peut rejoindre avant le lancement",
+	"invite_note": "N'importe qui avec le lien peut rejoindre",
 	"qr_label": "QR code pour {text}",
 	"run_settings": "règles du jeu",
 	"change": "modifier",
