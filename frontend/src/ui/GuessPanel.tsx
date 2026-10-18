@@ -85,6 +85,7 @@ function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTa
 			...PICKER,
 			grouping: 'systems',
 			zones: 'inner-outer',
+			rings: 'visible',
 			events: { select: (target) => select.current(target) }
 		})
 			.then((created) => {
