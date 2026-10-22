@@ -23,7 +23,17 @@ import {
 } from 'spacemap';
 import { bodyName, bodyOf } from '../game/bodies';
 import { HOST } from '../game/host';
-import { PICKER, ROOT, intoSystem, levelTitle, search, trailTo, type Level } from '../game/picker';
+import {
+	PICKER,
+	ROOT,
+	STEP,
+	STEPS,
+	intoSystem,
+	levelTitle,
+	search,
+	trailTo,
+	type Level
+} from '../game/picker';
 import type { Guess } from '../game/scoring';
 import type { Highlight } from '../game/tutorial';
 import * as m from '../paraglide/messages.js';
@@ -291,8 +301,10 @@ export function GuessPanel({
 	const level = trail[trail.length - 1];
 	const locked = waiting !== undefined;
 	const ring = (part: Highlight) => (highlight === part ? ' ringed' : '');
-	// The tip only hangs off the panel: reaching for it is not turning to it.
-	const turned = (event: SyntheticEvent) => !(event.target as Element).closest('.tip');
+	// The tip and the view's controls only hang off the panel: reaching for
+	// them is not turning to it, and the panel growing would move the controls
+	// out from under the pointer.
+	const turned = (event: SyntheticEvent) => !(event.target as Element).closest('.tip, .tools');
 	/** Whether the panel was already open when the gesture began: the tap that
 	 *  opens it also lands as a click, on a box that has grown since, and a
 	 *  pick from it would be nowhere the reader aimed. A key is pressed on what
@@ -334,7 +346,8 @@ export function GuessPanel({
 	return (
 		<div
 			className={`mapw${wide ? ' wide' : ''}${maximized ? ' max' : ''}${info?.surface ? '' : ' placeless'}${ring('panel')}`}
-			onPointerEnter={(event) => turned(event) && onOpen()}
+			// Over rather than enter: the pointer can come in by way of the controls.
+			onPointerOver={(event) => turned(event) && onOpen()}
 			onPointerDown={(event) => {
 				if (!turned(event)) return;
 				taking.current = wide;
@@ -361,7 +374,15 @@ export function GuessPanel({
 						<ChevronLeft size={16} />
 					</button>
 				)}
-				<span className="where">{levelTitle(level)}</span>
+				<span className="where">
+					<span className="name">{levelTitle(level)}</span>
+					<span
+						className="step mono dim"
+						title={m.guess_step({ step: STEP[level.kind], steps: STEPS })}
+					>
+						{STEP[level.kind]}/{STEPS}
+					</span>
+				</span>
 				<div className="find">
 					<input
 						type="search"

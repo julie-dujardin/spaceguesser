@@ -146,6 +146,13 @@ export class Space {
 		this.map.jumpTo({ body, distanceKm, lat: at?.lat, lon: at?.lon });
 	}
 
+	/** How far back to look from to hold across the view what `distanceKm`
+	 *  holds up it: further, on a view taller than it is wide. */
+	across(distanceKm: number): number {
+		const aspect = this.container.clientWidth / this.container.clientHeight;
+		return aspect > 0 && aspect < 1 ? distanceKm / aspect : distanceKm;
+	}
+
 	/** Kilometres between two bodies' centres as the map last drew them. */
 	apart(a: string, b: string): number | null {
 		return this.map.distanceKm({ body: a }, { body: b });

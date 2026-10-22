@@ -10,7 +10,6 @@ import type { Played } from '../game/run';
 import type { Guess } from '../game/scoring';
 import type { Profile } from '../game/players';
 import * as m from '../paraglide/messages.js';
-import { Quit } from './Hud';
 import { Recap, type RecapGuess } from './Recap';
 
 interface Props {
@@ -106,8 +105,7 @@ export function RoundResult({
 
 	return (
 		<div className="board">
-			<Recap space={space} rounds={recap} focus={0} />
-			<Quit onQuit={onQuit} />
+			<Recap space={space} rounds={recap} focus={0} onQuit={onQuit} />
 			<div className="rpanel glass">
 				<div className="col" style={{ gap: 3 }}>
 					<span className="hd">{m.actual_location()}</span>

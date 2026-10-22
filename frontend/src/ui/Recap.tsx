@@ -1,8 +1,8 @@
 /**
  * Where the guesses landed, in the Solar System map: every guess pinned on the
- * body it named, seen from far enough to hold them all, then flown in to the
- * place itself and, where the body has one, onto its own map. The slider is the
- * same flight in the reader's hands.
+ * body it named, seen from far enough to hold them all. The slider is the way
+ * in to the place and, where the body has one, onto its own map. A round is
+ * left at that distance, where its miss shows whole.
  */
 
 import { Minus, Plus } from 'lucide-react';
@@ -10,12 +10,13 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Anchor, LonLat } from 'spacemap';
 import { bodyOf, systemOf } from '../game/bodies';
 import type { Profile } from '../game/players';
-import type { Place, Round } from '../game/rounds';
+import { RAD, type Place, type Round } from '../game/rounds';
 import { AU_KM } from '../game/rules';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
 import { declutter } from './crowds';
+import { Quit } from './Hud';
 import { Legal } from './Legal';
 import { ResultMap, type Placement } from './ResultMap';
 import { MISS, OTHER_MISS, OWN_MISS, face, pin, pins } from './useFlatMap';
@@ -40,6 +41,9 @@ interface Props {
 	rounds: RecapRound[];
 	/** The round looked at by itself; null for the whole run at once. */
 	focus: number | null;
+	/** The way out of the run, in the corner the switch between the maps
+	 *  shares with it. */
+	onQuit?: () => void;
 }
 
 const SUN = 'naif-10';
@@ -57,8 +61,9 @@ const BACK_OFF = 2.6;
  *  the pixels, and at one of them it reads as dots. */
 const MISS_WIDTH_PX = 1.5;
 
-/** The last of the slider is the body's own map coming up over the globe. */
-const FLAT_FROM = 0.88;
+/** The last of the slider is the body's own map, up over the globe. A nudge
+ *  wide, so a nudge back from the end is back on the globe. */
+const FLAT_FROM = 0.9;
 
 /** The flight takes this long for every tenfold of distance it covers. */
 const MS_PER_DECADE = 1100;
@@ -80,6 +85,26 @@ interface Flight {
 
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
 
+/** Kept this far inside the limb, where a pin is drawn edge on. */
+const LIMB_DEG = 5;
+
+/** The place midway between `points` on a body, to look down on them all from
+ *  `distanceKm` off its centre; null when no one side of the body holds them. */
+function middle(points: LonLat[], radiusKm: number, distanceKm: number): LonLat | null {
+	const units = points.map(({ lat, lon }) => [
+		Math.cos(lat * RAD) * Math.cos(lon * RAD),
+		Math.cos(lat * RAD) * Math.sin(lon * RAD),
+		Math.sin(lat * RAD)
+	]);
+	const sum = [0, 1, 2].map((axis) => units.reduce((total, unit) => total + unit[axis], 0));
+	const length = Math.hypot(...sum);
+	if (length < 1e-6) return null;
+	const [x, y, z] = sum.map((value) => value / length);
+	const near = Math.cos(Math.acos(Math.min(1, radiusKm / distanceKm)) - LIMB_DEG * RAD);
+	if (units.some(([a, b, c]) => a * x + b * y + c * z < near)) return null;
+	return { lat: Math.asin(z) / RAD, lon: Math.atan2(y, x) / RAD };
+}
+
 function anchorOf(body: string, at: LonLat | null) {
 	return at ? { body, latitude: at.lat, longitude: at.lon } : { body };
 }
@@ -92,7 +117,7 @@ function bodiesIn(rounds: RecapRound[]): string[] {
 	]);
 }
 
-export function Recap({ space, rounds, focus }: Props) {
+export function Recap({ space, rounds, focus, onQuit }: Props) {
 	/** 0 is as far as the view goes, 1 as near. */
 	const [zoom, setZoom] = useState(0);
 	const [flight, setFlight] = useState<Flight | null>(null);
@@ -100,6 +125,8 @@ export function Recap({ space, rounds, focus }: Props) {
 	const flying = useRef<number | null>(null);
 	/** Where a nudge is headed, so that clicks in quick succession add up. */
 	const heading = useRef<number | null>(null);
+	/** Where the slider last was on the globe, to go back to from the flat map. */
+	const globe = useRef(0);
 	/** Over the map: the boxes the whole run's crowded pins go into. */
 	const crowded = useRef<HTMLDivElement>(null);
 	// A lobby hands the same rounds over as new objects on every snapshot.
@@ -202,6 +229,8 @@ export function Recap({ space, rounds, focus }: Props) {
 				const mapped = !!bodyOf(truth.body)?.surface;
 				const place = anchorOf(truth.body, mapped ? truth : null);
 				let widest = 0;
+				/** The places on the body itself, to be looked down on together. */
+				const seen: LonLat[] = [truth];
 				// From as far as another body is seen, a place on it is the body, and
 				// the guesses on it share its dot: side by side, not over one another.
 				const away = new Map<string, HTMLElement[]>();
@@ -219,6 +248,7 @@ export function Recap({ space, rounds, focus }: Props) {
 						continue;
 					}
 					if (guess.at && mapped) {
+						seen.push(guess.at);
 						drawn.push(
 							map.addSurfacePolyline({
 								...MISS,
@@ -238,10 +268,14 @@ export function Recap({ space, rounds, focus }: Props) {
 				next = {
 					body: truth.body,
 					nearKm,
-					farKm: Math.max(widest * HOLD, nearKm * BACK_OFF),
-					rest: 1
+					farKm: space.across(Math.max(widest * HOLD, nearKm * BACK_OFF)),
+					rest: 0
 				};
-				space.frame(truth.body, next.farKm, truth);
+				const radius = space.radiusKm(truth.body);
+				// Guesses round the far side are found by turning the body: the place
+				// itself is what has to be in view.
+				const over = radius ? middle(seen, radius, next.farKm) : null;
+				space.frame(truth.body, next.farKm, over ?? truth);
 			} else {
 				let reach = 0;
 				// A system is one dot from here, so its pins go side by side under
@@ -305,17 +339,20 @@ export function Recap({ space, rounds, focus }: Props) {
 
 	const one = focus === null ? null : rounds[focus];
 	const mapped = !!one && !!bodyOf(one.truth.body)?.surface;
-	// The camera has finished its way in by the time the map starts over it.
+	// The camera has finished its way in by the time the map is up.
 	const approach = mapped ? Math.min(1, zoom / FLAT_FROM) : zoom;
 	// With no map to fly in, or a flight that failed, the flat map is the recap.
 	const flown = !!space && !error;
-	const flat = !mapped ? 0 : flown ? Math.max(0, (zoom - FLAT_FROM) / (1 - FLAT_FROM)) : 1;
+	// Up or not, never half: the two maps at once are only the way between them.
+	const flat = mapped && (!flown || zoom > FLAT_FROM);
+	if (zoom <= FLAT_FROM) globe.current = zoom;
 
 	useEffect(() => {
-		if (!space || !flight) return;
+		// The globe holds still under the flat map, to be found as it was left.
+		if (!space || !flight || flat) return;
 		const distanceKm = flight.farKm * (flight.nearKm / flight.farKm) ** approach;
 		space.frame(flight.body, distanceKm);
-	}, [space, flight, approach]);
+	}, [space, flight, approach, flat]);
 
 	// The view is the reader's to turn and to zoom with the wheel as well, and
 	// the slider follows where the wheel leaves it.
@@ -328,7 +365,7 @@ export function Recap({ space, rounds, focus }: Props) {
 			const way = Math.log(flight.farKm / distanceKm) / Math.log(flight.farKm / flight.nearKm);
 			const there = Math.min(1, Math.max(0, way)) * span;
 			// Past the end of the way in, the slider is the flat map's.
-			setZoom((now) => (Math.abs(Math.min(now, span) - there) < 0.004 ? now : there));
+			setZoom((now) => (now > span || Math.abs(now - there) < 0.004 ? now : there));
 		});
 	}, [space, flight, mapped]);
 
@@ -355,13 +392,40 @@ export function Recap({ space, rounds, focus }: Props) {
 		<>
 			<div className="crowds" ref={crowded} />
 			{one && mapped && (
-				<div
-					className="recap-flat"
-					style={{ opacity: flat, pointerEvents: flat > 0.6 ? 'auto' : 'none' }}
-				>
+				<div className={`recap-flat${flat ? ' up' : ''}`}>
 					<ResultMap key={`${focus}:${one.truth.body}`} body={one.truth.body} rounds={placements} />
 					<Legal />
 				</div>
+			)}
+			{onQuit && (
+				<Quit onQuit={onQuit}>
+					{mapped && flown && flight && (
+						<div className="dims" role="group" aria-label={m.recap_view()}>
+							<button
+								type="button"
+								aria-pressed={!flat}
+								title={m.recap_globe_title()}
+								onClick={() => {
+									land();
+									setZoom(globe.current);
+								}}
+							>
+								{m.recap_globe()}
+							</button>
+							<button
+								type="button"
+								aria-pressed={flat}
+								title={m.recap_flat_title()}
+								onClick={() => {
+									land();
+									setZoom(1);
+								}}
+							>
+								{m.recap_flat()}
+							</button>
+						</div>
+					)}
+				</Quit>
 			)}
 			{space && !flight && !error && <div className="stage-note">{m.finding_the_place()}</div>}
 			{error && !mapped && <div className="stage-note">{error}</div>}

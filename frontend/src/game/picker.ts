@@ -24,6 +24,11 @@ export type Level =
 
 export const ROOT: Level[] = [{ kind: 'root' }];
 
+/** How far down the way a level is, out of `STEPS`. Counted by its kind, so a
+ *  body reached straight from the Solar System is still the last step. */
+export const STEP: Record<Level['kind'], number> = { root: 1, system: 2, zone: 2, body: 3 };
+export const STEPS = 3;
+
 /** As the system map names its two doors, which are the same places. */
 const ZONE_NAMES: Record<Zone, () => string> = {
 	inner: m.system_map_zone_inner,

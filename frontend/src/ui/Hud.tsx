@@ -1,5 +1,6 @@
 import { X } from 'lucide-react';
-import type { ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
+import { createPortal } from 'react-dom';
 import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
 import * as m from '../paraglide/messages.js';
 
@@ -90,19 +91,65 @@ export function Hud({
 	);
 }
 
-/** The way out of a run, on a round and on its result alike. */
-export function Quit({ onQuit }: { onQuit: () => void }) {
+/** The way out of a run, on a round and on its result alike. It asks first: the
+ *  corner is where a stray click lands, and a run left is gone. */
+export function Quit({ onQuit, children }: { onQuit: () => void; children?: ReactNode }) {
+	const [asking, setAsking] = useState(false);
+
+	useEffect(() => {
+		if (!asking) return;
+		const key = (event: KeyboardEvent) => event.key === 'Escape' && setAsking(false);
+		window.addEventListener('keydown', key);
+		return () => window.removeEventListener('keydown', key);
+	}, [asking]);
+
 	return (
-		<div className="hud-topr">
-			<button
-				type="button"
-				className="btn glassy ico"
-				title={m.leave_run()}
-				aria-label={m.leave_run()}
-				onClick={onQuit}
-			>
-				<X size={16} />
-			</button>
-		</div>
+		<>
+			<div className="hud-topr">
+				{children}
+				<button
+					type="button"
+					className="btn glassy ico"
+					title={m.leave_run()}
+					aria-label={m.leave_run()}
+					onClick={() => setAsking(true)}
+				>
+					<X size={16} />
+				</button>
+			</div>
+			{/* Over everything on the page, so nothing else takes a click meanwhile. */}
+			{asking &&
+				createPortal(
+					<div
+						className="scrim over"
+						onPointerDown={(event) => event.target === event.currentTarget && setAsking(false)}
+					>
+						<div
+							className="card glass panel"
+							role="alertdialog"
+							aria-modal="true"
+							aria-labelledby="leave-confirm"
+							style={{ width: 320 }}
+						>
+							<h2 id="leave-confirm">{m.leave_confirm()}</h2>
+							<div className="acts">
+								<button
+									type="button"
+									className="btn lg ghost"
+									style={{ flex: 1 }}
+									autoFocus
+									onClick={() => setAsking(false)}
+								>
+									{m.cancel()}
+								</button>
+								<button type="button" className="btn lg" style={{ flex: 1 }} onClick={onQuit}>
+									{m.leave()}
+								</button>
+							</div>
+						</div>
+					</div>,
+					document.body
+				)}
+		</>
 	);
 }

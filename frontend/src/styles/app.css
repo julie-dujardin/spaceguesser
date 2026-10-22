@@ -232,23 +232,23 @@ button {
 	background: #0a0a0a;
 }
 
-/* The view's own controls, held in the guess panel: across from it and at its
-   height, clear of the links under them. */
+/* The view's own controls ride on top of the guess panel, at the end that stays
+   put as it opens: one place for them however wide the screen is. */
 .tools {
-	position: fixed;
-	left: 16px;
-	bottom: 46px;
+	position: absolute;
+	right: 0;
+	bottom: calc(100% + 8px);
 	/* A tip about them goes on top. */
 	display: flex;
 	flex-direction: column-reverse;
-	align-items: flex-start;
+	align-items: flex-end;
 	gap: 14px;
 }
 
+/* A row, so the way back shows up beside the switch without moving it. */
 .hands {
 	display: flex;
-	flex-direction: column;
-	align-items: flex-start;
+	align-items: center;
 	gap: 8px;
 }
 
@@ -444,10 +444,23 @@ button {
 .mapw .where {
 	flex: 1;
 	min-width: 0;
-	font-weight: 500;
+	display: flex;
+	align-items: baseline;
+	gap: 8px;
 	white-space: nowrap;
+}
+
+/* A long name is cut short rather than the count of steps after it. */
+.mapw .where .name {
+	min-width: 0;
 	overflow: hidden;
 	text-overflow: ellipsis;
+	font-weight: 500;
+}
+
+.mapw .where .step {
+	flex: none;
+	font-size: 12px;
 }
 
 .find {
@@ -1372,14 +1385,57 @@ input.code {
 	pointer-events: auto;
 }
 
-/* The body's own map, come up over the globe at the end of the way in. It
-   covers the links to the pages beside the game, so it carries its own, and
-   keeps them and its credit line under the panel. */
+/* The body's own map, up over the globe at the end of the way in. It covers
+   the links to the pages beside the game, so it carries its own, and keeps
+   them and its credit line under the panel. */
 .recap-flat {
 	position: absolute;
 	inset: 0;
 	background: oklch(0.185 0 0);
 	isolation: isolate;
+	opacity: 0;
+	pointer-events: none;
+	transition: opacity 250ms;
+}
+
+.recap-flat.up {
+	opacity: 1;
+	pointer-events: auto;
+}
+
+/* Which of the two maps a round's result shows, beside the way out and as
+   tall as it. */
+.dims {
+	display: flex;
+	gap: 2px;
+	padding: 2px;
+	border-radius: 9999px;
+	background: var(--glass);
+	backdrop-filter: blur(12px);
+	border: 1px solid var(--gborder);
+}
+
+.dims button {
+	min-width: 26px;
+	height: 26px;
+	padding: 0 10px;
+	border: 0;
+	border-radius: 9999px;
+	background: transparent;
+	color: var(--mut);
+	font-family: var(--font-mono);
+	font-size: 12.5px;
+	cursor: pointer;
+	transition: all 150ms;
+}
+
+.dims button:hover {
+	color: var(--fg);
+}
+
+.dims button[aria-pressed='true'] {
+	background: var(--light);
+	color: var(--on-light);
 }
 
 .zoomer {
@@ -2144,7 +2200,7 @@ button.rk {
 .tools > .tip::after {
 	content: '';
 	position: absolute;
-	left: 28px;
+	right: 28px;
 	bottom: -6px;
 	width: 10px;
 	height: 10px;
@@ -2376,27 +2432,6 @@ button.rk {
 		width: calc(100% - 32px);
 	}
 
-	/* The panel leaves no room beside it here: they ride on top of it, at the
-	   end that stays put as it opens. */
-	.tools {
-		position: absolute;
-		left: auto;
-		right: 0;
-		bottom: calc(100% + 8px);
-		align-items: flex-end;
-	}
-
-	.tools > .tip::after {
-		left: auto;
-		right: 28px;
-	}
-
-	/* A row, so the way back shows up beside the switch without moving it. */
-	.hands {
-		flex-direction: row;
-		align-items: center;
-	}
-
 	.mapw > .tip {
 		right: 0;
 		bottom: calc(100% + 14px);
@@ -2415,6 +2450,22 @@ button.rk {
 	/* A recap's slider runs the width of the line the links go up to. */
 	#root:has(.zoomer) .legal {
 		display: none;
+	}
+
+	/* Beside the way out, the switch would run over the result's panel: it
+	   stands under it instead, as narrow as it. */
+	.hud-topr:has(> .dims) {
+		flex-direction: column-reverse;
+		align-items: flex-end;
+	}
+
+	.dims {
+		flex-direction: column;
+	}
+
+	.dims button {
+		width: 26px;
+		padding: 0;
 	}
 
 	.mapw {
