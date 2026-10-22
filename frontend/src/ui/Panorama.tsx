@@ -1,10 +1,13 @@
 /** The round's panorama, filling the screen behind the HUD. */
 
-import { useEffect, useRef, useState } from 'react';
+import { LocateFixed } from 'lucide-react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { HOST } from '../game/host';
 import { createPanorama, type PanoramaEntry, type PanoramaView } from 'spacemap';
 import type { Movement } from '../game/rules';
 import * as m from '../paraglide/messages.js';
+import { ToolSlot } from './tools';
 
 interface Props {
 	body: string;
@@ -39,6 +42,9 @@ export function Panorama({
 	const container = useRef<HTMLDivElement>(null);
 	const [view, setView] = useState<PanoramaView | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	/** The panorama last opened, and the round's it was opened in. */
+	const [here, setHere] = useState<{ round: string; id: string } | null>(null);
+	const { slot } = useContext(ToolSlot);
 	// The view on screen. `view` is still the old one for a render after a
 	// rebuild removed it, and what that one has to say is no longer news.
 	const live = useRef<PanoramaView | null>(null);
@@ -73,6 +79,7 @@ export function Panorama({
 					// A view taken down while it loaded still says so, about a round
 					// no longer on screen.
 					if (dropped) return;
+					setHere({ round: opening.current, id: entry.id });
 					place.current(entry);
 					// Not a panorama walked to.
 					if (entry.id === opening.current) ready.current();
@@ -108,13 +115,40 @@ export function Panorama({
 		});
 	}, [view, at]);
 
+	const walked = here?.round === at && here.id !== at;
+	const back = () => {
+		const shown = live.current;
+		void shown?.open(at).catch((cause: unknown) => {
+			if (shown === live.current) setError(String(cause));
+		});
+	};
+
 	const note = error ?? (!view ? m.dropping_in() : veiled ? m.waiting_for_others() : null);
 	return (
-		<div className="stage" onPointerDown={onEngage}>
-			<div ref={container} style={{ position: 'absolute', inset: 0 }} />
-			{dimmed && <div className="stage-dim" />}
-			<div className="stage-shade" />
-			{note && <div className={`stage-note${veiled ? ' veil' : ''}`}>{note}</div>}
-		</div>
+		<>
+			<div className="stage" onPointerDown={onEngage}>
+				<div ref={container} style={{ position: 'absolute', inset: 0 }} />
+				{dimmed && <div className="stage-dim" />}
+				<div className="stage-shade" />
+				{note && <div className={`stage-note${veiled ? ' veil' : ''}`}>{note}</div>}
+			</div>
+			{walked &&
+				!dimmed &&
+				slot &&
+				createPortal(
+					<div className="hands">
+						<button
+							type="button"
+							className="btn glassy ico"
+							title={m.back_to_start()}
+							aria-label={m.back_to_start()}
+							onClick={back}
+						>
+							<LocateFixed size={14} />
+						</button>
+					</div>,
+					slot
+				)}
+		</>
 	);
 }

@@ -44,7 +44,7 @@
 	"orbit_look_title": "Drag to turn the view",
 	"orbit_move": "move",
 	"orbit_move_title": "Drag to fly over the ground. The arrow keys fly too",
-	"orbit_back": "Back to where the round started",
+	"back_to_start": "Back to where the round started",
 	"setup_timer": "round timer",
 	"timer_off": "off",
 	"timer_seconds": "{count} s",

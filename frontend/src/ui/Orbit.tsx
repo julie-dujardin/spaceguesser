@@ -260,8 +260,8 @@ export function Orbit({
 							<button
 								type="button"
 								className="btn glassy ico"
-								title={m.orbit_back()}
-								aria-label={m.orbit_back()}
+								title={m.back_to_start()}
+								aria-label={m.back_to_start()}
 								onClick={back}
 							>
 								<LocateFixed size={14} />

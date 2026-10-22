@@ -44,7 +44,7 @@
 	"orbit_look_title": "Glisser pour tourner la vue",
 	"orbit_move": "déplacement",
 	"orbit_move_title": "Glisser pour survoler le sol. Les flèches du clavier aussi",
-	"orbit_back": "Revenir au point de départ de la manche",
+	"back_to_start": "Revenir au point de départ de la manche",
 	"setup_timer": "chrono par manche",
 	"timer_off": "aucun",
 	"timer_seconds": "{count} s",
