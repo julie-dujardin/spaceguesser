@@ -122,6 +122,8 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 	const [zoom, setZoom] = useState(0);
 	const [flight, setFlight] = useState<Flight | null>(null);
 	const [error, setError] = useState<string | null>(null);
+	/** The map is drawn where the recap put it, and shown. */
+	const [up, setUp] = useState(false);
 	const flying = useRef<number | null>(null);
 	/** Where a nudge is headed, so that clicks in quick succession add up. */
 	const heading = useRef<number | null>(null);
@@ -141,6 +143,7 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 	if (shownFor !== subject) {
 		setShownFor(subject);
 		setFlight(null);
+		setUp(false);
 		setError(null);
 		setZoom(0);
 	}
@@ -314,7 +317,12 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 				// From over the pole, where the orbits are circles rather than lines.
 				space.frame(SUN, RUN_FAR_KM, { lat: 70, lon: 0 });
 			}
+			const settled = space.drawn();
 			setFlight(next);
+			// Shown at rest, not on its way there.
+			await settled;
+			if (dropped) return;
+			setUp(true);
 
 			const decades = Math.log10(next.farKm / next.nearKm) * next.rest;
 			const duration = Math.min(MAX_FLIGHT_MS, Math.max(MIN_FLIGHT_MS, decades * MS_PER_DECADE));
@@ -391,6 +399,9 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 	return (
 		<>
 			<div className="crowds" ref={crowded} />
+			{space && !up && !error && (
+				<div className="stage-note recap-veil">{m.finding_the_place()}</div>
+			)}
 			{one && mapped && (
 				<div className={`recap-flat${flat ? ' up' : ''}`}>
 					<ResultMap key={`${focus}:${one.truth.body}`} body={one.truth.body} rounds={placements} />
@@ -399,7 +410,7 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 			)}
 			{onQuit && (
 				<Quit onQuit={onQuit}>
-					{mapped && flown && flight && (
+					{mapped && flown && up && (
 						<div className="dims" role="group" aria-label={m.recap_view()}>
 							<button
 								type="button"
@@ -427,9 +438,8 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 					)}
 				</Quit>
 			)}
-			{space && !flight && !error && <div className="stage-note">{m.finding_the_place()}</div>}
 			{error && !mapped && <div className="stage-note">{error}</div>}
-			{flight && (
+			{up && (
 				<div className="zoomer glass">
 					<button
 						type="button"

@@ -1438,6 +1438,12 @@ input.code {
 	color: var(--on-light);
 }
 
+/* The map on its way to the round's date and place, under the panel, which has
+   the score to read meanwhile. */
+.recap-veil {
+	background: #0a0a0a;
+}
+
 .zoomer {
 	position: absolute;
 	left: 50%;
