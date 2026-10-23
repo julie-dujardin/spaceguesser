@@ -127,9 +127,16 @@ export interface Modes {
 }
 
 /** What a run's rounds are drawn from. */
-export interface Pool {
+export interface Draw {
 	modes: Modes;
 	difficulty: Difficulty;
+}
+
+/** The stops on bodies the guess panel offers at `difficulty`: one anywhere
+ *  else is a round nobody can answer. */
+function standable(stops: readonly Stop[], difficulty: Difficulty): Stop[] {
+	const offered = new Set(POOLS[difficulty].map((body) => body.id));
+	return stops.filter((stop) => offered.has(stop.body));
 }
 
 function pickBody(
@@ -146,25 +153,22 @@ function pickBody(
 }
 
 /**
- * `count` rounds, each a coin toss between the modes switched on. Both draw
- * from the difficulty's pool: a stop on a body the guess panel does not offer
- * is left out. Stops are spread across probes; bodies are drawn evenly, none
- * twice while another is left and none of `shaded`. `before` is the rounds
- * just before these, and `date` the run's when these go on with it. With no
- * stops to draw from, every round is from orbit.
+ * `count` rounds, each a coin toss between the modes switched on, both over
+ * the difficulty's bodies. Stops are spread across probes; bodies are drawn
+ * evenly, none twice while another is left and none of `shaded`. `before` is
+ * the rounds just before these, and `date` the run's when these go on with
+ * it. With no stops to draw from, every round is from orbit.
  */
 export function drawRun(
 	stops: readonly Stop[],
 	count: number,
-	{ modes, difficulty }: Pool,
+	{ modes, difficulty }: Draw,
 	before: readonly Round[] = [],
 	date = drawDate(),
 	shaded: ReadonlySet<string> = new Set(),
 	random: () => number = Math.random
 ): Round[] {
-	const pool = POOLS[difficulty];
-	const offered = new Set(pool.map((body) => body.id));
-	const standing = stops.filter((stop) => offered.has(stop.body));
+	const standing = standable(stops, difficulty);
 	const ground = modes.ground && standing.length > 0;
 	const orbit = modes.orbit || !ground;
 	const drawn: Round[] = [];
@@ -183,7 +187,7 @@ export function drawRun(
 		}
 		drawn.push({
 			mode: 'orbit',
-			body: pickBody(pool, spent, shaded, random).id,
+			body: pickBody(POOLS[difficulty], spent, shaded, random).id,
 			time: date,
 			u: random(),
 			v: random()
@@ -202,14 +206,14 @@ const SKY_TIMEOUT_MS = 5_000;
 export async function drawLitRun(
 	stops: readonly Stop[],
 	count: number,
-	pool: Pool,
+	draw: Draw,
 	before: readonly Round[] = [],
 	date = drawDate()
 ): Promise<Round[]> {
-	if (pool.modes.orbit || !pool.modes.ground || stops.length === 0)
+	if (draw.modes.orbit || !draw.modes.ground || !standable(stops, draw.difficulty).length)
 		await Promise.race([
 			eclipsed(date),
 			new Promise((resolve) => setTimeout(resolve, SKY_TIMEOUT_MS))
 		]);
-	return drawRun(stops, count, pool, before, date, shadedOn(date));
+	return drawRun(stops, count, draw, before, date, shadedOn(date));
 }

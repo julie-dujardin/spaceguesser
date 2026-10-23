@@ -217,5 +217,9 @@ for (const [id, { map: systemMap, model }] of candidates) {
 }
 out.sort((a, b) => a.id.localeCompare(b.id, 'en', { numeric: true }));
 
+// A mistyped id would leave its body in balanced runs without a word.
+const strays = Object.keys(HARD_ONLY).filter((id) => !out.some((body) => body.id === id));
+if (strays.length) throw new Error(`HARD_ONLY names bodies not in play: ${strays.join(', ')}`);
+
 writeFileSync(OUT, `${JSON.stringify(out, null, '\t')}\n`);
 console.log(`${out.length} bodies, ${out.filter((b) => b.surface).length} with a map to guess on`);

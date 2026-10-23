@@ -10,9 +10,9 @@ import {
 	drawLitRun,
 	drawRun,
 	shownDate,
+	type Draw,
 	type Modes,
 	type Place,
-	type Pool,
 	type Round,
 	type Stop
 } from './game/rounds';
@@ -57,7 +57,7 @@ const NO_GROUND = new Set(['naif-399']);
 
 /** What the opener is drawn from: Quick Play's kinds of round, over the bodies
  *  every difficulty plays, so it can start any run. */
-const OPENER: Pool = { modes: QUICK_PLAY.modes, difficulty: 'balanced' };
+const OPENER: Draw = { modes: QUICK_PLAY.modes, difficulty: 'balanced' };
 
 /** A card over the home screen, one at a time: the way into a multiplayer game,
  *  or the reader's own history. Null is the home screen. */
@@ -191,8 +191,8 @@ export default function App() {
 	useEffect(() => {
 		if (!stops || !ready || opener) return;
 		let dropped = false;
-		const pool = { ...OPENER, modes: modesFor(OPENER.modes) };
-		void drawLitRun(stops, 1, pool, run.drawn).then(([round]) => {
+		const draw = { ...OPENER, modes: modesFor(OPENER.modes) };
+		void drawLitRun(stops, 1, draw, run.drawn).then(([round]) => {
 			if (!dropped) setOpener(round ?? null);
 		});
 		return () => {

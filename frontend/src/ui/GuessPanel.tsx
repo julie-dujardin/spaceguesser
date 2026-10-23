@@ -41,7 +41,7 @@ import { ToolSlot } from './tools';
 import { pin, useFlatMap } from './useFlatMap';
 
 interface Props {
-	/** Which bodies are offered: the run's pool. */
+	/** Which bodies are offered: the run's. */
 	difficulty: Difficulty;
 	guess: Guess | null;
 	/** Taking up the corner, rather than tucked out of the view's way. */
@@ -89,8 +89,8 @@ function Chart({
 	const [error, setError] = useState<string | null>(null);
 	const select = useRef(onSelect);
 	select.current = onSelect;
-	// The map is built once, on the level it was first asked for and the pool
-	// it was given.
+	// The map is built once, on the first level and difficulty it is given: a
+	// run keeps its difficulty.
 	const opening = useRef({ level, difficulty });
 	const key = JSON.stringify(level);
 
@@ -425,7 +425,7 @@ export function GuessPanel({
 			</div>
 			<div className={`surface${ring('surface')}`}>
 				{level.kind !== 'body' ? (
-					<Chart key={difficulty} level={level} difficulty={difficulty} onSelect={select} />
+					<Chart level={level} difficulty={difficulty} onSelect={select} />
 				) : info?.surface ? (
 					<Surface key={level.id} body={level.id} at={at} taking={live} onPick={place} />
 				) : (

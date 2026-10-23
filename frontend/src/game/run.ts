@@ -3,7 +3,7 @@
 import type { PanoramaEntry } from 'spacemap';
 import type { PastRun } from './history';
 import type { Place, Round } from './rounds';
-import type { RunSettings } from './rules';
+import { QUICK_PLAY, type RunSettings } from './rules';
 import { score, type Guess, type Score, type Sky } from './scoring';
 
 export interface Played {
@@ -66,13 +66,7 @@ export const INITIAL: Run = {
 	phase: 'home',
 	shared: false,
 	past: null,
-	settings: {
-		rounds: 0,
-		movement: 'free',
-		timer: 0,
-		modes: { ground: true, orbit: true },
-		difficulty: 'balanced'
-	},
+	settings: { ...QUICK_PLAY, rounds: 0 },
 	tutorial: false,
 	drawn: [],
 	round: 0,
