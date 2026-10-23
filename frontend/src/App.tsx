@@ -72,9 +72,8 @@ import { useSpace } from './ui/useSpace';
 /** Earth has panoramas of its own in the export, and is not in play. */
 const NO_GROUND = new Set(['naif-399']);
 
-/** What the opener is drawn from: Quick Play's kinds of round, over the bodies
- *  every difficulty plays, so it can start any run. */
-const OPENER: Draw = { modes: QUICK_PLAY.modes, difficulty: 'balanced' };
+/** What the opener is drawn from: it is the first round of a Quick Play. */
+const OPENER: Draw = { modes: QUICK_PLAY.modes, difficulty: QUICK_PLAY.difficulty };
 
 /** A card over the home screen, one at a time: the way into a multiplayer game,
  *  or the reader's own history. Null is the home screen. */
@@ -222,20 +221,21 @@ export default function App() {
 	}, [canOrbit, opener]);
 
 	const start = useCallback(
-		(settings: RunSettings) => {
+		(settings: RunSettings, quick = false) => {
 			if (!stops || !opener) return;
 			setGuess(null);
 			setMapOpen(false);
 			setProgress(FRESH);
 			const modes = modesFor(settings.modes);
-			// The opener is the first round only when the run plays its kind. Its
-			// date is the run's either way: that sky is the one already read.
-			const first = modes[opener.mode] ? [opener] : [];
+			// Quick Play opens on the place behind the home screen; any other run
+			// is drawn by its own rules, away from that place. Every run takes the
+			// opener's date: that sky is the one already read.
+			const first = quick && modes[opener.mode] ? [opener] : [];
 			const rest = drawRun(
 				stops,
 				settings.rounds - first.length,
 				{ modes, difficulty: settings.difficulty },
-				first,
+				[opener],
 				opener.time,
 				shadedOn(opener.time)
 			);
@@ -671,7 +671,7 @@ export default function App() {
 			{solo && !returning && !opening && run.phase === 'home' && (
 				<Home
 					ready={ready && !!opener}
-					onQuickPlay={() => start(QUICK_PLAY)}
+					onQuickPlay={() => start(QUICK_PLAY, true)}
 					onTutorial={startTutorial}
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
