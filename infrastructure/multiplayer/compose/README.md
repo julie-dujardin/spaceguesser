@@ -4,8 +4,8 @@ The multiplayer server + Postgres + cloudflared, deployed via docker-compose.
 
 The game has no host port: the only public path is the in-stack Cloudflare
 tunnel (which also terminates TLS) → `multiplayer:8787`. The server answers
-`/ws` and `/healthz` there, and refuses sockets from origins outside
-`ALLOWED_ORIGINS`. Its [metrics](../../../backend/README.md#metrics) are on a
+`/ws`, `/daily.json` and `/healthz` there, and refuses sockets from origins
+outside `ALLOWED_ORIGINS`. Its [metrics](../../../backend/README.md#metrics) are on a
 port of their own, 9787, which the tunnel must not be routed to. With
 `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE=create`, opening a lobby takes a
 Turnstile token, and with `create,join` so does joining one: the server's
@@ -28,7 +28,8 @@ to for five minutes, is closed and its rows deleted.
    cookie, and the privacy page says there are none. The widget's sitekey is
    the `PUBLIC_TURNSTILE_SITEKEY` variable of the site's Worker, set in the
    Cloudflare dashboard; its secret key goes in `.env`.
-3. `cp .env.example .env` and fill it in. Leave `TURNSTILE_REQUIRE` empty until
+3. `cp .env.example .env` and fill it in. Make `DAILY_HOST_DIR`, writable by
+   the account that uploads the daily challenge files. Leave `TURNSTILE_REQUIRE` empty until
    the site is live with the sitekey: a page without it has no proof to give,
    and opens no lobby on a server that requires one.
 4. Bring up the stack.

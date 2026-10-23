@@ -3,3 +3,6 @@ dist
 .wrangler
 tsconfig.tsbuildinfo
 .env
+
+# The daily challenge files: they contain the answers.
+/dailies

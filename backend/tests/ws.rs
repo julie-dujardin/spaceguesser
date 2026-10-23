@@ -26,6 +26,7 @@ async fn serve(database_url: Option<String>, allowed_origins: Vec<String>) -> Se
 		allowed_origins,
 		turnstile: None,
 		max_sockets: MAX_SOCKETS,
+		daily_dir: None,
 	})
 	.await
 }
@@ -525,6 +526,7 @@ async fn sockets_past_the_cap_are_refused_until_one_closes() {
 		allowed_origins: vec![],
 		turnstile: None,
 		max_sockets: 2,
+		daily_dir: None,
 	})
 	.await;
 	let hello = json!({ "type": "create", "name": "Ann", "identity": who("Ann") });
@@ -595,6 +597,7 @@ async fn guarded(secret: &str, verify_url: String, require: Vec<Action>) -> Serv
 			require,
 		}),
 		max_sockets: MAX_SOCKETS,
+		daily_dir: None,
 	})
 	.await
 }
@@ -713,6 +716,7 @@ async fn a_secret_cloudflare_does_not_know_stops_the_server_starting() {
 			require: vec![],
 		}),
 		max_sockets: MAX_SOCKETS,
+		daily_dir: None,
 	};
 	assert!(app(misconfigured).await.is_err());
 }

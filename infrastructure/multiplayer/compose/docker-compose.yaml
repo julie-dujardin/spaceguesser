@@ -34,6 +34,9 @@ services:
       # Unset, the server asks nobody for proof of a person.
       - TURNSTILE_SECRET=${TURNSTILE_SECRET:-}
       - TURNSTILE_REQUIRE=${TURNSTILE_REQUIRE:-}
+      - DAILY_DIR=/daily
+    volumes:
+      - ${DAILY_HOST_DIR:-/srv/spaceguesser/daily}:/daily:ro
     # Every player is an open file, and a container's soft limit is 1024. The
     # server takes 60,000 sockets, and needs what is left over.
     ulimits:

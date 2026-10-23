@@ -1,5 +1,7 @@
 //! Multiplayer lobbies over WebSockets: the relay between the players of a game.
+//! Beside them, the file of the daily challenge.
 
+use std::path::PathBuf;
 use std::sync::Arc;
 
 use axum::Router;
@@ -8,6 +10,7 @@ use axum::routing::get;
 use tokio::sync::Semaphore;
 use tracing::info;
 
+mod daily;
 mod lobby;
 mod metrics;
 mod protocol;
@@ -16,6 +19,7 @@ mod store;
 mod turnstile;
 mod ws;
 
+pub use daily::utc_day;
 use registry::Registry;
 use store::Store;
 use turnstile::Verifier;
@@ -31,6 +35,8 @@ pub struct Config {
 	pub turnstile: Option<Turnstile>,
 	/// Sockets open at once before more are refused: `MAX_SOCKETS`, deployed.
 	pub max_sockets: usize,
+	/// The folder of the daily challenge files. Unset, there is no challenge.
+	pub daily_dir: Option<PathBuf>,
 }
 
 struct App {
@@ -39,6 +45,7 @@ struct App {
 	turnstile: Option<Arc<Verifier>>,
 	/// A place for each socket that may still open.
 	sockets: Arc<Semaphore>,
+	daily_dir: Option<PathBuf>,
 }
 
 pub async fn app(config: Config) -> Result<Router, Box<dyn std::error::Error + Send + Sync>> {
@@ -61,9 +68,11 @@ pub async fn app(config: Config) -> Result<Router, Box<dyn std::error::Error + S
 		origins: config.allowed_origins,
 		turnstile,
 		sockets: Arc::new(Semaphore::new(config.max_sockets)),
+		daily_dir: config.daily_dir,
 	});
 	Ok(Router::new()
 		.route("/ws", get(ws::upgrade))
+		.route("/daily.json", get(daily::today))
 		.route("/healthz", get(|| async { "ok" }))
 		.with_state(app))
 }

@@ -17,8 +17,9 @@ names and drop it after, so it is safe to point at the development one.
 `BIND` (default `127.0.0.1:8787`), `DATABASE_URL` (unset: games live in
 memory only, for development) and `ALLOWED_ORIGINS` (comma-separated; unset:
 any) configure it,
-with `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE` for [proof of a person](#proof-of-a-person)
-and `METRICS_BIND` (default `127.0.0.1:9787`) for its [metrics](#metrics).
+with `TURNSTILE_SECRET` and `TURNSTILE_REQUIRE` for [proof of a person](#proof-of-a-person),
+`METRICS_BIND` (default `127.0.0.1:9787`) for its [metrics](#metrics)
+and `DAILY_DIR` for the [daily challenge](#daily-challenge).
 
 ## Protocol
 
@@ -90,6 +91,14 @@ The server sends four things:
 
 - `error {code}`: `not_found`, `full`, `not_host`, `bad_phase`,
   `bad_request`, `already_guessed`, `busy`, `unverified`.
+
+## Daily challenge
+
+`GET /daily.json` sends `DAILY_DIR/<YYYY-MM-DD>.json` for the current UTC
+date, as it is on disk, or a 404. The server sends no file of another day, so
+nobody can read a challenge before its day. The answer has
+`Cache-Control: no-cache` and names the page's origin when `ALLOWED_ORIGINS`
+holds it, or any origin when the list is empty.
 
 ## Proof of a person
 

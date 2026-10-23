@@ -56,6 +56,7 @@ async fn what_happens_at_the_sockets_is_counted() {
 			require: vec![Action::Create],
 		}),
 		max_sockets: MAX_SOCKETS,
+		daily_dir: None,
 	})
 	.await
 	.unwrap();
