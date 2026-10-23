@@ -12,6 +12,7 @@ import {
 	shownDate,
 	type Modes,
 	type Place,
+	type Pool,
 	type Round,
 	type Stop
 } from './game/rounds';
@@ -53,6 +54,10 @@ import { useSpace } from './ui/useSpace';
 
 /** Earth has panoramas of its own in the export, and is not in play. */
 const NO_GROUND = new Set(['naif-399']);
+
+/** What the opener is drawn from: Quick Play's kinds of round, over the bodies
+ *  every difficulty plays, so it can start any run. */
+const OPENER: Pool = { modes: QUICK_PLAY.modes, difficulty: 'balanced' };
 
 /** A card over the home screen, one at a time: the way into a multiplayer game,
  *  or the reader's own history. Null is the home screen. */
@@ -186,7 +191,8 @@ export default function App() {
 	useEffect(() => {
 		if (!stops || !ready || opener) return;
 		let dropped = false;
-		void drawLitRun(stops, 1, modesFor(QUICK_PLAY.modes), run.drawn).then(([round]) => {
+		const pool = { ...OPENER, modes: modesFor(OPENER.modes) };
+		void drawLitRun(stops, 1, pool, run.drawn).then(([round]) => {
 			if (!dropped) setOpener(round ?? null);
 		});
 		return () => {
@@ -211,7 +217,7 @@ export default function App() {
 			const rest = drawRun(
 				stops,
 				settings.rounds - first.length,
-				modes,
+				{ modes, difficulty: settings.difficulty },
 				first,
 				opener.time,
 				shadedOn(opener.time)
@@ -351,11 +357,11 @@ export default function App() {
 	// swap is this browser's to make: a lobby's rounds are the host's.
 	const redraw = () => {
 		if (!stops || lobby || shown?.mode !== 'orbit') return;
-		const modes = modesFor(run.phase === 'playing' ? run.settings.modes : QUICK_PLAY.modes);
+		const asked = run.phase === 'playing' ? run.settings : OPENER;
 		const [fresh] = drawRun(
 			stops,
 			1,
-			modes,
+			{ modes: modesFor(asked.modes), difficulty: asked.difficulty },
 			[...run.drawn, shown],
 			shown.time,
 			shadedOn(shown.time)
@@ -620,6 +626,7 @@ export default function App() {
 					/>
 					<GuessPanel
 						key={run.round}
+						difficulty={run.settings.difficulty}
 						guess={guess}
 						open={mapOpen}
 						headingDeg={heading}

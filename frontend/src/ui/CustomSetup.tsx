@@ -1,6 +1,13 @@
 import { LoaderCircle } from 'lucide-react';
 import { useState } from 'react';
-import { MOVEMENT_LABELS, QUICK_PLAY, type Movement, type RunSettings } from '../game/rules';
+import { POOLS, type Difficulty } from '../game/bodies';
+import {
+	DIFFICULTY_LABELS,
+	MOVEMENT_LABELS,
+	QUICK_PLAY,
+	type Movement,
+	type RunSettings
+} from '../game/rules';
 import * as m from '../paraglide/messages.js';
 
 export interface SetupAction {
@@ -79,6 +86,20 @@ export function CustomSetup({ title, initial = QUICK_PLAY, actions, onBack, read
 							{ value: 'both', label: m.setup_both() }
 						]}
 					/>
+				</div>
+				<div className="field">
+					<span className="hd">{m.setup_difficulty()}</span>
+					<Seg
+						value={settings.difficulty}
+						onChange={(difficulty) => set({ difficulty })}
+						options={(Object.keys(DIFFICULTY_LABELS) as Difficulty[]).map((value) => ({
+							value,
+							label: DIFFICULTY_LABELS[value]()
+						}))}
+					/>
+					<span className="note">
+						{m.difficulty_worlds({ count: POOLS[settings.difficulty].length })}
+					</span>
 				</div>
 				<div className="field">
 					<span className="hd">{m.setup_movement()}</span>

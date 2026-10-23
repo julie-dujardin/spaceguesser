@@ -127,7 +127,9 @@ export function settingsOf(value: unknown): RunSettings {
 		modes:
 			given.modes && (given.modes.ground || given.modes.orbit)
 				? { ground: !!given.modes.ground, orbit: !!given.modes.orbit }
-				: QUICK_PLAY.modes
+				: QUICK_PLAY.modes,
+		// Runs from before there was a choice played the whole catalogue.
+		difficulty: given.difficulty === 'balanced' ? 'balanced' : 'hard'
 	};
 }
 

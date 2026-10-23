@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
+import { POOLS } from './bodies';
 import { spot, type Stop } from './rounds';
 import {
 	LESSONS,
@@ -57,6 +58,11 @@ describe('tutorialRun', () => {
 			expect(round.u).toBeLessThan(1);
 			expect(apart(spot(round, where.noon), where.over)).toBeLessThan(1e-5);
 		});
+	});
+
+	it('asks only about bodies its guess panel offers', () => {
+		const offered = new Set(POOLS[TUTORIAL.difficulty].map((body) => body.id));
+		expect(LESSONS.map(({ where }) => where.body).filter((id) => !offered.has(id))).toEqual([]);
 	});
 
 	it('leaves out a lesson whose panorama is gone, and the flown ones without a map', () => {

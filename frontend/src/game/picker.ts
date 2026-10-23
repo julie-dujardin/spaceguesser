@@ -5,12 +5,12 @@
  */
 
 import {
-	BODIES,
+	POOLS,
 	bodyName,
 	bodyOf,
-	membersOf,
 	systemName,
 	type BodyInfo,
+	type Difficulty,
 	type Zone
 } from './bodies';
 import * as m from '../paraglide/messages.js';
@@ -48,27 +48,32 @@ export function levelTitle(level: Level): string {
 	}
 }
 
+/** What of one system a run of `difficulty` offers. */
+function offered(system: string, difficulty: Difficulty): BodyInfo[] {
+	return POOLS[difficulty].filter((body) => body.system === system);
+}
+
 /** The level a body is reached from: its system when that has more than the
  *  one body in play, else its zone, else the Solar System itself. */
-function above(body: BodyInfo): Level | null {
-	if (membersOf(body.system).length > 1) return { kind: 'system', id: body.system };
+function above(body: BodyInfo, difficulty: Difficulty): Level | null {
+	if (offered(body.system, difficulty).length > 1) return { kind: 'system', id: body.system };
 	if (body.zone) return { kind: 'zone', zone: body.zone };
 	return null;
 }
 
 /** The whole trail to a body, for a jump straight to it: back still walks up
  *  the way a reader would have come down. */
-export function trailTo(id: string): Level[] {
+export function trailTo(id: string, difficulty: Difficulty): Level[] {
 	const body = bodyOf(id);
 	if (!body) return ROOT;
-	const parent = above(body);
+	const parent = above(body, difficulty);
 	return [...ROOT, ...(parent ? [parent] : []), { kind: 'body', id }];
 }
 
 /** Where picking a system leads: its map, or straight to its one body in
  *  play when a map would hold nothing else. */
-export function intoSystem(trail: Level[], system: string): Level[] {
-	const members = membersOf(system);
+export function intoSystem(trail: Level[], system: string, difficulty: Difficulty): Level[] {
+	const members = offered(system, difficulty);
 	return [
 		...trail,
 		members.length === 1 ? { kind: 'body', id: members[0].id } : { kind: 'system', id: system }
@@ -80,7 +85,7 @@ const fold = (text: string) => text.normalize('NFD').replace(/\p{M}/gu, '').toLo
 
 /** Bodies whose name holds `query`, the ones that start with it first. A name
  *  is typed in the reader's language or as the catalogue has it. */
-export function search(query: string, limit = 8): BodyInfo[] {
+export function search(query: string, difficulty: Difficulty, limit = 8): BodyInfo[] {
 	const wanted = fold(query.trim());
 	if (!wanted) return [];
 	const rank = (text: string) => {
@@ -91,29 +96,33 @@ export function search(query: string, limit = 8): BodyInfo[] {
 		if (words.some((word) => word.startsWith(wanted))) return 1;
 		return name.includes(wanted) ? 2 : Infinity;
 	};
-	return BODIES.map((body) => {
-		const name = bodyName(body.id);
-		return { body, name, at: Math.min(rank(name), rank(body.name)) };
-	})
+	return POOLS[difficulty]
+		.map((body) => {
+			const name = bodyName(body.id);
+			return { body, name, at: Math.min(rank(name), rank(body.name)) };
+		})
 		.filter((hit) => hit.at < Infinity)
 		.sort((a, b) => a.at - b.at || a.name.localeCompare(b.name, getLocale()))
 		.slice(0, limit)
 		.map((hit) => hit.body);
 }
 
-/** What the system map is told of the catalogue: which bodies to draw, what
- *  they are called, and where the small ones orbit, so it reads none of that. */
-export const PICKER = {
-	bodies: BODIES.map((body) => body.id),
-	names: Object.fromEntries([
-		...BODIES.map((body) => [body.id, bodyName(body.id)]),
-		...[...new Set(BODIES.map((body) => body.system))].map((id) => [id, systemName(id)])
-	]) as Record<string, string>,
-	places: BODIES.filter((body) => body.zone).map(({ id, aAu, tiltDeg, radiusKm }) => ({
-		id,
-		name: bodyName(id),
-		aAu,
-		tiltDeg,
-		radiusKm
-	}))
+/** What the system map is told of a pool: which bodies to draw, what they are
+ *  called, and where the small ones orbit, so it reads none of that. */
+function pickerOf(pool: readonly BodyInfo[]) {
+	return {
+		bodies: pool.map((body) => body.id),
+		names: Object.fromEntries([
+			...pool.map((body) => [body.id, bodyName(body.id)]),
+			...[...new Set(pool.map((body) => body.system))].map((id) => [id, systemName(id)])
+		]) as Record<string, string>,
+		places: pool
+			.filter((body) => body.zone)
+			.map(({ id, aAu, tiltDeg, radiusKm }) => ({ id, name: bodyName(id), aAu, tiltDeg, radiusKm }))
+	};
+}
+
+export const PICKERS: Record<Difficulty, ReturnType<typeof pickerOf>> = {
+	balanced: pickerOf(POOLS.balanced),
+	hard: pickerOf(POOLS.hard)
 };

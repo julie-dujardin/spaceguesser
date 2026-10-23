@@ -91,7 +91,7 @@ export function Party({
 					const rounds = drawRun(
 						stops,
 						settings.rounds,
-						modesFor(settings.modes),
+						{ modes: modesFor(settings.modes), difficulty: settings.difficulty },
 						[opener],
 						opener.time,
 						shadedOn(opener.time)
@@ -354,6 +354,7 @@ function Round({
 			)}
 			{!waiting && !observing && (
 				<GuessPanel
+					difficulty={settings.difficulty}
 					placed={placed}
 					guess={guess}
 					open={mapOpen}

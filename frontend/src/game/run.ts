@@ -66,7 +66,13 @@ export const INITIAL: Run = {
 	phase: 'home',
 	shared: false,
 	past: null,
-	settings: { rounds: 0, movement: 'free', timer: 0, modes: { ground: true, orbit: true } },
+	settings: {
+		rounds: 0,
+		movement: 'free',
+		timer: 0,
+		modes: { ground: true, orbit: true },
+		difficulty: 'balanced'
+	},
 	tutorial: false,
 	drawn: [],
 	round: 0,

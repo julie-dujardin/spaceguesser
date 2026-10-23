@@ -4,6 +4,7 @@ import type { PanoramaEntry } from 'spacemap';
 import { groundDistanceM, isViewable } from 'spacemap';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
+import type { Difficulty } from './bodies';
 import type { Modes } from './rounds';
 
 export type Movement = 'free' | 'look' | 'frozen';
@@ -15,13 +16,26 @@ export interface RunSettings {
 	timer: number;
 	/** Which kinds of round are drawn; a coin toss between them when both are. */
 	modes: Modes;
+	difficulty: Difficulty;
 }
 
 export const QUICK_PLAY: RunSettings = {
 	rounds: 5,
 	movement: 'free',
 	timer: 0,
-	modes: { ground: true, orbit: true }
+	modes: { ground: true, orbit: true },
+	difficulty: 'balanced'
+};
+
+export const DIFFICULTY_LABELS: Record<Difficulty, () => string> = {
+	balanced: m.difficulty_balanced,
+	hard: m.difficulty_hard
+};
+
+/** A difficulty named where no heading says what the word is about. */
+export const DIFFICULTY_NAMES: Record<Difficulty, () => string> = {
+	balanced: m.rules_balanced,
+	hard: m.rules_hard
 };
 
 export const MOVEMENT_LABELS: Record<Movement, () => string> = {
@@ -128,6 +142,7 @@ export function describeRun(settings: RunSettings): string[] {
 			: ground
 				? m.rules_ground_only()
 				: m.rules_orbit_only(),
+		DIFFICULTY_NAMES[settings.difficulty](),
 		movementName(settings.movement),
 		settings.timer ? m.rules_timer({ seconds: settings.timer }) : m.rules_no_timer()
 	];

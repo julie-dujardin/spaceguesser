@@ -101,7 +101,12 @@ describe('the kept history', () => {
 			JSON.stringify([null, 'run', { at: NOW }, { at: NOW, total: 900, settings: { rounds: 3 } }])
 		);
 		expect(recallHistory()).toEqual([
-			{ at: NOW, total: 900, code: null, settings: { ...QUICK_PLAY, rounds: 3 } }
+			{
+				at: NOW,
+				total: 900,
+				code: null,
+				settings: { ...QUICK_PLAY, rounds: 3, difficulty: 'hard' }
+			}
 		]);
 		localStorage.setItem('spaceguesser.history', '{not json');
 		expect(recallHistory()).toEqual([]);
@@ -126,6 +131,9 @@ describe('a run in a row', () => {
 		expect(describePast(run())).toBe('5 rounds');
 		expect(describePast(run({ settings: { ...QUICK_PLAY, rounds: 10, timer: 60 } }))).toBe(
 			'10 rounds · 60 s'
+		);
+		expect(describePast(run({ settings: { ...QUICK_PLAY, difficulty: 'hard' } }))).toBe(
+			'5 rounds · hard mode'
 		);
 		expect(describePast(run({ place: 2, of: 4 }))).toBe('2nd of 4');
 		expect(describePast(run({ place: 11, of: 12 }))).toBe('11th of 12');

@@ -3,9 +3,9 @@
 
 import { ExternalLink } from 'lucide-react';
 import { Fragment } from 'react';
-import { BODIES } from '../game/bodies';
+import { POOLS } from '../game/bodies';
 import { SITE } from '../game/links';
-import { formatNumber } from '../game/rules';
+import { QUICK_PLAY, formatNumber } from '../game/rules';
 import { TIERS, type Score } from '../game/scoring';
 import * as m from '../paraglide/messages.js';
 
@@ -56,7 +56,12 @@ export function Onward({ panoramas }: { panoramas: number }) {
 	return (
 		<div className="why">
 			<span className="hd">{m.tutorial_next_title()}</span>
-			<p>{m.tutorial_next({ panoramas: formatNumber(panoramas), bodies: BODIES.length })}</p>
+			<p>
+				{m.tutorial_next({
+					panoramas: formatNumber(panoramas),
+					bodies: POOLS[QUICK_PLAY.difficulty].length
+				})}
+			</p>
 			<p>
 				{parts.map((part, i) =>
 					part === '\u0000' ? (

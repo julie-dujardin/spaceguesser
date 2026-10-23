@@ -35,9 +35,20 @@ export interface BodyInfo {
 	model?: boolean;
 	/** False where no spin is measured: the body has no noon to stand under. */
 	spin?: false;
+	/** False where the view shows too little to tell the body from others by:
+	 *  only a hard run plays it. */
+	balanced?: false;
 }
 
 export const BODIES = catalogue as BodyInfo[];
+
+/** How much of the catalogue a run flies over and offers to guess. */
+export type Difficulty = 'balanced' | 'hard';
+
+export const POOLS: Record<Difficulty, readonly BodyInfo[]> = {
+	balanced: BODIES.filter((body) => body.balanced !== false),
+	hard: BODIES
+};
 
 const BY_ID = new Map(BODIES.map((body) => [body.id, body]));
 

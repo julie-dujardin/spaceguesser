@@ -90,17 +90,35 @@ describe('drawLitRun', () => {
 
 	it('flies over no moon in eclipse', async () => {
 		for (const id of MOONS) if (id !== EUROPA) SUNLIGHT.set(id, 0);
-		const run = await drawLitRun([], 200, { ground: false, orbit: true }, [], fresh());
+		const run = await drawLitRun(
+			[],
+			200,
+			{ modes: { ground: false, orbit: true }, difficulty: 'hard' },
+			[],
+			fresh()
+		);
 		const flown = new Set(run.map((round) => round.body));
 		expect(MOONS.filter((id) => flown.has(id))).toEqual([EUROPA]);
 	});
 
 	it('does not ask the sky for a draw that cannot fly', async () => {
-		const run = await drawLitRun(stops, 2, { ground: true, orbit: false }, [], fresh());
+		const run = await drawLitRun(
+			stops,
+			2,
+			{ modes: { ground: true, orbit: false }, difficulty: 'hard' },
+			[],
+			fresh()
+		);
 		expect(run.map((round) => round.mode)).toEqual(['ground', 'ground']);
 		expect(asked).toEqual([]);
 		// With no stop to stand on, the same modes are flown.
-		await drawLitRun([], 1, { ground: true, orbit: false }, [], fresh());
+		await drawLitRun(
+			[],
+			1,
+			{ modes: { ground: true, orbit: false }, difficulty: 'hard' },
+			[],
+			fresh()
+		);
 		expect(asked.length).toBeGreaterThan(0);
 	});
 
@@ -108,7 +126,13 @@ describe('drawLitRun', () => {
 		vi.useFakeTimers();
 		down = 'silent';
 		let run: unknown = null;
-		void drawLitRun([], 3, { ground: false, orbit: true }, [], fresh()).then((drawn) => {
+		void drawLitRun(
+			[],
+			3,
+			{ modes: { ground: false, orbit: true }, difficulty: 'hard' },
+			[],
+			fresh()
+		).then((drawn) => {
 			run = drawn;
 		});
 		await vi.advanceTimersByTimeAsync(4_900);

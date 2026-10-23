@@ -16,13 +16,26 @@ const EXCLUDED = {
 	'naif-10': 'the Sun has no surface to stand over',
 	'naif-399': 'every other guessing game is already here',
 	'spkid-120065803': 'a moon of an asteroid: the map never loads it',
-	'spkid-20101955': 'Bennu: the map has no position for it at present dates',
-	'spkid-20065803': 'Didymos: the map has no position for it at present dates',
 	'naif-635': 'Daphnis: too small for the map to draw',
 	'naif-701': 'Ariel: the side in sunlight this decade was never mapped',
 	'naif-702': 'Umbriel: the side in sunlight this decade was never mapped',
 	'naif-703': 'Titania: the side in sunlight this decade was never mapped',
 	'naif-704': 'Oberon: the side in sunlight this decade was never mapped'
+};
+
+/**
+ * Played only in hard runs, with why: the view shows too little to tell each
+ * from the bodies like it.
+ */
+const HARD_ONLY = {
+	'naif-610': 'Janus: shares its orbit with Epimetheus, and looks like it',
+	'naif-611': 'Epimetheus: shares its orbit with Janus, and looks like it',
+	'naif-612': "Helene: a trojan of Dione's",
+	'naif-613': "Telesto: a trojan of Tethys'",
+	'naif-614': "Calypso: a trojan of Tethys'",
+	'naif-616': 'Prometheus: one of the two like shepherds of the F ring',
+	'naif-617': 'Pandora: one of the two like shepherds of the F ring',
+	'spkid-20065803': 'Didymos: a smooth shape and no map'
 };
 
 /** Nothing of the ground shows from orbit, so the body is the whole answer. */
@@ -179,6 +192,10 @@ for (const [id, { map: systemMap, model }] of candidates) {
 	// by its orbit.
 	const small = system === id && kind !== 'planet';
 	const orbit = heliocentric.get(id) ?? record.orbit;
+	// A small body is told by its shape, and only a probe has seen one well
+	// enough: radar sounds out a smooth lump.
+	const seen =
+		!['asteroid', 'comet'].includes(kind) || record.model_source?.provenance === 'missions';
 	out.push({
 		id,
 		name: tidy(record.name),
@@ -193,6 +210,7 @@ for (const [id, { map: systemMap, model }] of candidates) {
 		peakKm: peakKm > 0 ? Math.round(peakKm * 100) / 100 : undefined,
 		surface: widthPx > 0 && !CLOUDED.has(id),
 		model: model || undefined,
+		balanced: seen && !(id in HARD_ONLY) ? undefined : false,
 		// With no measured spin there is no noon to stand under.
 		spin: record.orientation ? undefined : false
 	});

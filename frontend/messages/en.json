@@ -34,6 +34,19 @@
 	"setup_on_ground": "on the ground",
 	"setup_from_orbit": "from orbit",
 	"setup_both": "both",
+	"setup_difficulty": "difficulty",
+	"difficulty_balanced": "balanced",
+	"difficulty_hard": "hard",
+	"difficulty_worlds": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} world",
+				"countPlural=other": "{count} worlds"
+			}
+		}
+	],
 	"setup_movement": "movement",
 	"movement_free": "free",
 	"movement_look": "look only",
@@ -72,6 +85,8 @@
 	"rules_ground_and_orbit": "ground and orbit",
 	"rules_ground_only": "ground only",
 	"rules_orbit_only": "orbit only",
+	"rules_balanced": "balanced mode",
+	"rules_hard": "hard mode",
 	"rules_timer": "{seconds} s per round",
 	"rules_no_timer": "no timer",
 	"create_a_run": "Create a run",

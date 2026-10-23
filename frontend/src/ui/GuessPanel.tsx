@@ -21,10 +21,10 @@ import {
 	type SystemMapTarget,
 	type SystemMapView
 } from 'spacemap';
-import { bodyName, bodyOf } from '../game/bodies';
+import { bodyName, bodyOf, type Difficulty } from '../game/bodies';
 import { HOST } from '../game/host';
 import {
-	PICKER,
+	PICKERS,
 	ROOT,
 	STEP,
 	STEPS,
@@ -41,6 +41,8 @@ import { ToolSlot } from './tools';
 import { pin, useFlatMap } from './useFlatMap';
 
 interface Props {
+	/** Which bodies are offered: the run's pool. */
+	difficulty: Difficulty;
 	guess: Guess | null;
 	/** Taking up the corner, rather than tucked out of the view's way. */
 	open: boolean;
@@ -72,15 +74,24 @@ function viewOf(level: MapLevel): SystemMapView {
 
 /** The map of a level, and under it the same targets by name: the map draws
  *  no names, and a dot two pixels wide is no target for a thumb. */
-function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTarget) => void }) {
+function Chart({
+	level,
+	difficulty,
+	onSelect
+}: {
+	level: MapLevel;
+	difficulty: Difficulty;
+	onSelect: (t: SystemMapTarget) => void;
+}) {
 	const container = useRef<HTMLDivElement>(null);
 	const [map, setMap] = useState<SystemMap | null>(null);
 	const [targets, setTargets] = useState<SystemMapTarget[]>([]);
 	const [error, setError] = useState<string | null>(null);
 	const select = useRef(onSelect);
 	select.current = onSelect;
-	// The map is built once, on the level it was first asked for.
-	const opening = useRef(level);
+	// The map is built once, on the level it was first asked for and the pool
+	// it was given.
+	const opening = useRef({ level, difficulty });
 	const key = JSON.stringify(level);
 
 	useEffect(() => {
@@ -91,8 +102,8 @@ function Chart({ level, onSelect }: { level: MapLevel; onSelect: (t: SystemMapTa
 		createSystemMap({
 			...HOST,
 			container: element,
-			view: viewOf(opening.current),
-			...PICKER,
+			view: viewOf(opening.current.level),
+			...PICKERS[opening.current.difficulty],
 			grouping: 'systems',
 			zones: 'inner-outer',
 			rings: 'visible',
@@ -278,6 +289,7 @@ function Coordinates({
 }
 
 export function GuessPanel({
+	difficulty,
 	guess,
 	open,
 	headingDeg,
@@ -325,11 +337,11 @@ export function GuessPanel({
 	const select = (target: SystemMapTarget) => {
 		if (!live()) return;
 		if (target.kind === 'zone') go([...trail, { kind: 'zone', zone: target.zone }]);
-		else if (target.kind === 'system') go(intoSystem(trail, target.id));
+		else if (target.kind === 'system') go(intoSystem(trail, target.id, difficulty));
 		else go([...trail, { kind: 'body', id: target.id }]);
 	};
 
-	const hits = search(query);
+	const hits = search(query, difficulty);
 	const info = level.kind === 'body' ? bodyOf(level.id) : undefined;
 	const complete = !!guess && (!info?.surface || !!guess.at);
 	const body = level.kind === 'body' ? level.id : null;
@@ -392,16 +404,18 @@ export function GuessPanel({
 						disabled={locked}
 						onChange={(event) => setQuery(event.target.value)}
 						onKeyDown={(event) => {
-							if (event.key === 'Enter' && hits[0]) go(trailTo(hits[0].id));
+							if (event.key === 'Enter' && hits[0]) go(trailTo(hits[0].id, difficulty));
 							if (event.key === 'Escape') setQuery('');
 						}}
 					/>
 					{query.trim() !== '' && (
 						<div className="hits glass">
 							{hits.map((hit) => (
-								<button type="button" key={hit.id} onClick={() => go(trailTo(hit.id))}>
+								<button type="button" key={hit.id} onClick={() => go(trailTo(hit.id, difficulty))}>
 									{bodyName(hit.id)}
-									<span className="mono dim">{levelTitle(trailTo(hit.id).at(-2) ?? ROOT[0])}</span>
+									<span className="mono dim">
+										{levelTitle(trailTo(hit.id, difficulty).at(-2) ?? ROOT[0])}
+									</span>
 								</button>
 							))}
 							{hits.length === 0 && <span className="note">{m.search_no_hits()}</span>}
@@ -411,7 +425,7 @@ export function GuessPanel({
 			</div>
 			<div className={`surface${ring('surface')}`}>
 				{level.kind !== 'body' ? (
-					<Chart level={level} onSelect={select} />
+					<Chart key={difficulty} level={level} difficulty={difficulty} onSelect={select} />
 				) : info?.surface ? (
 					<Surface key={level.id} body={level.id} at={at} taking={live} onPick={place} />
 				) : (

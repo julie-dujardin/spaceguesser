@@ -34,6 +34,19 @@
 	"setup_on_ground": "au sol",
 	"setup_from_orbit": "depuis l'orbite",
 	"setup_both": "les deux",
+	"setup_difficulty": "difficulté",
+	"difficulty_balanced": "équilibré",
+	"difficulty_hard": "difficile",
+	"difficulty_worlds": [
+		{
+			"declarations": ["input count", "local countPlural = count: plural"],
+			"selectors": ["countPlural"],
+			"match": {
+				"countPlural=one": "{count} monde",
+				"countPlural=other": "{count} mondes"
+			}
+		}
+	],
 	"setup_movement": "déplacement",
 	"movement_free": "libre",
 	"movement_look": "regard seul",
@@ -72,6 +85,8 @@
 	"rules_ground_and_orbit": "sol et orbite",
 	"rules_ground_only": "sol uniquement",
 	"rules_orbit_only": "orbite uniquement",
+	"rules_balanced": "mode équilibré",
+	"rules_hard": "mode difficile",
 	"rules_timer": "{seconds} s par manche",
 	"rules_no_timer": "sans chrono",
 	"create_a_run": "Créer une partie",

@@ -1,6 +1,6 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import type { PanoramaEntry } from 'spacemap';
-import { BODIES, bodyOf, setTiled, viewDistance } from './bodies';
+import { BODIES, POOLS, bodyOf, setTiled, viewDistance } from './bodies';
 import {
 	aim,
 	altitudeKm,
@@ -81,43 +81,146 @@ describe('drawRun', () => {
 	const LIT = new Set<string>();
 
 	it('tosses a coin between the two modes', () => {
-		const run = drawRun(stops(400), 200, { ground: true, orbit: true }, [], now, LIT, seeded(1));
+		const run = drawRun(
+			stops(400),
+			200,
+			{ modes: { ground: true, orbit: true }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(1)
+		);
 		const ground = run.filter((round) => round.mode === 'ground').length;
 		expect(ground).toBeGreaterThan(70);
 		expect(ground).toBeLessThan(130);
 	});
 
 	it('plays one mode alone when the other is switched off', () => {
-		const ground = drawRun(stops(40), 10, { ground: true, orbit: false }, [], now, LIT, seeded(2));
+		const ground = drawRun(
+			stops(40),
+			10,
+			{ modes: { ground: true, orbit: false }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(2)
+		);
 		expect(ground.every((round) => round.mode === 'ground')).toBe(true);
-		const orbit = drawRun(stops(40), 10, { ground: false, orbit: true }, [], now, LIT, seeded(2));
+		const orbit = drawRun(
+			stops(40),
+			10,
+			{ modes: { ground: false, orbit: true }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(2)
+		);
 		expect(orbit.every((round) => round.mode === 'orbit')).toBe(true);
 	});
 
 	it('flies the rounds it has no stop for', () => {
-		const run = drawRun([], 5, { ground: true, orbit: false }, [], now, LIT, seeded(3));
+		const run = drawRun(
+			[],
+			5,
+			{ modes: { ground: true, orbit: false }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(3)
+		);
 		expect(run.map((round) => round.mode)).toEqual(Array(5).fill('orbit'));
-		const short = drawRun(stops(2), 5, { ground: true, orbit: false }, [], now, LIT, seeded(3));
+		const short = drawRun(
+			stops(2),
+			5,
+			{ modes: { ground: true, orbit: false }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(3)
+		);
 		expect(short).toHaveLength(5);
 		expect(short.filter((round) => round.mode === 'ground')).toHaveLength(2);
 	});
 
 	it('does not fly over one body twice while another is left', () => {
 		const count = BODIES.length;
-		const run = drawRun([], count, { ground: false, orbit: true }, [], now, LIT, seeded(4));
+		const run = drawRun(
+			[],
+			count,
+			{ modes: { ground: false, orbit: true }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(4)
+		);
 		expect(new Set(run.map((round) => round.body)).size).toBe(count);
+	});
+
+	it('flies over every body a balanced run plays, and nothing else', () => {
+		const count = POOLS.balanced.length;
+		const run = drawRun(
+			[],
+			count,
+			{ modes: { ground: false, orbit: true }, difficulty: 'balanced' },
+			[],
+			now,
+			LIT,
+			seeded(9)
+		);
+		expect(new Set(run.map((round) => round.body))).toEqual(
+			new Set(POOLS.balanced.map((body) => body.id))
+		);
+		expect(run.some((round) => bodyOf(round.body)?.balanced === false)).toBe(false);
+	});
+
+	it('stands on no body a run does not offer', () => {
+		const hardOnly = POOLS.hard.find((body) => body.balanced === false)!;
+		const stop: Stop = {
+			body: hardOnly.id,
+			entry: { id: 'p', mission: 'lander', lat: 0, lon: 0, time: '' } as PanoramaEntry
+		};
+		const modes = { ground: true, orbit: false };
+		const hard = drawRun([stop], 1, { modes, difficulty: 'hard' }, [], now, LIT, seeded(10));
+		expect(hard.map((round) => round.body)).toEqual([hardOnly.id]);
+		const balanced = drawRun(
+			[stop],
+			3,
+			{ modes, difficulty: 'balanced' },
+			[],
+			now,
+			LIT,
+			seeded(10)
+		);
+		expect(balanced.map((round) => round.mode)).toEqual(['orbit', 'orbit', 'orbit']);
+		expect(balanced.some((round) => round.body === hardOnly.id)).toBe(false);
 	});
 
 	it('flies over nothing in shadow, however long the run', () => {
 		const shaded = new Set(BODIES.filter((body) => body.kind === 'moon').map((body) => body.id));
 		const count = 3 * BODIES.length;
-		const run = drawRun([], count, { ground: false, orbit: true }, [], now, shaded, seeded(8));
+		const run = drawRun(
+			[],
+			count,
+			{ modes: { ground: false, orbit: true }, difficulty: 'hard' },
+			[],
+			now,
+			shaded,
+			seeded(8)
+		);
 		expect(run).toHaveLength(count);
 		expect(run.filter((round) => shaded.has(round.body))).toEqual([]);
 	});
 
 	it('gives every round of a run the one date', () => {
-		const run = drawRun(stops(40), 50, { ground: true, orbit: true }, [], now, LIT, seeded(5));
+		const run = drawRun(
+			stops(40),
+			50,
+			{ modes: { ground: true, orbit: true }, difficulty: 'hard' },
+			[],
+			now,
+			LIT,
+			seeded(5)
+		);
 		expect(new Set(run.map((round) => round.time))).toEqual(new Set([now]));
 	});
 

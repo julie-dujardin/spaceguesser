@@ -6,7 +6,7 @@
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 import { settingsOf } from './lobby';
-import { QUICK_PLAY, type RunSettings } from './rules';
+import { DIFFICULTY_NAMES, QUICK_PLAY, type RunSettings } from './rules';
 import type { Played } from './run';
 import { shareCode } from './share';
 
@@ -48,13 +48,16 @@ export function kindOf(run: PastRun): RunKind {
 }
 
 /** What a row says of a run besides its kind: how it went among friends, or
- *  how long it was. */
+ *  how long it was and, where it is not Quick Play's, its difficulty. */
 export function describePast(run: PastRun): string {
 	if (run.place !== undefined && run.of !== undefined)
 		return m.place_of({ place: run.place, of: run.of });
-	const { rounds, timer } = run.settings;
-	const length = m.rules_rounds({ count: rounds });
-	return timer ? `${length} · ${m.timer_seconds({ count: timer })}` : length;
+	const { rounds, timer, difficulty } = run.settings;
+	return [
+		m.rules_rounds({ count: rounds }),
+		...(timer ? [m.timer_seconds({ count: timer })] : []),
+		...(difficulty === QUICK_PLAY.difficulty ? [] : [DIFFICULTY_NAMES[difficulty]()])
+	].join(' · ');
 }
 
 /** A day as the reader's own clock has it, and as their language writes it. */

@@ -14,7 +14,8 @@ export const TUTORIAL: RunSettings = {
 	rounds: 9,
 	movement: 'free',
 	timer: 0,
-	modes: { ground: true, orbit: true }
+	modes: { ground: true, orbit: true },
+	difficulty: 'balanced'
 };
 
 /** The run's date. One for every round, as a run and its link carry one, and

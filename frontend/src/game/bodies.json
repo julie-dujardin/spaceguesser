@@ -225,7 +225,8 @@
 		"system": "naif-699",
 		"radiusKm": 90.33,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-611",
@@ -235,7 +236,8 @@
 		"radiusKm": 58.4,
 		"widthPx": 3600,
 		"surface": true,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-612",
@@ -244,7 +246,8 @@
 		"system": "naif-699",
 		"radiusKm": 18.47,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-613",
@@ -253,7 +256,8 @@
 		"system": "naif-699",
 		"radiusKm": 12.63,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-614",
@@ -262,7 +266,8 @@
 		"system": "naif-699",
 		"radiusKm": 10.3,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-615",
@@ -280,7 +285,8 @@
 		"system": "naif-699",
 		"radiusKm": 46,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-617",
@@ -289,7 +295,8 @@
 		"system": "naif-699",
 		"radiusKm": 41.5,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "naif-618",
@@ -516,7 +523,8 @@
 		"tiltDeg": 3.1,
 		"radiusKm": 116.67,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20000021",
@@ -540,7 +548,8 @@
 		"tiltDeg": 13.1,
 		"radiusKm": 61,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20000243",
@@ -603,7 +612,8 @@
 		"tiltDeg": 52.2,
 		"radiusKm": 2.9,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20001620",
@@ -615,7 +625,8 @@
 		"tiltDeg": 13.3,
 		"radiusKm": 1.28,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20002063",
@@ -628,6 +639,7 @@
 		"radiusKm": 0.51,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -640,7 +652,8 @@
 		"tiltDeg": 15.8,
 		"radiusKm": 1.15,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20002867",
@@ -666,6 +679,7 @@
 		"radiusKm": 1.33,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -679,6 +693,7 @@
 		"radiusKm": 0.92,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -692,6 +707,7 @@
 		"radiusKm": 0.17,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -705,6 +721,7 @@
 		"radiusKm": 0.7,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -718,6 +735,7 @@
 		"radiusKm": 0.27,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -730,7 +748,8 @@
 		"tiltDeg": 8.4,
 		"radiusKm": 1.46,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20010115",
@@ -742,7 +761,8 @@
 		"tiltDeg": 15.3,
 		"radiusKm": 0.47,
 		"surface": false,
-		"model": true
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20025143",
@@ -768,6 +788,7 @@
 		"radiusKm": 0.65,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -781,6 +802,7 @@
 		"radiusKm": 0.22,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -806,7 +828,21 @@
 		"radiusKm": 0.5,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
+	},
+	{
+		"id": "spkid-20065803",
+		"name": "Didymos",
+		"kind": "asteroid",
+		"system": "spkid-20065803",
+		"zone": "inner",
+		"aAu": 1.643,
+		"tiltDeg": 3.4,
+		"radiusKm": 0.36,
+		"surface": false,
+		"model": true,
+		"balanced": false
 	},
 	{
 		"id": "spkid-20066391",
@@ -819,6 +855,7 @@
 		"radiusKm": 0.66,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -832,7 +869,22 @@
 		"radiusKm": 0.17,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
+	},
+	{
+		"id": "spkid-20101955",
+		"name": "Bennu",
+		"kind": "asteroid",
+		"system": "spkid-20101955",
+		"zone": "inner",
+		"aAu": 1.126,
+		"tiltDeg": 6,
+		"radiusKm": 0.27,
+		"widthPx": 11836,
+		"tilesPx": 32768,
+		"surface": true,
+		"model": true
 	},
 	{
 		"id": "spkid-20153591",
@@ -845,6 +897,7 @@
 		"radiusKm": 1,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -870,6 +923,7 @@
 		"radiusKm": 1.75,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{
@@ -883,6 +937,7 @@
 		"radiusKm": 0.2,
 		"surface": false,
 		"model": true,
+		"balanced": false,
 		"spin": false
 	},
 	{

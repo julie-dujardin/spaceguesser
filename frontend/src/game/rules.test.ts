@@ -27,13 +27,15 @@ describe('describeRun', () => {
 		expect(describeRun({ ...QUICK_PLAY, timer: 30 })).toEqual([
 			'5 rounds',
 			'ground and orbit',
+			'balanced mode',
 			'free movement',
 			'30 s per round'
 		]);
 		overwriteGetLocale(() => 'fr');
-		expect(describeRun({ ...QUICK_PLAY, rounds: 1 })).toEqual([
+		expect(describeRun({ ...QUICK_PLAY, rounds: 1, difficulty: 'hard' })).toEqual([
 			'1 manche',
 			'sol et orbite',
+			'mode difficile',
 			'déplacement libre',
 			'sans chrono'
 		]);
