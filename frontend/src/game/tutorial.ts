@@ -4,10 +4,9 @@
  * none; every recap says what gave the place away.
  */
 
-import type { LonLat } from 'spacemap';
 import * as m from '../paraglide/messages.js';
 import { bodyOf } from './bodies';
-import { aim, type Round, type Stop } from './rounds';
+import { roundAt, type Round, type Stop, type Where } from './rounds';
 import type { RunSettings } from './rules';
 
 export const TUTORIAL: RunSettings = {
@@ -60,11 +59,6 @@ export interface Tip {
 	wait?: Wait;
 	ring?: (progress: Progress) => Highlight;
 }
-
-type Where =
-	| { mode: 'ground'; body: string; panorama: string }
-	/** `noon` is where the Sun stands at `TUTORIAL_DATE`, as the map says. */
-	| { mode: 'orbit'; body: string; over: LonLat; noon: LonLat };
 
 export interface Lesson {
 	where: Where;
@@ -215,23 +209,8 @@ export function tutorialRun(
 	const rounds: Round[] = [];
 	const lessons: Lesson[] = [];
 	for (const lesson of LESSONS) {
-		const { where } = lesson;
-		let round: Round;
-		if (where.mode === 'ground') {
-			const stop = stops.find(
-				(stop) => stop.body === where.body && stop.entry.id === where.panorama
-			);
-			if (!stop) continue;
-			round = { mode: 'ground', body: where.body, entry: stop.entry, time: TUTORIAL_DATE };
-		} else {
-			if (!canOrbit) continue;
-			round = {
-				mode: 'orbit',
-				body: where.body,
-				time: TUTORIAL_DATE,
-				...aim(where.over, where.noon)
-			};
-		}
+		const round = roundAt(lesson.where, TUTORIAL_DATE, stops, canOrbit);
+		if (!round) continue;
 		rounds.push(round);
 		lessons.push(lesson);
 	}

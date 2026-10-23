@@ -1,5 +1,4 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
-import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { shadedOn } from './game/eclipse';
 import {
@@ -26,6 +25,7 @@ import {
 	altitudeKm,
 	drawLitRun,
 	drawRun,
+	fetchStops,
 	shownDate,
 	type Draw,
 	type Modes,
@@ -33,7 +33,7 @@ import {
 	type Round,
 	type Stop
 } from './game/rounds';
-import { QUICK_PLAY, playable } from './game/rules';
+import { QUICK_PLAY } from './game/rules';
 import type { RunSettings } from './game/rules';
 import { INITIAL, play, reduce } from './game/run';
 import { measure } from './game/measure';
@@ -69,9 +69,6 @@ import { RoundResult } from './ui/RoundResult';
 import { TipCard } from './ui/Tip';
 import { useSpace } from './ui/useSpace';
 
-/** Earth has panoramas of its own in the export, and is not in play. */
-const NO_GROUND = new Set(['naif-399']);
-
 /** What the opener is drawn from: it is the first round of a Quick Play. */
 const OPENER: Draw = { modes: QUICK_PLAY.modes, difficulty: QUICK_PLAY.difficulty };
 
@@ -95,22 +92,6 @@ const FRESH = { dragged: null as number | null, opened: null as number | null, .
 const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
 /** Or on a run someone shared. */
 const SHARED = sharedCode(location.pathname);
-
-/** Every playable stop on every body that has any. A body whose list does not
- *  come is left out, and the runs are drawn from the others. */
-async function fetchStops(): Promise<Stop[]> {
-	const bodies = (await fetchPanoramaIndex()).filter((body) => !NO_GROUND.has(body.id));
-	const lists = await Promise.allSettled(
-		bodies.map(async ({ id }) =>
-			(await fetchPanoramas(id)).filter(playable).map((entry) => ({ body: id, entry }))
-		)
-	);
-	const stops = lists.flatMap((list) => (list.status === 'fulfilled' ? list.value : []));
-	const failed = lists.find((list) => list.status === 'rejected');
-	// With none at all there is no ground to play on, and the reader is told why.
-	if (!stops.length && failed) throw failed.reason;
-	return stops;
-}
 
 export default function App() {
 	const [run, dispatch] = useReducer(reduce, INITIAL);

@@ -1,14 +1,33 @@
 /** What a round asks: a place stood on, or a place stood over. */
 
-import type { LonLat, PanoramaEntry } from 'spacemap';
+import { fetchPanoramaIndex, fetchPanoramas, type LonLat, type PanoramaEntry } from 'spacemap';
 import { POOLS, bodyOf, viewDistance, type BodyInfo, type Difficulty } from './bodies';
 import { eclipsed, shadedOn } from './eclipse';
-import { drawRounds, formatWhen, takenAt } from './rules';
+import { drawRounds, formatWhen, playable, takenAt } from './rules';
 
 /** A panorama, and the body it was taken on. */
 export interface Stop {
 	body: string;
 	entry: PanoramaEntry;
+}
+
+/** Earth has panoramas of its own in the export, and is not in play. */
+const NO_GROUND = new Set(['naif-399']);
+
+/** Every playable stop on every body that has any. A body whose list does not
+ *  come is left out, and the runs are drawn from the others. */
+export async function fetchStops(): Promise<Stop[]> {
+	const bodies = (await fetchPanoramaIndex()).filter((body) => !NO_GROUND.has(body.id));
+	const lists = await Promise.allSettled(
+		bodies.map(async ({ id }) =>
+			(await fetchPanoramas(id)).filter(playable).map((entry) => ({ body: id, entry }))
+		)
+	);
+	const stops = lists.flatMap((list) => (list.status === 'fulfilled' ? list.value : []));
+	const failed = lists.find((list) => list.status === 'rejected');
+	// With none at all there is no ground to play on, and the reader is told why.
+	if (!stops.length && failed) throw failed.reason;
+	return stops;
 }
 
 interface Asked {
@@ -119,6 +138,28 @@ export function aim(over: LonLat, noon: LonLat): Pick<OrbitRound, 'u' | 'v'> {
 		u: (1 - cos) / (1 - Math.cos((90 - MIN_SUN_DEG) * RAD)),
 		v: (((bearing / (2 * Math.PI)) % 1) + 1) % 1
 	};
+}
+
+/** A round picked by hand: a panorama by its id, or a place flown over. */
+export type Where =
+	| { mode: 'ground'; body: string; panorama: string }
+	/** `noon` is where the Sun stands overhead at the round's time. */
+	| { mode: 'orbit'; body: string; over: LonLat; noon: LonLat };
+
+/** The round `where` names at `time`. Null for a panorama not among `stops`,
+ *  or a flown round with no map to fly in. */
+export function roundAt(
+	where: Where,
+	time: number,
+	stops: readonly Stop[],
+	canOrbit: boolean
+): Round | null {
+	if (where.mode === 'ground') {
+		const stop = stops.find((stop) => stop.body === where.body && stop.entry.id === where.panorama);
+		return stop ? { mode: 'ground', body: where.body, entry: stop.entry, time } : null;
+	}
+	if (!canOrbit) return null;
+	return { mode: 'orbit', body: where.body, time, ...aim(where.over, where.noon) };
 }
 
 export interface Modes {
