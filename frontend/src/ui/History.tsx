@@ -5,6 +5,7 @@ import {
 	describePast,
 	formatDay,
 	kindOf,
+	recallStreak,
 	weeksOf,
 	type Day,
 	type PastRun
@@ -14,6 +15,7 @@ import { describeRun, formatNumber } from '../game/rules';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 import { Avatar } from './Avatar';
+import { StreakField } from './Streak';
 
 interface Props {
 	runs: PastRun[];
@@ -51,6 +53,8 @@ function monthOf(week: (Day | null)[]): string {
 
 export function History({ runs, notice, onOpen, onEdit, onClear, onBack }: Props) {
 	const [profile] = useState(recallProfile);
+	// Kept beside the runs, so it changes when they do.
+	const streak = useMemo(recallStreak, [runs]);
 	/** The day whose runs are listed by themselves, as its midnight; null for
 	 *  every run. */
 	const [picked, setPicked] = useState<number | null>(null);
@@ -92,6 +96,7 @@ export function History({ runs, notice, onOpen, onEdit, onClear, onBack }: Props
 						{m.edit()}
 					</button>
 				</div>
+				{streak.best > 0 && <StreakField streak={streak} />}
 				<div className="field">
 					<div className="ends">
 						<span className="hd">{m.activity()}</span>

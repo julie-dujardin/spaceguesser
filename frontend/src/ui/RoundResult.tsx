@@ -8,9 +8,11 @@ import type { Round } from '../game/rounds';
 import { formatClock, formatDistance, formatNumber, formatWhen } from '../game/rules';
 import type { Played } from '../game/run';
 import type { Guess } from '../game/scoring';
+import type { StreakNews } from '../game/history';
 import type { Profile } from '../game/players';
 import * as m from '../paraglide/messages.js';
 import { Recap, type RecapGuess } from './Recap';
+import { StreakLine } from './Streak';
 
 interface Props {
 	space: Space | null;
@@ -25,6 +27,8 @@ interface Props {
 	others?: { guess: Guess; avatar: Profile }[];
 	/** Multiplayer: the reader watched the round, and has no score in it. */
 	observing?: boolean;
+	/** What the round did to the streak, where it counts towards one. */
+	streak?: StreakNews | null;
 	/** Goes under the score: the standings, in a game that has them. */
 	children?: ReactNode;
 }
@@ -88,6 +92,7 @@ export function RoundResult({
 	avatar,
 	others,
 	observing,
+	streak,
 	children
 }: Props) {
 	const { truth, guess, score, secondsLeft, timedOut } = played;
@@ -139,6 +144,7 @@ export function RoundResult({
 						</span>
 					</div>
 				)}
+				{streak && <StreakLine news={streak} />}
 				{timedOut && <span className="note">{guess ? m.timed_out_stood() : m.timed_out()}</span>}
 				{children}
 				<span className="note">

@@ -154,14 +154,44 @@ export interface Streak {
 
 export const NO_STREAK: Streak = { current: 0, best: 0 };
 
+function named({ guess, truth }: Played): boolean {
+	return guess?.body === truth.body;
+}
+
 /** The streak once `rounds` are played after it. */
 export function extendStreak(streak: Streak, rounds: readonly Played[]): Streak {
 	let { current, best } = streak;
-	for (const { guess, truth } of rounds) {
-		current = guess?.body === truth.body ? current + 1 : 0;
+	for (const round of rounds) {
+		current = named(round) ? current + 1 : 0;
 		best = Math.max(best, current);
 	}
 	return { current, best };
+}
+
+/** What a recap says of the streak once its rounds are played. */
+export interface StreakNews {
+	/** The streak going on, or the one the latest miss ended. */
+	count: number;
+	ended: boolean;
+	/** Null while there is no best from before to measure against: a first
+	 *  streak would be a new best every round. */
+	best: number | null;
+	newBest: boolean;
+}
+
+/** Null when the rounds leave no streak to speak of: a miss after a miss. */
+export function streakNews(before: Streak, rounds: readonly Played[]): StreakNews | null {
+	// Misses at the end take nothing from the best, only from the count.
+	let built = rounds.length;
+	while (built > 0 && !named(rounds[built - 1])) built--;
+	const { current, best } = extendStreak(before, rounds.slice(0, built));
+	if (!current) return null;
+	return {
+		count: current,
+		ended: built < rounds.length,
+		best: before.best > 0 ? best : null,
+		newBest: before.best > 0 && best > before.best
+	};
 }
 
 export function recallStreak(): Streak {

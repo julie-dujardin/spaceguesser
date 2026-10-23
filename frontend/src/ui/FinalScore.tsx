@@ -1,7 +1,14 @@
 import { ExternalLink } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { bodyName } from '../game/bodies';
-import { KIND_LABELS, describePast, formatDay, kindOf, type PastRun } from '../game/history';
+import {
+	KIND_LABELS,
+	describePast,
+	formatDay,
+	kindOf,
+	type PastRun,
+	type StreakNews
+} from '../game/history';
 import { roundUrl } from '../game/links';
 import { formatClock, formatNumber } from '../game/rules';
 import type { Played } from '../game/run';
@@ -11,6 +18,7 @@ import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 import { Recap, type RecapGuess } from './Recap';
 import { Named, missed } from './RoundResult';
+import { StreakLine } from './Streak';
 
 interface Props {
 	space: Space | null;
@@ -22,6 +30,8 @@ interface Props {
 	avatar?: RecapGuess['avatar'];
 	/** Multiplayer: the reader watched the game, and has no score in it. */
 	observing?: boolean;
+	/** What the run did to the streak, where it counts towards one. */
+	streak?: StreakNews | null;
 	/** The path of the link to this run, where it has one to hand out. */
 	share?: string;
 	/** Someone's run, looked at from its link. */
@@ -45,6 +55,7 @@ export function FinalScore({
 	others,
 	avatar,
 	observing,
+	streak,
 	share,
 	shared,
 	past,
@@ -117,6 +128,7 @@ export function FinalScore({
 						</div>
 					)}
 				</div>
+				{streak && <StreakLine news={streak} />}
 				{children}
 				<div className="rounds">
 					{played.map((round, index) => (

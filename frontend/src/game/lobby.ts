@@ -268,3 +268,10 @@ export function playedIn(lobby: Lobby, id: string, index: number): Played | null
 export function playedBy(lobby: Lobby, id: string): Played[] {
 	return lobby.history.flatMap((_, index) => playedIn(lobby, id, index) ?? []);
 }
+
+/** The rounds before `before` that a player answered themselves, which are
+ *  those their streak goes through: one from before they joined is not one
+ *  they got wrong. */
+export function answeredBy(lobby: Lobby, id: string, before = lobby.history.length): Played[] {
+	return lobby.history.slice(0, before).flatMap((round) => round[id] ?? []);
+}

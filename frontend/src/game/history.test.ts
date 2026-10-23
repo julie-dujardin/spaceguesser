@@ -11,6 +11,7 @@ import {
 	kindOf,
 	recallHistory,
 	recallStreak,
+	streakNews,
 	weeksOf,
 	type PastRun
 } from './history';
@@ -164,6 +165,49 @@ describe('the streak', () => {
 
 	it('ends on a round with no guess', () => {
 		expect(extendStreak({ current: 3, best: 5 }, [round(null)])).toEqual({ current: 0, best: 5 });
+	});
+});
+
+describe('what a recap says of the streak', () => {
+	const news = (current: number, best: number, rounds: Played[]) =>
+		streakNews({ current, best }, rounds);
+
+	it('says how long it is, and how it stands to the best', () => {
+		expect(news(5, 23, [RIGHT])).toEqual({ count: 6, ended: false, best: 23, newBest: false });
+		expect(news(23, 23, [RIGHT])).toEqual({ count: 24, ended: false, best: 24, newBest: true });
+	});
+
+	it('has no best to tell of until a first streak is over', () => {
+		expect(news(0, 0, [RIGHT, RIGHT])).toEqual({
+			count: 2,
+			ended: false,
+			best: null,
+			newBest: false
+		});
+	});
+
+	it('says how long the streak a miss ended was', () => {
+		expect(news(8, 23, [WRONG])).toEqual({ count: 8, ended: true, best: 23, newBest: false });
+		expect(news(22, 23, [RIGHT, RIGHT, WRONG, WRONG])).toEqual({
+			count: 24,
+			ended: true,
+			best: 24,
+			newBest: true
+		});
+	});
+
+	it('keeps a best the run set before losing it', () => {
+		expect(news(22, 23, [RIGHT, RIGHT, WRONG, RIGHT, RIGHT])).toEqual({
+			count: 2,
+			ended: false,
+			best: 24,
+			newBest: true
+		});
+	});
+
+	it('says nothing of a miss after a miss', () => {
+		expect(news(0, 23, [WRONG])).toBeNull();
+		expect(news(0, 0, [])).toBeNull();
 	});
 });
 

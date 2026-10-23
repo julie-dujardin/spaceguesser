@@ -2,8 +2,25 @@ import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'r
 import { fetchPanoramaIndex, fetchPanoramas } from 'spacemap';
 import { bodyOf } from './game/bodies';
 import { shadedOn } from './game/eclipse';
-import { clearHistory, keepRun, pastRun, recallHistory, type PastRun } from './game/history';
-import { held, inviteCode, invitePath, playedBy, settingsOf, standings } from './game/lobby';
+import {
+	clearHistory,
+	extendStreak,
+	keepRun,
+	pastRun,
+	recallHistory,
+	recallStreak,
+	streakNews,
+	type PastRun
+} from './game/history';
+import {
+	answeredBy,
+	held,
+	inviteCode,
+	invitePath,
+	playedBy,
+	settingsOf,
+	standings
+} from './game/lobby';
 import { keepProfile } from './game/players';
 import {
 	altitudeKm,
@@ -222,7 +239,7 @@ export default function App() {
 				opener.time,
 				shadedOn(opener.time)
 			);
-			dispatch({ kind: 'start', settings, drawn: [...first, ...rest] });
+			dispatch({ kind: 'start', settings, drawn: [...first, ...rest], streak: recallStreak() });
 			// The opener is spent: leaving the run must not find a place it has
 			// already used. Moving between menus leaves it alone.
 			setOpener(null);
@@ -239,7 +256,13 @@ export default function App() {
 		setProgress(FRESH);
 		setTipsOff(false);
 		setTaught(drawn);
-		dispatch({ kind: 'start', settings: TUTORIAL, drawn: drawn.rounds, tutorial: true });
+		dispatch({
+			kind: 'start',
+			settings: TUTORIAL,
+			drawn: drawn.rounds,
+			tutorial: true,
+			streak: null
+		});
 	}, [stops, canOrbit]);
 
 	const { lobby } = party;
@@ -265,10 +288,7 @@ export default function App() {
 		const table = standings(lobby);
 		const place = table.findIndex(({ seat }) => seat.id === you) + 1;
 		const past = pastRun(played, settingsOf(lobby.settings), { place, of: table.length });
-		// The streak goes through the rounds this seat answered: one from before
-		// it joined is not one it got wrong.
-		const answered = lobby.history.flatMap((round) => round[you] ?? []);
-		setKept(keepRun(past, answered));
+		setKept(keepRun(past, answeredBy(lobby, you)));
 	}, [finished, party.you]);
 
 	const last = run.played[run.played.length - 1];
@@ -690,6 +710,9 @@ export default function App() {
 					played={last}
 					round={run.round + 1}
 					rounds={run.drawn.length}
+					streak={
+						run.streak && streakNews(extendStreak(run.streak, run.played.slice(0, -1)), [last])
+					}
 					onNext={next}
 					onQuit={() => dispatch({ kind: 'home' })}
 				>
@@ -701,6 +724,7 @@ export default function App() {
 				<FinalScore
 					space={space}
 					played={run.played}
+					streak={run.streak && streakNews(run.streak, run.played)}
 					share={share ?? undefined}
 					shared={run.shared}
 					past={run.past ?? undefined}

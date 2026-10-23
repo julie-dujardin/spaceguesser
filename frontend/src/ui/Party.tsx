@@ -4,6 +4,14 @@ import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from
 import { bodyOf } from '../game/bodies';
 import { shadedOn } from '../game/eclipse';
 import {
+	extendStreak,
+	recallStreak,
+	streakNews,
+	type Streak,
+	type StreakNews
+} from '../game/history';
+import {
+	answeredBy,
 	held,
 	playedBy,
 	playedIn,
@@ -84,6 +92,15 @@ export function Party({
 	const played = useMemo(() => playedBy(lobby, you ?? ''), [lobby, you]);
 	const me = lobby.players.find((seat) => seat.id === you);
 	const observing = !!me?.observing;
+	// The streak as this game found it, read again when the next one starts. A
+	// page opened on a game already over cannot tell: the history may hold the
+	// game already.
+	const going = lobby.phase !== 'final';
+	const [found, setFound] = useState(() => (going ? recallStreak() : null));
+	useEffect(() => {
+		if (going) setFound(recallStreak());
+	}, [going]);
+	const counts = found && you && !observing;
 
 	const start =
 		stops && opener
@@ -173,6 +190,7 @@ export function Party({
 					round={round}
 					you={you}
 					observing={observing}
+					streak={counts ? newsOf(lobby, you, found, round.index) : null}
 					onNext={act('next')}
 					onQuit={session.leave}
 				>
@@ -187,6 +205,7 @@ export function Party({
 					others={everyoneElse}
 					avatar={mine}
 					observing={observing}
+					streak={counts ? newsOf(lobby, you, found) : null}
 					onAgain={hosting ? start : undefined}
 					onHome={session.leave}
 				>
@@ -225,6 +244,14 @@ export function Party({
 			)}
 		</>
 	);
+}
+
+/** What a seat's answers did to the streak the game found: in the round at
+ *  `index`, which says nothing when sat out, or in the whole game. */
+function newsOf(lobby: Lobby, you: string, found: Streak, index?: number): StreakNews | null {
+	if (index === undefined) return streakNews(found, answeredBy(lobby, you));
+	const own = lobby.history[index]?.[you];
+	return own ? streakNews(extendStreak(found, answeredBy(lobby, you, index)), [own]) : null;
 }
 
 /** Seconds until `endsAt` on the server's clock; null for a round with no deadline. */
@@ -401,12 +428,23 @@ interface ResultProps {
 	round: LobbyRound;
 	you: string | null;
 	observing: boolean;
+	streak: StreakNews | null;
 	onNext?: () => void;
 	onQuit: () => void;
 	children: ReactNode;
 }
 
-function Result({ space, lobby, round, you, observing, onNext, onQuit, children }: ResultProps) {
+function Result({
+	space,
+	lobby,
+	round,
+	you,
+	observing,
+	streak,
+	onNext,
+	onQuit,
+	children
+}: ResultProps) {
 	const guesses = lobby.history[round.index];
 	const mine = guesses?.[you ?? ''];
 	const me = lobby.players.find((seat) => seat.id === you);
@@ -453,6 +491,7 @@ function Result({ space, lobby, round, you, observing, onNext, onQuit, children 
 			round={round.index + 1}
 			rounds={round.total}
 			observing={observing}
+			streak={streak}
 			onNext={onNext}
 			onQuit={onQuit}
 		>

@@ -1,7 +1,7 @@
 /** One solo run: the rounds drawn for it, and what the reader made of them. */
 
 import type { PanoramaEntry } from 'spacemap';
-import type { PastRun } from './history';
+import type { PastRun, Streak } from './history';
 import type { Place, Round } from './rounds';
 import { QUICK_PLAY, type RunSettings } from './rules';
 import { score, type Guess, type Score, type Sky } from './scoring';
@@ -42,6 +42,8 @@ export interface Run {
 	past: PastRun | null;
 	settings: RunSettings;
 	tutorial: boolean;
+	/** The streak as the run found it; null for one that does nothing to it. */
+	streak: Streak | null;
 	drawn: Round[];
 	round: number;
 	/** Where the reader is standing, which free movement lets them change. */
@@ -52,7 +54,13 @@ export interface Run {
 export type Action =
 	| { kind: 'home' }
 	| { kind: 'setup' }
-	| { kind: 'start'; settings: RunSettings; drawn: Round[]; tutorial?: boolean }
+	| {
+			kind: 'start';
+			settings: RunSettings;
+			drawn: Round[];
+			tutorial?: boolean;
+			streak: Streak | null;
+	  }
 	/** A run someone shared, as its link told it, or one of the reader's own
 	 *  from the history. */
 	| { kind: 'visit'; played: Played[]; past?: PastRun }
@@ -68,6 +76,7 @@ export const INITIAL: Run = {
 	past: null,
 	settings: { ...QUICK_PLAY, rounds: 0 },
 	tutorial: false,
+	streak: null,
 	drawn: [],
 	round: 0,
 	standing: null,
@@ -87,6 +96,7 @@ export function reduce(run: Run, action: Action): Run {
 				past: null,
 				settings: action.settings,
 				tutorial: !!action.tutorial,
+				streak: action.streak,
 				drawn: action.drawn,
 				round: 0,
 				standing: null,

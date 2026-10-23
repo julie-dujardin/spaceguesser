@@ -18,6 +18,7 @@
 	--gborder: rgb(255 255 255 / 0.1);
 	--good: #4ade80;
 	--bad: #ef4444;
+	--warm: #f59e0b;
 	color-scheme: dark;
 }
 
@@ -1568,6 +1569,43 @@ input.code {
 
 .world .ok {
 	margin-left: 5px;
+}
+
+/* The streak's flame is the one warm colour on a panel, so it is found at a
+   glance among the greys and the green checks. */
+.streak {
+	display: flex;
+	align-items: baseline;
+	flex-wrap: wrap;
+	gap: 0 6px;
+	font-family: var(--font-mono);
+	font-variant-numeric: tabular-nums;
+	font-size: 13px;
+	color: var(--mut);
+}
+
+.streak .lucide {
+	align-self: center;
+	color: var(--warm);
+}
+
+.streak b {
+	font-size: 15px;
+	font-weight: 500;
+	color: var(--fg);
+}
+
+.streak .best,
+.streak.over .lucide {
+	color: var(--dim);
+}
+
+.streak .new {
+	color: var(--warm);
+}
+
+.streak.over b {
+	color: var(--mut);
 }
 
 .rounds {

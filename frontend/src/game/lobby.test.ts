@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import {
+	answeredBy,
 	guessesOf,
 	held,
 	lobbyOf,
@@ -125,6 +126,15 @@ describe('lobbyOf', () => {
 			]);
 			expect(playedBy(read, 'bob')).toHaveLength(1);
 		}
+	});
+});
+
+describe('answeredBy', () => {
+	it('leaves out the rounds a seat sat out, as a seat that joined late did', () => {
+		const read = lobby([{ ann: ON_MARS }, { ann: NO_PICK, bob: OVER_EUROPA }, { bob: ON_MARS }]);
+		expect(answeredBy(read, 'bob')).toEqual([OVER_EUROPA, ON_MARS]);
+		expect(answeredBy(read, 'bob', 2)).toEqual([OVER_EUROPA]);
+		expect(playedBy(read, 'bob')).toHaveLength(3);
 	});
 });
 
