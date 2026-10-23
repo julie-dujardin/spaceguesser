@@ -1,6 +1,7 @@
 /**
  * The runs finished in this browser, newest first: what a list of them shows,
  * and each run as a share link packs it, so its results can be opened again.
+ * Beside them, the streak of rounds whose world the guess named.
  */
 
 import * as m from '../paraglide/messages.js';
@@ -85,6 +86,7 @@ export function pastRun(
 }
 
 const KEY = 'spaceguesser.history';
+const STREAK_KEY = 'spaceguesser.streak';
 
 /** The oldest runs go past this: the browser gives a site a few megabytes. */
 const MAX_RUNS = 1000;
@@ -115,16 +117,18 @@ export function recallHistory(): PastRun[] {
 }
 
 /**
- * Adds a finished run, and returns the whole history. It is read afresh, so a
- * run finished in another tab is not written over. A run already there is left
- * alone: the final screen of a game with friends comes back on a reload.
+ * Adds a finished run, and returns the whole history. `rounds` are those of it
+ * the streak goes on through. Both are read afresh, so a run finished in
+ * another tab is not written over. A run already there is left alone: the
+ * final screen of a game with friends comes back on a reload.
  */
-export function keepRun(run: PastRun): PastRun[] {
+export function keepRun(run: PastRun, rounds: readonly Played[]): PastRun[] {
 	const kept = recallHistory();
 	if (run.code !== null && kept.some((old) => old.code === run.code)) return kept;
 	const next = [run, ...kept].slice(0, MAX_RUNS);
 	try {
 		localStorage.setItem(KEY, JSON.stringify(next));
+		localStorage.setItem(STREAK_KEY, JSON.stringify(extendStreak(recallStreak(), rounds)));
 	} catch {
 		// Not remembered, then.
 	}
@@ -134,9 +138,42 @@ export function keepRun(run: PastRun): PastRun[] {
 export function clearHistory() {
 	try {
 		localStorage.removeItem(KEY);
+		localStorage.removeItem(STREAK_KEY);
 	} catch {
 		// Nothing was kept there to begin with.
 	}
+}
+
+/** Rounds running whose world the guess named. Which runs they were in is the
+ *  history's to tell. */
+export interface Streak {
+	/** The one going on, which a wrong world ends. */
+	current: number;
+	best: number;
+}
+
+export const NO_STREAK: Streak = { current: 0, best: 0 };
+
+/** The streak once `rounds` are played after it. */
+export function extendStreak(streak: Streak, rounds: readonly Played[]): Streak {
+	let { current, best } = streak;
+	for (const { guess, truth } of rounds) {
+		current = guess?.body === truth.body ? current + 1 : 0;
+		best = Math.max(best, current);
+	}
+	return { current, best };
+}
+
+export function recallStreak(): Streak {
+	try {
+		const kept = JSON.parse(localStorage.getItem(STREAK_KEY) ?? 'null') as Partial<Streak> | null;
+		const { current = -1, best = -1 } = kept ?? {};
+		if (Number.isInteger(current) && Number.isInteger(best) && current >= 0 && best >= current)
+			return { current, best };
+	} catch {
+		// Storage that is blocked or holds something else: no streak.
+	}
+	return NO_STREAK;
 }
 
 /** The reader's own day a moment falls in, as its midnight. */

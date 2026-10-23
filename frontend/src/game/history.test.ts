@@ -1,17 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { baseLocale, overwriteGetLocale } from '../paraglide/runtime.js';
 import {
+	NO_STREAK,
 	clearHistory,
 	dayOf,
 	describePast,
+	extendStreak,
 	formatDay,
 	keepRun,
 	kindOf,
 	recallHistory,
+	recallStreak,
 	weeksOf,
 	type PastRun
 } from './history';
+import type { Round } from './rounds';
 import { QUICK_PLAY } from './rules';
+import { play, type Played } from './run';
+import { NO_SKY } from './scoring';
 
 /** A Wednesday evening. */
 const NOW = new Date(2026, 9, 7, 21, 40).getTime();
@@ -21,6 +27,17 @@ afterEach(() => overwriteGetLocale(() => baseLocale));
 function run(patch: Partial<PastRun> = {}): PastRun {
 	return { at: NOW, settings: QUICK_PLAY, total: 14028, code: 'AbC', ...patch };
 }
+
+const MARS = 'naif-499';
+const ORBIT: Round = { mode: 'orbit', body: MARS, time: NOW, u: 0.25, v: 0.5 };
+
+/** A round over Mars, guessed on `body`, or not guessed. */
+function round(body: string | null): Played {
+	const guess = body ? { body, at: null } : null;
+	return play(ORBIT, { body: MARS, lat: 0, lon: 0 }, guess, NO_SKY, null, null, false);
+}
+const RIGHT = round(MARS);
+const WRONG = round('naif-501');
 
 describe('weeksOf', () => {
 	it('ends on this week, as far as today', () => {
@@ -69,8 +86,8 @@ describe('the kept history', () => {
 	});
 
 	it('keeps the newest run first', () => {
-		keepRun(run({ code: 'first' }));
-		expect(keepRun(run({ code: 'second', at: NOW + 1 })).map((kept) => kept.code)).toEqual([
+		keepRun(run({ code: 'first' }), []);
+		expect(keepRun(run({ code: 'second', at: NOW + 1 }), []).map((kept) => kept.code)).toEqual([
 			'second',
 			'first'
 		]);
@@ -78,20 +95,20 @@ describe('the kept history', () => {
 	});
 
 	it('does not keep the same run twice', () => {
-		keepRun(run());
-		expect(keepRun(run({ at: NOW + 60_000 }))).toEqual([run()]);
+		keepRun(run(), []);
+		expect(keepRun(run({ at: NOW + 60_000 }), [])).toEqual([run()]);
 	});
 
 	it('keeps every run that has no link to tell it by', () => {
-		keepRun(run({ code: null }));
-		expect(keepRun(run({ code: null }))).toHaveLength(2);
+		keepRun(run({ code: null }), []);
+		expect(keepRun(run({ code: null }), [])).toHaveLength(2);
 	});
 
 	it('reads back what it wrote', () => {
 		const friends = run({ code: 'friends', place: 2, of: 4 });
 		const tutorial = run({ code: 'tutorial', tutorial: true });
-		keepRun(friends);
-		keepRun(tutorial);
+		keepRun(friends, []);
+		keepRun(tutorial, []);
 		expect(recallHistory()).toEqual([tutorial, friends]);
 	});
 
@@ -113,9 +130,40 @@ describe('the kept history', () => {
 	});
 
 	it('forgets', () => {
-		keepRun(run());
+		keepRun(run(), [RIGHT]);
 		clearHistory();
 		expect(recallHistory()).toEqual([]);
+		expect(recallStreak()).toEqual(NO_STREAK);
+	});
+
+	it('keeps the streak going from one run to the next', () => {
+		keepRun(run({ code: 'first' }), [RIGHT, RIGHT]);
+		keepRun(run({ code: 'second' }), [RIGHT, WRONG, RIGHT]);
+		expect(recallStreak()).toEqual({ current: 1, best: 3 });
+	});
+
+	it('counts a run in the streak once', () => {
+		keepRun(run(), [RIGHT]);
+		keepRun(run(), [RIGHT]);
+		expect(recallStreak()).toEqual({ current: 1, best: 1 });
+	});
+
+	it('reads back no streak it did not write', () => {
+		for (const kept of ['{not json', '[]', '{"current":2,"best":1}', '{"current":1.5,"best":2}']) {
+			localStorage.setItem('spaceguesser.streak', kept);
+			expect(recallStreak()).toEqual(NO_STREAK);
+		}
+	});
+});
+
+describe('the streak', () => {
+	it('counts the rounds running whose world the guess named', () => {
+		expect(extendStreak(NO_STREAK, [RIGHT, RIGHT, WRONG, RIGHT])).toEqual({ current: 1, best: 2 });
+		expect(extendStreak({ current: 4, best: 4 }, [RIGHT, RIGHT])).toEqual({ current: 6, best: 6 });
+	});
+
+	it('ends on a round with no guess', () => {
+		expect(extendStreak({ current: 3, best: 5 }, [round(null)])).toEqual({ current: 0, best: 5 });
 	});
 });
 

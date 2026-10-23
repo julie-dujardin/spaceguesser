@@ -245,10 +245,12 @@ export default function App() {
 	const { lobby } = party;
 
 	// A run played here to its end goes in the history: not one come for from a
-	// link, nor one the history is showing again.
+	// link, nor one the history is showing again. The tutorial is the same nine
+	// rounds every time, so it does nothing to the streak.
 	useEffect(() => {
 		if (run.phase !== 'final' || run.shared || run.past) return;
-		setKept(keepRun(pastRun(run.played, run.settings, run.tutorial ? { tutorial: true } : {})));
+		const past = pastRun(run.played, run.settings, run.tutorial ? { tutorial: true } : {});
+		setKept(keepRun(past, run.tutorial ? [] : run.played));
 	}, [run.phase, run.shared, run.past, run.played, run.settings, run.tutorial]);
 	// And so does a game with friends, once: each snapshot of its final screen
 	// is a new lobby.
@@ -262,7 +264,11 @@ export default function App() {
 		const played = playedBy(lobby, you);
 		const table = standings(lobby);
 		const place = table.findIndex(({ seat }) => seat.id === you) + 1;
-		setKept(keepRun(pastRun(played, settingsOf(lobby.settings), { place, of: table.length })));
+		const past = pastRun(played, settingsOf(lobby.settings), { place, of: table.length });
+		// The streak goes through the rounds this seat answered: one from before
+		// it joined is not one it got wrong.
+		const answered = lobby.history.flatMap((round) => round[you] ?? []);
+		setKept(keepRun(past, answered));
 	}, [finished, party.you]);
 
 	const last = run.played[run.played.length - 1];
