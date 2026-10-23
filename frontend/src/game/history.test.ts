@@ -1,17 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { baseLocale, overwriteGetLocale } from '../paraglide/runtime.js';
 import {
+	NO_DAYS,
 	NO_STREAK,
 	clearHistory,
+	dayNews,
 	dayOf,
 	describePast,
+	extendDays,
 	extendStreak,
+	finishDay,
 	formatDay,
 	keepRun,
 	kindOf,
+	recallDays,
 	recallHistory,
 	recallStreak,
 	roundNews,
+	standingDays,
 	streakNews,
 	weeksOf,
 	type PastRun
@@ -109,9 +115,37 @@ describe('the kept history', () => {
 	it('reads back what it wrote', () => {
 		const friends = run({ code: 'friends', place: 2, of: 4 });
 		const tutorial = run({ code: 'tutorial', tutorial: true });
+		const daily = run({ code: 'daily', daily: '2026-10-07' });
 		keepRun(friends, []);
 		keepRun(tutorial, []);
-		expect(recallHistory()).toEqual([tutorial, friends]);
+		keepRun(daily, []);
+		expect(recallHistory()).toEqual([daily, tutorial, friends]);
+		expect(kindOf(daily)).toBe('daily');
+	});
+
+	it('keeps a daily challenge once', () => {
+		keepRun(run({ code: 'part', daily: '2026-10-07' }), []);
+		expect(keepRun(run({ code: 'whole', daily: '2026-10-07' }), [])).toHaveLength(1);
+		expect(keepRun(run({ code: 'next', daily: '2026-10-08' }), [])).toHaveLength(2);
+	});
+
+	it('keeps the day streak, and forgets it with the rest', () => {
+		finishDay('2026-10-06');
+		finishDay('2026-10-07');
+		expect(recallDays()).toEqual({ current: 2, best: 2, last: '2026-10-07' });
+		clearHistory();
+		expect(recallDays()).toEqual(NO_DAYS);
+	});
+
+	it('reads back no day streak it did not write', () => {
+		for (const kept of [
+			'{not json',
+			'{"current":2,"best":1,"last":"2026-10-07"}',
+			'{"current":1,"best":1}'
+		]) {
+			localStorage.setItem('spaceguesser.days', kept);
+			expect(recallDays()).toEqual(NO_DAYS);
+		}
 	});
 
 	it('drops what it did not write, and mends what it can', () => {
@@ -155,6 +189,44 @@ describe('the kept history', () => {
 			localStorage.setItem('spaceguesser.streak', kept);
 			expect(recallStreak()).toEqual(NO_STREAK);
 		}
+	});
+});
+
+describe('the day streak', () => {
+	const ON_7TH = { current: 3, best: 5, last: '2026-10-07' };
+
+	it('goes on with the next day, and starts over after a day missed', () => {
+		expect(extendDays(NO_DAYS, '2026-10-07')).toEqual({ current: 1, best: 1, last: '2026-10-07' });
+		expect(extendDays(ON_7TH, '2026-10-08')).toEqual({ current: 4, best: 5, last: '2026-10-08' });
+		expect(extendDays(ON_7TH, '2026-10-09')).toEqual({ current: 1, best: 5, last: '2026-10-09' });
+		expect(extendDays({ ...ON_7TH, best: 3 }, '2026-10-08').best).toBe(4);
+	});
+
+	it('counts a day once', () => {
+		expect(extendDays(ON_7TH, '2026-10-07')).toBe(ON_7TH);
+		expect(extendDays(ON_7TH, '2026-10-06')).toBe(ON_7TH);
+	});
+
+	it('runs on through the day after, and stops when it is missed', () => {
+		expect(standingDays(ON_7TH, '2026-10-07')).toBe(ON_7TH);
+		expect(standingDays(ON_7TH, '2026-10-08')).toBe(ON_7TH);
+		expect(standingDays(ON_7TH, '2026-10-09')).toEqual({ ...ON_7TH, current: 0 });
+	});
+
+	it('names a best once there is one to beat', () => {
+		expect(dayNews(NO_DAYS, '2026-10-07')).toEqual({
+			count: 1,
+			ended: false,
+			best: null,
+			newBest: false
+		});
+		expect(dayNews(ON_7TH, '2026-10-08')).toEqual({
+			count: 4,
+			ended: false,
+			best: 5,
+			newBest: false
+		});
+		expect(dayNews({ ...ON_7TH, best: 3 }, '2026-10-08')).toMatchObject({ best: 4, newBest: true });
 	});
 });
 

@@ -178,6 +178,13 @@ export function formatClock(seconds: number): string {
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
 }
 
+/** Hours, minutes and seconds. */
+export function formatCountdown(seconds: number): string {
+	const s = Math.max(0, Math.ceil(seconds));
+	const [h, m, sec] = [Math.floor(s / 3600), Math.floor(s / 60) % 60, s % 60];
+	return `${h}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
+}
+
 /** A panorama's date in epoch milliseconds. The export writes a day, which is
  *  read as its midnight, or a moment that is UTC whether or not it says so.
  *  Null when the export wrote something else. */

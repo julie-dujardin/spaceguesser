@@ -1,10 +1,24 @@
 import { useCallback, useEffect, useMemo, useReducer, useRef, useState } from 'react';
 import { bodyOf } from './game/bodies';
+import {
+	DAILY,
+	HAS_DAILY,
+	dailyRun,
+	endOf,
+	fetchDaily,
+	keepStarted,
+	recallStarted,
+	utcDay,
+	type Daily
+} from './game/daily';
 import { shadedOn } from './game/eclipse';
 import {
 	clearHistory,
+	dayNews,
+	finishDay,
 	keepRun,
 	pastRun,
+	recallDays,
 	recallHistory,
 	recallStreak,
 	roundNews,
@@ -93,6 +107,11 @@ const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
 /** Or on a run someone shared. */
 const SHARED = sharedCode(location.pathname);
 
+/** The server is asked again this long after the day ends, and no sooner
+ *  than a minute after the last time: its clock can be behind. */
+const DAILY_LATE_MS = 5_000;
+const DAILY_AGAIN_MS = 60_000;
+
 export default function App() {
 	const [run, dispatch] = useReducer(reduce, INITIAL);
 	// A shared run is come for by itself: a game left open in another tab keeps
@@ -133,6 +152,10 @@ export default function App() {
 	/** No more tips this run. */
 	const [tipsOff, setTipsOff] = useState(false);
 	const [left, setLeft] = useState<number | null>(null);
+	/** The day's challenge: undefined while it is asked for, null when there is none. */
+	const [daily, setDaily] = useState<Daily | null | undefined>(HAS_DAILY ? undefined : null);
+	/** The last day whose challenge was started here. */
+	const [started, setStarted] = useState(recallStarted);
 	// Read when a guess lands, so committing does not depend on the tick.
 	const remaining = useRef<number | null>(null);
 	remaining.current = left;
@@ -156,6 +179,25 @@ export default function App() {
 				setStopsError(String(cause));
 				setStops([]);
 			});
+	}, []);
+
+	// The next day's challenge comes once the day is over.
+	useEffect(() => {
+		if (!HAS_DAILY) return;
+		let dropped = false;
+		let timer: ReturnType<typeof setTimeout>;
+		const ask = async () => {
+			const found = await fetchDaily();
+			if (dropped) return;
+			setDaily(found);
+			const wait = endOf(found?.day ?? utcDay()) - Date.now() + DAILY_LATE_MS;
+			timer = setTimeout(() => void ask(), Math.max(wait, DAILY_AGAIN_MS));
+		};
+		void ask();
+		return () => {
+			dropped = true;
+			clearTimeout(timer);
+		};
 	}, []);
 
 	useEffect(() => {
@@ -246,6 +288,28 @@ export default function App() {
 		});
 	}, [stops, canOrbit]);
 
+	// Null when a round of it cannot be played here.
+	const dailyRounds = useMemo(
+		() => (daily && stops ? dailyRun(daily, stops, canOrbit) : null),
+		[daily, stops, canOrbit]
+	);
+	const startDaily = useCallback(() => {
+		if (!daily || !dailyRounds) return;
+		// Another tab can have started it.
+		if (recallStarted() === daily.day) return setStarted(daily.day);
+		setStarted(keepStarted(daily.day));
+		setGuess(null);
+		setMapOpen(false);
+		setProgress(FRESH);
+		dispatch({
+			kind: 'start',
+			settings: DAILY,
+			drawn: dailyRounds,
+			streak: recallStreak(),
+			daily: { day: daily.day, streak: recallDays() }
+		});
+	}, [daily, dailyRounds]);
+
 	const { lobby } = party;
 
 	// A run played here to its end goes in the history: not one come for from a
@@ -253,9 +317,36 @@ export default function App() {
 	// rounds every time, so it does nothing to the streak.
 	useEffect(() => {
 		if (run.phase !== 'final' || run.shared || run.past) return;
-		const past = pastRun(run.played, run.settings, run.tutorial ? { tutorial: true } : {});
+		const kind = run.tutorial
+			? { tutorial: true as const }
+			: run.daily
+				? { daily: run.daily.day }
+				: {};
+		const past = pastRun(run.played, run.settings, kind);
 		setKept(keepRun(past, run.tutorial ? [] : run.played));
-	}, [run.phase, run.shared, run.past, run.played, run.settings, run.tutorial]);
+		if (run.daily) finishDay(run.daily.day);
+	}, [run.phase, run.shared, run.past, run.played, run.settings, run.tutorial, run.daily]);
+	// A daily challenge left part of the way is kept as far as it went: starting
+	// it used up the day.
+	const keepPart = useCallback(() => {
+		if (!run.daily || !run.played.length) return;
+		const past = pastRun(run.played, run.settings, { daily: run.daily.day });
+		setKept(keepRun(past, run.played));
+		if (run.played.length === run.drawn.length) finishDay(run.daily.day);
+	}, [run.daily, run.played, run.drawn, run.settings]);
+	const quit = () => {
+		keepPart();
+		dispatch({ kind: 'home' });
+	};
+	useEffect(() => {
+		if (run.phase !== 'playing' && run.phase !== 'result') return;
+		// A page kept for the back button can still come back to the run.
+		const hide = (event: PageTransitionEvent) => {
+			if (!event.persisted) keepPart();
+		};
+		addEventListener('pagehide', hide);
+		return () => removeEventListener('pagehide', hide);
+	}, [run.phase, keepPart]);
 	// And so does a game with friends, once: each snapshot of its final screen
 	// is a new lobby.
 	const finished = lobby?.phase === 'final';
@@ -361,9 +452,10 @@ export default function App() {
 	}, [timed, running, run.settings.timer, run.round]);
 
 	// An orbit round the map cannot reach is swapped for another, wherever a
-	// swap is this browser's to make: a lobby's rounds are the host's.
+	// swap is this browser's to make: a lobby's rounds are the host's, and the
+	// daily challenge's are the same for everyone.
 	const redraw = () => {
-		if (!stops || lobby || shown?.mode !== 'orbit') return;
+		if (!stops || lobby || run.daily || shown?.mode !== 'orbit') return;
 		const asked = run.phase === 'playing' ? run.settings : OPENER;
 		const [fresh] = drawRun(
 			stops,
@@ -626,7 +718,7 @@ export default function App() {
 						when={shownDate(round)}
 						altitude={altitudeKm(round)}
 						left={left}
-						onQuit={() => dispatch({ kind: 'home' })}
+						onQuit={quit}
 						tutorial={run.tutorial}
 						tip={tip?.at === 'view' ? tipCard : undefined}
 						onTip={() => setMapOpen(false)}
@@ -651,8 +743,13 @@ export default function App() {
 
 			{solo && !returning && !opening && run.phase === 'home' && (
 				<Home
-					ready={ready && !!opener}
+					ready={ready && !!opener && daily !== undefined}
 					onQuickPlay={() => start(QUICK_PLAY, true)}
+					daily={
+						daily && dailyRounds
+							? { open: started !== daily.day, ends: endOf(daily.day), go: startDaily }
+							: undefined
+					}
 					onTutorial={startTutorial}
 					onCustom={() => dispatch({ kind: 'setup' })}
 					onFriends={MULTIPLAYER ? () => enter({ at: 'friends' }) : undefined}
@@ -693,7 +790,7 @@ export default function App() {
 					rounds={run.drawn.length}
 					streak={run.streak && roundNews(run.streak, run.played)}
 					onNext={next}
-					onQuit={() => dispatch({ kind: 'home' })}
+					onQuit={quit}
 				>
 					{recapped && <Explanation score={last.score} lines={recapped.recap} />}
 				</RoundResult>
@@ -704,11 +801,17 @@ export default function App() {
 					space={space}
 					played={run.played}
 					streak={run.streak && streakNews(run.streak, run.played)}
+					days={run.daily && dayNews(run.daily.streak, run.daily.day)}
 					share={share ?? undefined}
 					shared={run.shared}
 					past={run.past ?? undefined}
-					onAgain={run.shared ? undefined : () => start(run.tutorial ? QUICK_PLAY : run.settings)}
+					onAgain={
+						run.shared
+							? undefined
+							: () => start(run.tutorial || run.daily ? QUICK_PLAY : run.settings)
+					}
 					tutorial={run.tutorial}
+					daily={!!run.daily}
 					ahead={run.tutorial && !run.past && <Onward panoramas={stops?.length ?? 0} />}
 					onHome={() => {
 						// A run come for from the history goes back to it.

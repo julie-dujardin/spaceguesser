@@ -57,3 +57,10 @@ docker compose pull multiplayer && docker compose up -d multiplayer
 ```
 
 Open sockets drop; a client gets its seat back with `rejoin`.
+
+## Daily challenge
+
+The files are written by hand and are not in git, because they contain the
+answers. `frontend/scripts/upload-dailies.mjs` checks them, then copies them
+to `DAILY_HOST_DIR` and to the R2 bucket that keeps the backup. The server
+reads the folder at each request, so a new file needs no restart.

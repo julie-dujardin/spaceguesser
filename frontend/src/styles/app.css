@@ -1028,6 +1028,28 @@ button {
 	color: oklch(0.4 0 0);
 }
 
+.d.left {
+	display: inline-flex;
+	align-items: center;
+	gap: 5px;
+	font-variant-numeric: tabular-nums;
+}
+
+/* The daily challenge once started: there, but not to be clicked. */
+.mode.spent {
+	cursor: default;
+}
+
+.mode.spent:hover {
+	background: transparent;
+}
+
+.mode.spent .ok {
+	margin-left: 6px;
+	vertical-align: -2px;
+	color: var(--good);
+}
+
 /* --- playing with friends ------------------------------------------------ */
 
 input[type='text'] {

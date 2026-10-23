@@ -1,11 +1,13 @@
 /**
  * The runs finished in this browser, newest first: what a list of them shows,
  * and each run as a share link packs it, so its results can be opened again.
- * Beside them, the streak of rounds whose world the guess named.
+ * Beside them, the streak of rounds whose world the guess named, and the
+ * streak of days with a daily challenge finished.
  */
 
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
+import { dayBefore } from './daily';
 import { settingsOf } from './lobby';
 import { DIFFICULTY_NAMES, QUICK_PLAY, type RunSettings } from './rules';
 import type { Played } from './run';
@@ -24,20 +26,24 @@ export interface PastRun {
 	of?: number;
 	/** The tutorial, which its settings alone do not tell from a custom run. */
 	tutorial?: true;
+	/** The UTC day of a daily challenge. */
+	daily?: string;
 }
 
-export type RunKind = 'quick' | 'custom' | 'friends' | 'tutorial';
+export type RunKind = 'quick' | 'custom' | 'friends' | 'tutorial' | 'daily';
 
 export const KIND_LABELS: Record<RunKind, () => string> = {
 	quick: m.quick_play,
 	custom: m.custom_run,
 	friends: m.with_friends,
-	tutorial: m.tutorial
+	tutorial: m.tutorial,
+	daily: m.daily_challenge
 };
 
 export function kindOf(run: PastRun): RunKind {
 	if (run.of !== undefined) return 'friends';
 	if (run.tutorial) return 'tutorial';
+	if (run.daily) return 'daily';
 	const { rounds, movement, timer, modes } = run.settings;
 	const quick =
 		rounds === QUICK_PLAY.rounds &&
@@ -74,7 +80,7 @@ export function formatDay(at: number, year = false): string {
 export function pastRun(
 	played: readonly Played[],
 	settings: RunSettings,
-	kind: Pick<PastRun, 'place' | 'of' | 'tutorial'> = {}
+	kind: Pick<PastRun, 'place' | 'of' | 'tutorial' | 'daily'> = {}
 ): PastRun {
 	return {
 		at: Date.now(),
@@ -87,6 +93,7 @@ export function pastRun(
 
 const KEY = 'spaceguesser.history';
 const STREAK_KEY = 'spaceguesser.streak';
+const DAYS_KEY = 'spaceguesser.days';
 
 /** The oldest runs go past this: the browser gives a site a few megabytes. */
 const MAX_RUNS = 1000;
@@ -102,7 +109,8 @@ function read(value: unknown): PastRun | null {
 		total: run.total,
 		code: typeof run.code === 'string' ? run.code : null,
 		...(friends ? { place: run.place, of: run.of } : {}),
-		...(run.tutorial === true ? { tutorial: true } : {})
+		...(run.tutorial === true ? { tutorial: true } : {}),
+		...(typeof run.daily === 'string' ? { daily: run.daily } : {})
 	};
 }
 
@@ -120,11 +128,13 @@ export function recallHistory(): PastRun[] {
  * Adds a finished run, and returns the whole history. `rounds` are those of it
  * the streak goes on through. Both are read afresh, so a run finished in
  * another tab is not written over. A run already there is left alone: the
- * final screen of a game with friends comes back on a reload.
+ * final screen of a game with friends comes back on a reload, and a daily
+ * challenge is kept once.
  */
 export function keepRun(run: PastRun, rounds: readonly Played[]): PastRun[] {
 	const kept = recallHistory();
 	if (run.code !== null && kept.some((old) => old.code === run.code)) return kept;
+	if (run.daily && kept.some((old) => old.daily === run.daily)) return kept;
 	const next = [run, ...kept].slice(0, MAX_RUNS);
 	try {
 		localStorage.setItem(KEY, JSON.stringify(next));
@@ -139,6 +149,7 @@ export function clearHistory() {
 	try {
 		localStorage.removeItem(KEY);
 		localStorage.removeItem(STREAK_KEY);
+		localStorage.removeItem(DAYS_KEY);
 	} catch {
 		// Nothing was kept there to begin with.
 	}
@@ -220,6 +231,61 @@ export function recallStreak(): Streak {
 		// Storage that is blocked or holds something else: no streak.
 	}
 	return NO_STREAK;
+}
+
+/** Days running with the daily challenge finished. */
+export interface DayStreak extends Streak {
+	/** The day it last went on, as `YYYY-MM-DD`. */
+	last: string | null;
+}
+
+export const NO_DAYS: DayStreak = { ...NO_STREAK, last: null };
+
+/** The streak once `day` is finished. A day missed before it starts it over. */
+export function extendDays(streak: DayStreak, day: string): DayStreak {
+	if (streak.last !== null && day <= streak.last) return streak;
+	const current = streak.last === dayBefore(day) ? streak.current + 1 : 1;
+	return { current, best: Math.max(streak.best, current), last: day };
+}
+
+/** The streak as it stands on `today`: a day missed since ended it. */
+export function standingDays(streak: DayStreak, today: string): DayStreak {
+	const going = streak.last === today || streak.last === dayBefore(today);
+	return going ? streak : { ...streak, current: 0 };
+}
+
+/** What the tally says of the day streak, `start` being the one the run found. */
+export function dayNews(start: DayStreak, day: string): StreakNews {
+	const { current, best } = extendDays(start, day);
+	if (!start.best) return { count: current, ended: false, best: null, newBest: false };
+	return { count: current, ended: false, best, newBest: current > start.best };
+}
+
+export function recallDays(): DayStreak {
+	try {
+		const kept = JSON.parse(localStorage.getItem(DAYS_KEY) ?? 'null') as Partial<DayStreak> | null;
+		const { current = -1, best = -1, last = null } = kept ?? {};
+		if (
+			Number.isInteger(current) &&
+			Number.isInteger(best) &&
+			current > 0 &&
+			best >= current &&
+			typeof last === 'string'
+		)
+			return { current, best, last };
+	} catch {
+		// Storage that is blocked or holds something else: no streak.
+	}
+	return NO_DAYS;
+}
+
+/** Extends the stored streak with `day`. */
+export function finishDay(day: string) {
+	try {
+		localStorage.setItem(DAYS_KEY, JSON.stringify(extendDays(recallDays(), day)));
+	} catch {
+		// Not remembered, then.
+	}
 }
 
 /** The reader's own day a moment falls in, as its midnight. */

@@ -5,12 +5,18 @@ import * as m from '../paraglide/messages.js';
 
 /** The streak as a recap tells it: how long it now is, or how long the one
  *  just lost was, and how that stands to the best. */
-export function StreakLine({ news }: { news: StreakNews }) {
+export function StreakLine({
+	news,
+	label = m.world_streak()
+}: {
+	news: StreakNews;
+	label?: string;
+}) {
 	const { count, ended, best, newBest } = news;
 	return (
 		<div className={ended ? 'streak over' : 'streak'}>
 			<Flame size={14} />
-			<span>{m.world_streak()}</span>
+			<span>{label}</span>
 			<b>{formatNumber(count)}</b>
 			{ended && <span>{m.streak_ended()}</span>}
 			{best !== null && (
@@ -28,10 +34,16 @@ export function StreakLine({ news }: { news: StreakNews }) {
 }
 
 /** The streak as the history keeps it. */
-export function StreakField({ streak }: { streak: Streak }) {
+export function StreakField({
+	streak,
+	label = m.world_streak()
+}: {
+	streak: Streak;
+	label?: string;
+}) {
 	return (
 		<div className="field">
-			<span className="hd">{m.world_streak()}</span>
+			<span className="hd">{label}</span>
 			<div className={streak.current ? 'streak' : 'streak over'}>
 				<Flame size={14} />
 				<b>{formatNumber(streak.current)}</b>

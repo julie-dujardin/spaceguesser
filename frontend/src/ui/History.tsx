@@ -5,11 +5,14 @@ import {
 	describePast,
 	formatDay,
 	kindOf,
+	recallDays,
 	recallStreak,
+	standingDays,
 	weeksOf,
 	type Day,
 	type PastRun
 } from '../game/history';
+import { utcDay } from '../game/daily';
 import { recallProfile } from '../game/players';
 import { describeRun, formatNumber } from '../game/rules';
 import * as m from '../paraglide/messages.js';
@@ -55,6 +58,7 @@ export function History({ runs, notice, onOpen, onEdit, onClear, onBack }: Props
 	const [profile] = useState(recallProfile);
 	// Kept beside the runs, so it changes when they do.
 	const streak = useMemo(recallStreak, [runs]);
+	const days = useMemo(() => standingDays(recallDays(), utcDay()), [runs]);
 	/** The day whose runs are listed by themselves, as its midnight; null for
 	 *  every run. */
 	const [picked, setPicked] = useState<number | null>(null);
@@ -97,6 +101,7 @@ export function History({ runs, notice, onOpen, onEdit, onClear, onBack }: Props
 					</button>
 				</div>
 				{streak.best > 0 && <StreakField streak={streak} />}
+				{days.best > 0 && <StreakField streak={days} label={m.daily_streak()} />}
 				<div className="field">
 					<div className="ends">
 						<span className="hd">{m.activity()}</span>

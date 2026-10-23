@@ -32,6 +32,8 @@ interface Props {
 	observing?: boolean;
 	/** What the run did to the streak, where it counts towards one. */
 	streak?: StreakNews | null;
+	/** A daily challenge: what it did to the day streak. */
+	days?: StreakNews | null;
 	/** The path of the link to this run, where it has one to hand out. */
 	share?: string;
 	/** Someone's run, looked at from its link. */
@@ -42,6 +44,8 @@ interface Props {
 	onAgain?: () => void;
 	/** The tutorial, which leads on to a quick play rather than to itself. */
 	tutorial?: boolean;
+	/** The daily challenge, which leads on to a quick play too. */
+	daily?: boolean;
 	/** Over the buttons: what the first of them leads to. */
 	ahead?: ReactNode;
 	onHome: () => void;
@@ -56,11 +60,13 @@ export function FinalScore({
 	avatar,
 	observing,
 	streak,
+	days,
 	share,
 	shared,
 	past,
 	onAgain,
 	tutorial,
+	daily,
 	ahead,
 	onHome,
 	children
@@ -117,7 +123,8 @@ export function FinalScore({
 					<span className="hd">
 						{shared
 							? m.shared_run()
-							: (then ?? (tutorial ? m.tutorial_complete() : m.run_complete()))}
+							: (then ??
+								(tutorial ? m.tutorial_complete() : daily ? m.daily_complete() : m.run_complete()))}
 					</span>
 					{!observing && (
 						<div className="score">
@@ -129,6 +136,7 @@ export function FinalScore({
 					)}
 				</div>
 				{streak && <StreakLine news={streak} />}
+				{days && <StreakLine news={days} label={m.daily_streak()} />}
 				{children}
 				<div className="rounds">
 					{played.map((round, index) => (
@@ -182,7 +190,7 @@ export function FinalScore({
 							style={{ flex: share ? '1 0 100%' : 1 }}
 							onClick={onAgain}
 						>
-							{tutorial ? m.quick_play() : m.play_again()}
+							{tutorial || daily ? m.quick_play() : m.play_again()}
 						</button>
 					)}
 					{share && (

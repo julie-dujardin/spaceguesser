@@ -96,7 +96,8 @@ The server sends four things:
 
 `GET /daily.json` sends `DAILY_DIR/<YYYY-MM-DD>.json` for the current UTC
 date, as it is on disk, or a 404. The server sends no file of another day, so
-nobody can read a challenge before its day. The answer has
+nobody can read a challenge before its day. It does not read the files: the
+frontend's `scripts/upload-dailies.mjs` checks them. The answer has
 `Cache-Control: no-cache` and names the page's origin when `ALLOWED_ORIGINS`
 holds it, or any origin when the list is empty.
 

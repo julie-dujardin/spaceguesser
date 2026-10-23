@@ -1,7 +1,7 @@
 /** One solo run: the rounds drawn for it, and what the reader made of them. */
 
 import type { PanoramaEntry } from 'spacemap';
-import type { PastRun, Streak } from './history';
+import type { DayStreak, PastRun, Streak } from './history';
 import type { Place, Round } from './rounds';
 import { QUICK_PLAY, type RunSettings } from './rules';
 import { score, type Guess, type Score, type Sky } from './scoring';
@@ -44,11 +44,18 @@ export interface Run {
 	tutorial: boolean;
 	/** The streak as the run found it; null for one that does nothing to it. */
 	streak: Streak | null;
+	/** A daily challenge: its day, and the day streak as the run found it. */
+	daily: DailyStart | null;
 	drawn: Round[];
 	round: number;
 	/** Where the reader is standing, which free movement lets them change. */
 	standing: PanoramaEntry | null;
 	played: Played[];
+}
+
+export interface DailyStart {
+	day: string;
+	streak: DayStreak;
 }
 
 export type Action =
@@ -60,6 +67,7 @@ export type Action =
 			drawn: Round[];
 			tutorial?: boolean;
 			streak: Streak | null;
+			daily?: DailyStart;
 	  }
 	/** A run someone shared, as its link told it, or one of the reader's own
 	 *  from the history. */
@@ -77,6 +85,7 @@ export const INITIAL: Run = {
 	settings: { ...QUICK_PLAY, rounds: 0 },
 	tutorial: false,
 	streak: null,
+	daily: null,
 	drawn: [],
 	round: 0,
 	standing: null,
@@ -97,6 +106,7 @@ export function reduce(run: Run, action: Action): Run {
 				settings: action.settings,
 				tutorial: !!action.tutorial,
 				streak: action.streak,
+				daily: action.daily ?? null,
 				drawn: action.drawn,
 				round: 0,
 				standing: null,
