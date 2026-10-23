@@ -168,30 +168,46 @@ export function extendStreak(streak: Streak, rounds: readonly Played[]): Streak 
 	return { current, best };
 }
 
-/** What a recap says of the streak once its rounds are played. */
+/** What a recap says of the streak. */
 export interface StreakNews {
 	/** The streak going on, or the one the latest miss ended. */
 	count: number;
 	ended: boolean;
-	/** Null while there is no best from before to measure against: a first
-	 *  streak would be a new best every round. */
+	/** Null while it is the first streak there has been, with no best to beat. */
 	best: number | null;
 	newBest: boolean;
 }
 
-/** Null when the rounds leave no streak to speak of: a miss after a miss. */
-export function streakNews(before: Streak, rounds: readonly Played[]): StreakNews | null {
-	// Misses at the end take nothing from the best, only from the count.
+/**
+ * What the tally says: `rounds` are the run's, from where it found the streak.
+ * Null when they leave none to speak of, as a run of misses from the start.
+ */
+export function streakNews(start: Streak, rounds: readonly Played[]): StreakNews | null {
+	// Misses at the end end the streak told of, and leave the best as it was.
 	let built = rounds.length;
 	while (built > 0 && !named(rounds[built - 1])) built--;
-	const { current, best } = extendStreak(before, rounds.slice(0, built));
-	if (!current) return null;
+	const { current: count, best } = extendStreak(start, rounds.slice(0, built));
+	if (!count) return null;
+	const ended = built < rounds.length;
+	// The best there was when the streak began, which it had to beat.
+	const began = built - count;
+	const beaten = began > 0 ? extendStreak(start, rounds.slice(0, began)).best : start.best;
+	if (!beaten) return { count, ended, best: null, newBest: false };
 	return {
-		count: current,
-		ended: built < rounds.length,
-		best: before.best > 0 ? best : null,
-		newBest: before.best > 0 && best > before.best
+		count,
+		ended,
+		best,
+		// A streak short of the best tells of the run's own, if it set one.
+		newBest: count === best ? count > beaten : start.best > 0 && best > start.best
 	};
+}
+
+/** What a round's result says, `rounds` being those so far: as the tally would
+ *  of them, and so the same of the record, but nothing for a miss after a
+ *  miss, which ended no streak. */
+export function roundNews(start: Streak, rounds: readonly Played[]): StreakNews | null {
+	const news = streakNews(start, rounds);
+	return news?.ended && !extendStreak(start, rounds.slice(0, -1)).current ? null : news;
 }
 
 export function recallStreak(): Streak {

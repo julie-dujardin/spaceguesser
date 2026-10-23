@@ -269,9 +269,13 @@ export function playedBy(lobby: Lobby, id: string): Played[] {
 	return lobby.history.flatMap((_, index) => playedIn(lobby, id, index) ?? []);
 }
 
-/** The rounds before `before` that a player answered themselves, which are
- *  those their streak goes through: one from before they joined is not one
- *  they got wrong. */
-export function answeredBy(lobby: Lobby, id: string, before = lobby.history.length): Played[] {
-	return lobby.history.slice(0, before).flatMap((round) => round[id] ?? []);
+/** The rounds before `before` that a player's streak goes through: those from
+ *  their first answer on, as one from before they joined is not one they got
+ *  wrong, and one they let go by after it is. */
+export function streakRounds(lobby: Lobby, id: string, before = lobby.history.length): Played[] {
+	const first = lobby.history.findIndex((round) => id in round);
+	if (first < 0) return [];
+	return lobby.history
+		.slice(0, before)
+		.flatMap((_, index) => (index < first ? [] : (playedIn(lobby, id, index) ?? [])));
 }

@@ -11,6 +11,7 @@ import {
 	kindOf,
 	recallHistory,
 	recallStreak,
+	roundNews,
 	streakNews,
 	weeksOf,
 	type PastRun
@@ -178,11 +179,19 @@ describe('what a recap says of the streak', () => {
 	});
 
 	it('has no best to tell of until a first streak is over', () => {
-		expect(news(0, 0, [RIGHT, RIGHT])).toEqual({
-			count: 2,
+		for (const rounds of [[RIGHT], [RIGHT, RIGHT, RIGHT], [RIGHT, RIGHT, WRONG]])
+			expect(news(0, 0, rounds)?.best).toBeNull();
+		expect(news(0, 0, [RIGHT, RIGHT, WRONG, RIGHT])).toEqual({
+			count: 1,
 			ended: false,
-			best: null,
+			best: 2,
 			newBest: false
+		});
+		expect(news(0, 0, [RIGHT, RIGHT, WRONG, RIGHT, RIGHT, RIGHT])).toEqual({
+			count: 3,
+			ended: false,
+			best: 3,
+			newBest: true
 		});
 	});
 
@@ -196,6 +205,15 @@ describe('what a recap says of the streak', () => {
 		});
 	});
 
+	it('calls the record a miss ended a new best, as the tally after it does', () => {
+		expect(news(3, 5, [RIGHT, RIGHT, RIGHT, WRONG])).toEqual({
+			count: 6,
+			ended: true,
+			best: 6,
+			newBest: true
+		});
+	});
+
 	it('keeps a best the run set before losing it', () => {
 		expect(news(22, 23, [RIGHT, RIGHT, WRONG, RIGHT, RIGHT])).toEqual({
 			count: 2,
@@ -205,9 +223,28 @@ describe('what a recap says of the streak', () => {
 		});
 	});
 
-	it('says nothing of a miss after a miss', () => {
-		expect(news(0, 23, [WRONG])).toBeNull();
+	it('says nothing of a run of misses from the start', () => {
+		expect(news(0, 23, [WRONG, WRONG])).toBeNull();
 		expect(news(0, 0, [])).toBeNull();
+	});
+});
+
+describe('what a round says of the streak', () => {
+	const start = { current: 8, best: 23 };
+
+	it('says what the tally would of the rounds so far', () => {
+		for (const rounds of [[RIGHT], [WRONG], [RIGHT, RIGHT], [WRONG, RIGHT]])
+			expect(roundNews(start, rounds)).toEqual(streakNews(start, rounds));
+	});
+
+	it('says nothing of a miss after a miss, which the tally tells as the end of the streak', () => {
+		expect(roundNews(start, [WRONG, WRONG])).toBeNull();
+		expect(streakNews(start, [WRONG, WRONG])).toEqual({
+			count: 8,
+			ended: true,
+			best: 23,
+			newBest: false
+		});
 	});
 });
 

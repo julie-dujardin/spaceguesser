@@ -1,13 +1,14 @@
 import { describe, expect, it } from 'vitest';
 import {
-	answeredBy,
 	guessesOf,
 	held,
 	lobbyOf,
 	outdated,
 	playedBy,
+	playedIn,
 	slim,
 	standings,
+	streakRounds,
 	type Lobby,
 	type ToldLobby
 } from './lobby';
@@ -129,12 +130,24 @@ describe('lobbyOf', () => {
 	});
 });
 
-describe('answeredBy', () => {
-	it('leaves out the rounds a seat sat out, as a seat that joined late did', () => {
-		const read = lobby([{ ann: ON_MARS }, { ann: NO_PICK, bob: OVER_EUROPA }, { bob: ON_MARS }]);
-		expect(answeredBy(read, 'bob')).toEqual([OVER_EUROPA, ON_MARS]);
-		expect(answeredBy(read, 'bob', 2)).toEqual([OVER_EUROPA]);
-		expect(playedBy(read, 'bob')).toHaveLength(3);
+describe('streakRounds', () => {
+	const read = lobby([
+		{ ann: ON_MARS },
+		{ ann: NO_PICK, bob: OVER_EUROPA },
+		{ ann: ON_MARS },
+		{ bob: ON_MARS }
+	]);
+
+	it("starts at a seat's first answer, as one that joined late", () => {
+		expect(streakRounds(read, 'bob', 2)).toEqual([OVER_EUROPA]);
+		expect(streakRounds(read, 'bob', 1)).toEqual([]);
+		expect(streakRounds(read, 'cat')).toEqual([]);
+	});
+
+	it('counts a round let go by after it as one with no guess', () => {
+		const rounds = streakRounds(read, 'bob');
+		expect(rounds).toEqual([OVER_EUROPA, playedIn(read, 'bob', 2), ON_MARS]);
+		expect(rounds[1].guess).toBeNull();
 	});
 });
 

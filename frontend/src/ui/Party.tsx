@@ -3,21 +3,15 @@
 import { useContext, useEffect, useMemo, useRef, useState, type ReactNode } from 'react';
 import { bodyOf } from '../game/bodies';
 import { shadedOn } from '../game/eclipse';
+import { recallStreak, roundNews, streakNews, type Streak, type StreakNews } from '../game/history';
 import {
-	extendStreak,
-	recallStreak,
-	streakNews,
-	type Streak,
-	type StreakNews
-} from '../game/history';
-import {
-	answeredBy,
 	held,
 	playedBy,
 	playedIn,
 	settingsOf,
 	slim,
 	standings,
+	streakRounds,
 	type Lobby,
 	type LobbyRound
 } from '../game/lobby';
@@ -97,9 +91,11 @@ export function Party({
 	// game already.
 	const going = lobby.phase !== 'final';
 	const [found, setFound] = useState(() => (going ? recallStreak() : null));
-	useEffect(() => {
+	const [wasGoing, setWasGoing] = useState(going);
+	if (going !== wasGoing) {
+		setWasGoing(going);
 		if (going) setFound(recallStreak());
-	}, [going]);
+	}
 	const counts = found && you && !observing;
 
 	const start =
@@ -246,12 +242,14 @@ export function Party({
 	);
 }
 
-/** What a seat's answers did to the streak the game found: in the round at
- *  `index`, which says nothing when sat out, or in the whole game. */
+/** What a seat's rounds did to the streak the game found: up to the round at
+ *  `index`, or in the whole game. */
 function newsOf(lobby: Lobby, you: string, found: Streak, index?: number): StreakNews | null {
-	if (index === undefined) return streakNews(found, answeredBy(lobby, you));
-	const own = lobby.history[index]?.[you];
-	return own ? streakNews(extendStreak(found, answeredBy(lobby, you, index)), [own]) : null;
+	if (index === undefined) return streakNews(found, streakRounds(lobby, you));
+	const rounds = streakRounds(lobby, you, index + 1);
+	// A round from before the seat's first answer is none of its streak's.
+	if (rounds.length === streakRounds(lobby, you, index).length) return null;
+	return roundNews(found, rounds);
 }
 
 /** Seconds until `endsAt` on the server's clock; null for a round with no deadline. */

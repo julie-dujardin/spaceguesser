@@ -4,22 +4,22 @@ import { bodyOf } from './game/bodies';
 import { shadedOn } from './game/eclipse';
 import {
 	clearHistory,
-	extendStreak,
 	keepRun,
 	pastRun,
 	recallHistory,
 	recallStreak,
+	roundNews,
 	streakNews,
 	type PastRun
 } from './game/history';
 import {
-	answeredBy,
 	held,
 	inviteCode,
 	invitePath,
 	playedBy,
 	settingsOf,
-	standings
+	standings,
+	streakRounds
 } from './game/lobby';
 import { keepProfile } from './game/players';
 import {
@@ -288,7 +288,7 @@ export default function App() {
 		const table = standings(lobby);
 		const place = table.findIndex(({ seat }) => seat.id === you) + 1;
 		const past = pastRun(played, settingsOf(lobby.settings), { place, of: table.length });
-		setKept(keepRun(past, answeredBy(lobby, you)));
+		setKept(keepRun(past, streakRounds(lobby, you)));
 	}, [finished, party.you]);
 
 	const last = run.played[run.played.length - 1];
@@ -710,9 +710,7 @@ export default function App() {
 					played={last}
 					round={run.round + 1}
 					rounds={run.drawn.length}
-					streak={
-						run.streak && streakNews(extendStreak(run.streak, run.played.slice(0, -1)), [last])
-					}
+					streak={run.streak && roundNews(run.streak, run.played)}
 					onNext={next}
 					onQuit={() => dispatch({ kind: 'home' })}
 				>
