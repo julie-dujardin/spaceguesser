@@ -395,6 +395,7 @@
 	"body_note_crash_site": "site de l'impact, aucun modèle de l'épave",
 	"carried_by_scene_label": "Transporté par {carrier}",
 	"scene_canvas_label": "Carte 3D interactive du Système solaire",
+	"attribution_stars": "Étoiles",
 	"attribution_orbits": "Orbites",
 	"attribution_imagery": "Images",
 	"credits_see_all": "Voir tous les crédits",

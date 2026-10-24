@@ -387,6 +387,7 @@
 	"body_note_crash_site": "crash site, no wreckage model",
 	"carried_by_scene_label": "Carried by {carrier}",
 	"scene_canvas_label": "Interactive 3D map of the Solar System",
+	"attribution_stars": "Stars",
 	"attribution_orbits": "Orbits",
 	"attribution_imagery": "Imagery",
 	"credits_see_all": "See full credits",
