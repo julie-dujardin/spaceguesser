@@ -74,6 +74,25 @@ export function parseDaily(value: unknown): Daily {
 	return { day, time, rounds };
 }
 
+/** A value on one line, spaced as JSON is written by hand. */
+function inline(value: unknown): string {
+	if (Array.isArray(value)) return `[${value.map(inline).join(', ')}]`;
+	if (!value || typeof value !== 'object') return JSON.stringify(value);
+	const fields = Object.entries(value).map(
+		([key, field]) => `${JSON.stringify(key)}: ${inline(field)}`
+	);
+	return `{ ${fields.join(', ')} }`;
+}
+
+/** A day's file as it is kept, with a round on each line. For the scripts. */
+export function formatDaily({ rounds, ...head }: { rounds: unknown[] }): string {
+	const fields = Object.entries(head).map(
+		([key, field]) => `\t${JSON.stringify(key)}: ${inline(field)},\n`
+	);
+	const lines = rounds.map((round) => `\t\t${inline(round)}`).join(',\n');
+	return `{\n${fields.join('')}\t"rounds": [\n${lines}\n\t]\n}\n`;
+}
+
 /** A filled-in `noon` keeps 4 decimals: under 10 m on Mars. */
 const NOON_DIGITS = 4;
 

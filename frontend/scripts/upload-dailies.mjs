@@ -24,25 +24,6 @@ try {
 	// No `.env`: the shell gives the settings.
 }
 
-/** A value on one line, spaced as JSON is written by hand. */
-function inline(value) {
-	if (Array.isArray(value)) return `[${value.map(inline).join(', ')}]`;
-	if (!value || typeof value !== 'object') return JSON.stringify(value);
-	const fields = Object.entries(value).map(
-		([key, field]) => `${JSON.stringify(key)}: ${inline(field)}`
-	);
-	return `{ ${fields.join(', ')} }`;
-}
-
-/** A day's file with a round on each line. */
-function format({ rounds, ...head }) {
-	const fields = Object.entries(head).map(
-		([key, field]) => `\t${JSON.stringify(key)}: ${inline(field)},\n`
-	);
-	const lines = rounds.map((round) => `\t\t${inline(round)}`).join(',\n');
-	return `{\n${fields.join('')}\t"rounds": [\n${lines}\n\t]\n}\n`;
-}
-
 function run(command, args) {
 	const { status } = spawnSync(command, args, { cwd: FRONTEND, stdio: 'inherit' });
 	if (status !== 0) {
@@ -66,7 +47,7 @@ if (!names.length) {
 if (!existsSync(`${FRONTEND}src/paraglide/messages.js`)) run('pnpm', ['messages']);
 const load = async (path) =>
 	(await runnerImport(`${FRONTEND}${path}`, { configFile: false, logLevel: 'error' })).module;
-const { checkDaily, utcDay } = await load('src/game/daily.ts');
+const { checkDaily, formatDaily, utcDay } = await load('src/game/daily.ts');
 const { fetchStops } = await load('src/game/rounds.ts');
 // The game takes the non-commercial imagery, Huygens with it.
 (await load('src/game/host.ts')).setHost();
@@ -86,7 +67,7 @@ for (const name of ahead) {
 		continue;
 	}
 	const { filled, problems } = await checkDaily(name, value, stops);
-	if (filled) writeFileSync(path, format(value));
+	if (filled) writeFileSync(path, formatDaily(value));
 	for (const problem of problems) console.error(`${name}: ${problem}`);
 	if (problems.length) failed++;
 	else console.log(`${name}: ok${filled ? `, noon written for ${filled} round(s)` : ''}`);
