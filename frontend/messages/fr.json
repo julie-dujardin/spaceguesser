@@ -192,11 +192,12 @@
 			"declarations": ["input count", "local countPlural = count: plural"],
 			"selectors": ["countPlural"],
 			"match": {
-				"countPlural=one": "réponse envoyée · en attente d'un autre joueur",
-				"countPlural=other": "réponse envoyée · en attente de {count} autres joueurs"
+				"countPlural=one": "réponse envoyée · on attend un autre joueur",
+				"countPlural=other": "réponse envoyée · on attend {count} autres joueurs"
 			}
 		}
 	],
+	"guess_in_waiting_for": "réponse envoyée · on attend {names}",
 	"end_round": "Terminer la manche",
 	"observing": "vous observez",
 	"observing_waiting": [
@@ -204,11 +205,12 @@
 			"declarations": ["input count", "local countPlural = count: plural"],
 			"selectors": ["countPlural"],
 			"match": {
-				"countPlural=one": "vous observez · en attente d'une réponse",
-				"countPlural=other": "vous observez · en attente de {count} réponses"
+				"countPlural=one": "vous observez · on attend une réponse",
+				"countPlural=other": "vous observez · on attend {count} réponses"
 			}
 		}
 	],
+	"observing_waiting_for": "vous observez · on attend {names}",
 	"actual_location": "position réelle",
 	"show_in_spacemap": "voir dans spacemap",
 	"recap_gave_away": "ce qui l'a trahi",

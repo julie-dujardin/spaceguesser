@@ -187,6 +187,7 @@
 			}
 		}
 	],
+	"guess_in_waiting_for": "guess in · waiting for {names}",
 	"end_round": "End round",
 	"observing": "observing",
 	"observing_waiting": [
@@ -199,6 +200,7 @@
 			}
 		}
 	],
+	"observing_waiting_for": "observing · waiting for {names}",
 	"actual_location": "actual location",
 	"show_in_spacemap": "show in spacemap",
 	"recap_gave_away": "what gave it away",

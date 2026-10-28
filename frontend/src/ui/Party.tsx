@@ -13,7 +13,8 @@ import {
 	standings,
 	streakRounds,
 	type Lobby,
-	type LobbyRound
+	type LobbyRound,
+	type Seat
 } from '../game/lobby';
 import { profileOf } from '../game/players';
 import {
@@ -32,6 +33,7 @@ import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
 import type { LobbySession } from '../game/useLobby';
 import * as m from '../paraglide/messages.js';
+import { getLocale } from '../paraglide/runtime.js';
 import { Avatar } from './Avatar';
 import { CustomSetup } from './CustomSetup';
 import { FinalScore } from './FinalScore';
@@ -343,7 +345,7 @@ function Round({
 	const players = lobby.players.filter((seat) => !seat.observing);
 	const out = players.filter(
 		(seat) => seat.connected && seat.id !== you && !round.guessed.includes(seat.id)
-	).length;
+	);
 	const end = onEnd && (
 		<button type="button" className="btn ghost" onClick={onEnd}>
 			{m.end_round()}
@@ -375,7 +377,10 @@ function Round({
 				</span>
 			</Hud>
 			{!waiting && observing && (
-				<Watching note={out ? m.observing_waiting({ count: out }) : m.observing()} action={end} />
+				<Watching
+					note={awaited(out, m.observing, m.observing_waiting_for, m.observing_waiting)}
+					action={end}
+				/>
 			)}
 			{!waiting && !observing && (
 				<GuessPanel
@@ -391,9 +396,7 @@ function Round({
 						measuring
 							? m.measuring()
 							: answered
-								? out
-									? m.guess_in_waiting({ count: out })
-									: m.guess_in()
+								? awaited(out, m.guess_in, m.guess_in_waiting_for, m.guess_in_waiting)
 								: undefined
 					}
 					action={end}
@@ -401,6 +404,19 @@ function Round({
 			)}
 		</div>
 	);
+}
+
+/** Who the round still waits on. A name or two says more than a count. */
+function awaited(
+	out: Seat[],
+	none: () => string,
+	named: (inputs: { names: string }) => string,
+	counted: (inputs: { count: number }) => string
+): string {
+	if (!out.length) return none();
+	if (out.length >= 3) return counted({ count: out.length });
+	const names = out.map((seat) => profileOf(seat.name).name);
+	return named({ names: new Intl.ListFormat(getLocale()).format(names) });
 }
 
 /** The guess panel's corner, for the host observing: how the round is going,
