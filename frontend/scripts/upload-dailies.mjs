@@ -68,6 +68,8 @@ const load = async (path) =>
 	(await runnerImport(`${FRONTEND}${path}`, { configFile: false, logLevel: 'error' })).module;
 const { checkDaily, utcDay } = await load('src/game/daily.ts');
 const { fetchStops } = await load('src/game/rounds.ts');
+// The game takes the non-commercial imagery, Huygens with it.
+(await load('src/game/host.ts')).setHost();
 
 // A day gone by was checked before it began, against the panoramas of then.
 const ahead = names.filter((name) => name >= `${utcDay()}.json`);
