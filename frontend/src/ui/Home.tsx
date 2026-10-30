@@ -3,7 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { DAILY } from '../game/daily';
 import { REPO } from '../game/links';
 import { recallProfile } from '../game/players';
-import { QUICK_PLAY, formatCountdown } from '../game/rules';
+import { QUICK_PLAY, formatCountdown, formatNumber } from '../game/rules';
 import { TUTORIAL } from '../game/tutorial';
 import * as m from '../paraglide/messages.js';
 import { Avatar } from './Avatar';
@@ -14,6 +14,8 @@ export interface DailyDoor {
 	open: boolean;
 	/** When the day ends, in epoch milliseconds. */
 	ends: number;
+	/** What today's run scored. Absent when it was left before a first guess. */
+	score?: number;
 	go: () => void;
 }
 
@@ -106,6 +108,9 @@ export function Home({
 			<span className="t">
 				{m.daily_challenge()}
 				<Check className="ok" size="1em" aria-label={m.daily_played()} />
+				{daily.score !== undefined && (
+					<span className="mono gain">{formatNumber(daily.score)}</span>
+				)}
 			</span>
 			<Ticking text={m.daily_next_in({ time: left })} />
 		</div>

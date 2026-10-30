@@ -747,7 +747,12 @@ export default function App() {
 					onQuickPlay={() => start(QUICK_PLAY, true)}
 					daily={
 						daily && dailyRounds
-							? { open: started !== daily.day, ends: endOf(daily.day), go: startDaily }
+							? {
+									open: started !== daily.day,
+									ends: endOf(daily.day),
+									score: kept.find((past) => past.daily === daily.day)?.total,
+									go: startDaily
+								}
 							: undefined
 					}
 					onTutorial={startTutorial}
