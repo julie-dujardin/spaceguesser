@@ -2386,14 +2386,16 @@ button.rk {
 	text-wrap: pretty;
 }
 
-.why a {
+.why a,
+.tip a {
 	color: var(--fg);
 	text-decoration: underline;
 	text-decoration-color: var(--gborder);
 	text-underline-offset: 3px;
 }
 
-.why a:hover {
+.why a:hover,
+.tip a:hover {
 	text-decoration-color: currentColor;
 }
 

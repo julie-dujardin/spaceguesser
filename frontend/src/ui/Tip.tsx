@@ -1,8 +1,11 @@
 /** A tutorial tip: what to do next, or what to look for. */
 
 import { useMemo } from 'react';
-import type { Tip } from '../game/tutorial';
+import { STUCK_ID, type Tip } from '../game/tutorial';
 import * as m from '../paraglide/messages.js';
+import { NoIdea } from './Explanation';
+
+export const STUCK: Tip = { id: STUCK_ID, lines: [() => <NoIdea />], at: 'view' };
 
 interface Props {
 	tip: Tip;

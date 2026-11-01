@@ -12,6 +12,7 @@ import {
 	nextEnd,
 	onward,
 	shownTip,
+	stuckEnd,
 	tutorialRun,
 	type Progress,
 	type Seen
@@ -38,7 +39,14 @@ const STOPS: Stop[] = LESSONS.flatMap(({ where }) =>
 		: []
 );
 
-const NOTHING: Progress = { dragged: null, opened: null, picked: null, placed: false, now: 0 };
+const NOTHING: Progress = {
+	arrived: null,
+	dragged: null,
+	opened: null,
+	picked: null,
+	placed: false,
+	now: 0
+};
 /** Long enough ago for any wait to have run out. */
 const LONG_AGO = -60_000;
 
@@ -143,5 +151,14 @@ describe('the tips', () => {
 		const ganymede = LESSONS.find(({ where }) => where.body === 'naif-503')!.tips;
 		expect(ganymede[shownTip(ganymede, NOTHING, UNSEEN)]).toMatchObject({ at: 'tools' });
 		expect(ganymede[0].ring?.(NOTHING)).toBe('tools');
+	});
+
+	it('offer the map a minute after the view is up, until waved off', () => {
+		const here = { ...NOTHING, arrived: 1_000 };
+		expect(stuckEnd(NOTHING, UNSEEN)).toBeNull();
+		expect(stuckEnd(here, UNSEEN)).toBe(61_000);
+		expect(stuckEnd(here, { ...UNSEEN, dismissed: ['stuck'] })).toBeNull();
+		expect(nextEnd([], here, stuckEnd(here, UNSEEN))).toBe(61_000);
+		expect(nextEnd([], { ...here, now: 61_000 }, stuckEnd(here, UNSEEN))).toBeNull();
 	});
 });

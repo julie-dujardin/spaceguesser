@@ -4,6 +4,7 @@
  * none; every recap says what gave the place away.
  */
 
+import type { ReactNode } from 'react';
 import * as m from '../paraglide/messages.js';
 import { bodyOf } from './bodies';
 import { roundAt, type Round, type Stop, type Where } from './rounds';
@@ -23,6 +24,8 @@ export const TUTORIAL_DATE = Date.parse('2026-10-27T15:30:00Z');
 
 /** What the reader has done in the round so far. */
 export interface Progress {
+	/** When the round's view came up. */
+	arrived: number | null;
 	/** When they first turned the view, in epoch milliseconds. */
 	dragged: number | null;
 	/** When they first opened the guess panel. */
@@ -47,7 +50,7 @@ export type Highlight = 'panel' | 'surface' | 'guess' | 'tools';
 
 export interface Tip {
 	id: string;
-	lines: (() => string)[];
+	lines: (() => ReactNode)[];
 	/** Under the round's pills, beside the guess panel, or over the view's own
 	 *  controls. */
 	at: 'view' | 'panel' | 'tools';
@@ -236,12 +239,28 @@ function endOf(tip: Tip, progress: Progress): number | null {
 	return from === null ? null : from + tip.wait.ms;
 }
 
-/** When the next wait runs out, which may move the tips on; null when none
- *  is running. */
-export function nextEnd(tips: readonly Tip[], progress: Progress): number | null {
-	const ends = tips
-		.flatMap((tip) => endOf(tip, progress) ?? [])
-		.filter((end) => end > progress.now);
+/** The tip that points a reader stuck on a round at the map. */
+export const STUCK_ID = 'stuck';
+
+const STUCK_MS = 60_000;
+
+/** When that tip is due; null once waved off, or with the view not up yet. */
+export function stuckEnd(progress: Progress, seen: Seen): number | null {
+	if (progress.arrived === null || seen.dismissed.includes(STUCK_ID)) return null;
+	return progress.arrived + STUCK_MS;
+}
+
+/** When the next wait runs out, which may move the tips on, `stuck` among
+ *  them; null when none is running. */
+export function nextEnd(
+	tips: readonly Tip[],
+	progress: Progress,
+	stuck: number | null = null
+): number | null {
+	const ends = [
+		...tips.flatMap((tip) => endOf(tip, progress) ?? []),
+		...(stuck ? [stuck] : [])
+	].filter((end) => end > progress.now);
 	return ends.length ? Math.min(...ends) : null;
 }
 

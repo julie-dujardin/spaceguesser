@@ -55,12 +55,14 @@ import type { Guess } from './game/scoring';
 import { openShared, sharePath, sharedCode } from './game/share';
 import {
 	TUTORIAL,
+	STUCK_ID,
 	UNSEEN,
 	backward,
 	countdown,
 	nextEnd,
 	onward,
 	shownTip,
+	stuckEnd,
 	tutorialRun,
 	type Lesson
 } from './game/tutorial';
@@ -80,7 +82,7 @@ import { Panorama } from './ui/Panorama';
 import { Party } from './ui/Party';
 import { ProfileSetup } from './ui/ProfileSetup';
 import { RoundResult } from './ui/RoundResult';
-import { TipCard } from './ui/Tip';
+import { STUCK, TipCard } from './ui/Tip';
 import { useSpace } from './ui/useSpace';
 
 /** What the opener is drawn from: it is the first round of a Quick Play. */
@@ -100,7 +102,12 @@ type Door =
 	| null;
 
 /** A round of the tutorial before the reader has done anything in it. */
-const FRESH = { dragged: null as number | null, opened: null as number | null, ...UNSEEN };
+const FRESH = {
+	arrived: null as number | null,
+	dragged: null as number | null,
+	opened: null as number | null,
+	...UNSEEN
+};
 
 /** Read once: the page is opened on an invite or it is not. */
 const INVITE = MULTIPLAYER ? inviteCode(location.pathname) : null;
@@ -495,22 +502,36 @@ export default function App() {
 	const lesson = !lobby && run.phase === 'playing' ? lessonOf(run.round) : null;
 	const recapped = !lobby && run.phase === 'result' ? lessonOf(run.round) : null;
 	const tips = lesson && !tipsOff ? lesson.tips : [];
+	const arrived = !!lesson && viewUp;
+	useEffect(() => {
+		if (!arrived) return;
+		setProgress((done) => (done.arrived !== null ? done : { ...done, arrived: Date.now() }));
+	}, [arrived]);
 	const known = { ...progress, picked: guess?.body ?? null, placed: !!guess?.at, now };
-	const wake = nextEnd(tips, known);
+	const stuckAt = lesson && !tipsOff ? stuckEnd(known, progress) : null;
+	const stuck = stuckAt !== null && stuckAt <= now;
+	const wake = nextEnd(tips, known, stuckAt);
 	useEffect(() => {
 		if (wake === null) return;
 		const timer = setTimeout(() => setNow(Date.now()), wake - Date.now());
 		return () => clearTimeout(timer);
 	}, [wake]);
 	const tipAt = shownTip(tips, known, progress);
-	const tip = tips[tipAt] ?? null;
+	// The map hint stands in for the lesson's tip, which comes back after it.
+	const tip = stuck ? STUCK : (tips[tipAt] ?? null);
 	const tipCard = tip && (
 		<TipCard
 			tip={tip}
-			index={tipAt}
-			count={tips.length}
-			countdown={countdown(tips, tipAt, known)}
-			onDone={() => setProgress((done) => ({ ...done, ...onward(tips, known, done) }))}
+			index={stuck ? 0 : tipAt}
+			count={stuck ? 1 : tips.length}
+			countdown={stuck ? null : countdown(tips, tipAt, known)}
+			onDone={() =>
+				setProgress((done) =>
+					stuck
+						? { ...done, dismissed: [...done.dismissed, STUCK_ID] }
+						: { ...done, ...onward(tips, known, done) }
+				)
+			}
 			onBack={() => setProgress((done) => ({ ...done, ...backward(tips, known, done) }))}
 			onHide={() => setTipsOff(true)}
 		/>
@@ -797,7 +818,13 @@ export default function App() {
 					onNext={next}
 					onQuit={quit}
 				>
-					{recapped && <Explanation score={last.score} lines={recapped.recap} />}
+					{recapped && (
+						<Explanation
+							score={last.score}
+							lines={recapped.recap}
+							offWorld={last.guess?.body !== last.truth.body}
+						/>
+					)}
 				</RoundResult>
 			)}
 

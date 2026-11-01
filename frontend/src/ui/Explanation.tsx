@@ -19,9 +19,32 @@ interface Props {
 	score: Score;
 	/** A paragraph each. */
 	lines: (() => string)[];
+	/** The guess was not on the right world. */
+	offWorld: boolean;
 }
 
-export function Explanation({ score, lines }: Props) {
+function SiteLink() {
+	return (
+		<a href={SITE} target="_blank" rel="noopener noreferrer">
+			spacemap.co
+		</a>
+	);
+}
+
+/** Points a reader short of ideas at the map of the solar system. */
+export function NoIdea() {
+	// The link goes where the sentence puts it, in whatever language.
+	const [before, after] = m.tutorial_no_idea({ site: '\u0000' }).split('\u0000');
+	return (
+		<>
+			{before}
+			<SiteLink />
+			{after}
+		</>
+	);
+}
+
+export function Explanation({ score, lines, offWorld }: Props) {
 	return (
 		<div className="lesson">
 			<div className="split">
@@ -43,6 +66,11 @@ export function Explanation({ score, lines }: Props) {
 					{lines.map((line, i) => (
 						<p key={i}>{line()}</p>
 					))}
+					{offWorld && (
+						<p>
+							<NoIdea />
+						</p>
+					)}
 				</div>
 			)}
 		</div>
@@ -51,7 +79,7 @@ export function Explanation({ score, lines }: Props) {
 
 /** What the tutorial's end card says comes next. */
 export function Onward({ panoramas }: { panoramas: number }) {
-	// The link and the icon go where the sentence puts them, in whatever language.
+	// As in NoIdea, with an icon too.
 	const parts = m.tutorial_more({ site: '\u0000', icon: '\u0001' }).split(/([\u0000\u0001])/);
 	return (
 		<div className="why">
@@ -65,9 +93,7 @@ export function Onward({ panoramas }: { panoramas: number }) {
 			<p>
 				{parts.map((part, i) =>
 					part === '\u0000' ? (
-						<a key={i} href={SITE} target="_blank" rel="noopener noreferrer">
-							spacemap.co
-						</a>
+						<SiteLink key={i} />
 					) : part === '\u0001' ? (
 						<ExternalLink key={i} size="1em" role="img" aria-label={m.show_in_spacemap()} />
 					) : (
