@@ -252,6 +252,8 @@
 	"zoom": "Zoom",
 	"zoom_out": "Zoom out",
 	"zoom_in": "Zoom in",
+	"panel_fold": "Hide the details",
+	"panel_unfold": "Show the details",
 	"recap_view": "Map view",
 	"recap_globe": "3D",
 	"recap_globe_title": "The globe",

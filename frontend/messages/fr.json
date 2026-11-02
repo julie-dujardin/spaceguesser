@@ -262,6 +262,8 @@
 	"zoom": "Zoom",
 	"zoom_out": "Dézoomer",
 	"zoom_in": "Zoomer",
+	"panel_fold": "Masquer les détails",
+	"panel_unfold": "Afficher les détails",
 	"recap_view": "Vue de la carte",
 	"recap_globe": "3D",
 	"recap_globe_title": "Le globe",
