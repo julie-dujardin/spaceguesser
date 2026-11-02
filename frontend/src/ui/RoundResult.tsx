@@ -1,5 +1,5 @@
 import { Check, X } from 'lucide-react';
-import { useMemo, type ReactNode } from 'react';
+import { useMemo, useState, type ReactNode } from 'react';
 import type { LonLat } from 'spacemap';
 import { bodyName, bodyOf } from '../game/bodies';
 import type { Space } from '../game/space';
@@ -11,6 +11,7 @@ import type { Guess } from '../game/scoring';
 import type { StreakNews } from '../game/history';
 import type { Profile } from '../game/players';
 import * as m from '../paraglide/messages.js';
+import { Fold } from './Fold';
 import { Recap, type RecapGuess } from './Recap';
 import { StreakLine } from './Streak';
 
@@ -107,14 +108,16 @@ export function RoundResult({
 		];
 		return [{ round: played.round, truth, guesses }];
 	}, [played.round, truth, guess, avatar, others]);
+	const [folded, setFolded] = useState(false);
 
 	return (
 		<div className="board">
 			<Recap space={space} rounds={recap} focus={0} onQuit={onQuit} />
-			<div className="rpanel glass">
-				<div className="col" style={{ gap: 3 }}>
+			<div className={`rpanel glass${folded ? ' folded' : ''}`}>
+				<Fold folded={folded} onFold={setFolded} />
+				<div className="col keep" style={{ gap: 3 }}>
 					<span className="hd">{m.actual_location()}</span>
-					<span className="world" style={{ fontSize: '14.5px' }}>
+					<span className="world keep" style={{ fontSize: '14.5px' }}>
 						{bodyName(truth.body)}
 						<Named played={played} />
 					</span>
@@ -136,7 +139,7 @@ export function RoundResult({
 					</a>
 				</div>
 				{!observing && (
-					<div className="score">
+					<div className="score keep">
 						<b>+{formatNumber(score.points)}</b>
 						<span className="mono mut" style={{ fontSize: 13 }}>
 							{said}
@@ -152,7 +155,12 @@ export function RoundResult({
 					{!onNext && ` · ${m.host_moves_on()}`}
 				</span>
 				{onNext && (
-					<button type="button" className="btn lg" style={{ marginTop: 'auto' }} onClick={onNext}>
+					<button
+						type="button"
+						className="btn lg keep"
+						style={{ marginTop: 'auto' }}
+						onClick={onNext}
+					>
 						{round < rounds ? m.next_round() : m.see_total()}
 					</button>
 				)}

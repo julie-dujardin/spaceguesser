@@ -1551,6 +1551,28 @@ input.code {
 	max-height: calc(100% - 90px);
 }
 
+/* The chevron that folds the panel: a phone's, which the panel would
+   otherwise leave little of the map to. */
+.rpanel .fold {
+	display: none;
+	position: absolute;
+	top: 12px;
+	right: 12px;
+	padding: 5px;
+	border: 0;
+	border-radius: 999px;
+	background: none;
+	color: var(--mut);
+	cursor: pointer;
+}
+
+.rpanel .fold:hover,
+.rpanel .fold:focus-visible {
+	background: rgb(255 255 255 / 0.1);
+	color: var(--fg);
+	outline: none;
+}
+
 /* Three buttons are more than the panel is wide. */
 .rpanel .acts {
 	flex-wrap: wrap;
@@ -2533,6 +2555,25 @@ button.rk {
 
 	.dims {
 		flex-direction: column;
+	}
+
+	/* The result's panel folds down to what was scored and the way on, and
+	   gives the map back. */
+	.rpanel .fold {
+		display: flex;
+	}
+
+	.rpanel .fold + * {
+		padding-right: 26px;
+	}
+
+	.rpanel.folded {
+		gap: 10px;
+	}
+
+	.rpanel.folded > :not(.keep),
+	.rpanel.folded > .col > :not(.keep) {
+		display: none;
 	}
 
 	.dims button {

@@ -16,6 +16,7 @@ import { MAX_POINTS } from '../game/scoring';
 import type { Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
+import { Fold } from './Fold';
 import { Recap, type RecapGuess } from './Recap';
 import { Named, missed } from './RoundResult';
 import { StreakLine } from './Streak';
@@ -84,6 +85,7 @@ export function FinalScore({
 	const [copied, setCopied] = useState(false);
 	/** The round looked at by itself; null for the whole run on one map. */
 	const [focus, setFocus] = useState<number | null>(null);
+	const [folded, setFolded] = useState(false);
 	const recap = useMemo(
 		() =>
 			played.map(({ round, truth, guess }, index) => ({
@@ -118,16 +120,17 @@ export function FinalScore({
 		<div className="board">
 			{/* A game nobody answered a round of has nowhere to fly to. */}
 			{recap.length > 0 && <Recap space={space} rounds={recap} focus={focus} />}
-			<div className="rpanel glass">
-				<div className="col" style={{ gap: 3 }}>
-					<span className="hd">
+			<div className={`rpanel glass${folded ? ' folded' : ''}`}>
+				<Fold folded={folded} onFold={setFolded} />
+				<div className="col keep" style={{ gap: 3 }}>
+					<span className="hd keep">
 						{shared
 							? m.shared_run()
 							: (then ??
 								(tutorial ? m.tutorial_complete() : daily ? m.daily_complete() : m.run_complete()))}
 					</span>
 					{!observing && (
-						<div className="score">
+						<div className="score keep">
 							<b>{formatNumber(total)}</b>
 							<span className="mono mut" style={{ fontSize: 13 }}>
 								{m.of_points({ best: formatNumber(best) })}
@@ -181,7 +184,7 @@ export function FinalScore({
 					))}
 				</div>
 				{ahead}
-				<div className="acts">
+				<div className="acts keep">
 					{onAgain && (
 						<button
 							type="button"
