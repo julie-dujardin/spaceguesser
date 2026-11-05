@@ -13,6 +13,7 @@ import { parseArgs } from 'node:util';
 import { gunzipSync } from 'node:zlib';
 import { subsolarPoint, sunlight } from 'spacemap';
 import { runnerImport } from 'vite';
+import { showsFullTurn } from './full-turn.mjs';
 
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const FOLDER = fileURLToPath(new URL('../../dailies/', import.meta.url));
@@ -32,6 +33,7 @@ const load = async (path) =>
 const { DAILY, checkDaily, formatDaily, utcDay } = await load('src/game/daily.ts');
 const { aim, fetchStops, spot } = await load('src/game/rounds.ts');
 const { POOLS, setTiled, viewDistance } = await load('src/game/bodies.ts');
+const { ANY_SWEEP } = await load('src/game/rules.ts');
 const { LESSONS } = await load('src/game/tutorial.ts');
 // The game takes the non-commercial imagery, Huygens with it.
 (await load('src/game/host.ts')).setHost();
@@ -157,8 +159,17 @@ const NO_LANDFORM = new Set(['SF', 'LF']);
 
 // --- What there is, and what was played ---
 
-const stops = (await fetchStops()).filter((stop) => BODY.has(stop.body));
-const STOP = new Map(stops.map((stop) => [stop.entry.id, stop]));
+const fullTurn = (stop) => showsFullTurn(stop, ANY_SWEEP);
+const listed = (await fetchStops()).filter((stop) => BODY.has(stop.body));
+const listedSize = new Map();
+for (const stop of listed) listedSize.set(kindOf(stop), (listedSize.get(kindOf(stop)) ?? 0) + 1);
+// A rare kind is measured whole: with no full turn left, it must not come due.
+// A common kind is too large for that, and is measured as it is picked.
+const measured = await Promise.all(
+	listed.map(async (stop) => listedSize.get(kindOf(stop)) >= RARE_BELOW || (await fullTurn(stop)))
+);
+const stops = listed.filter((_, i) => measured[i]);
+const STOP = new Map(listed.map((stop) => [stop.entry.id, stop]));
 const kindSize = new Map();
 for (const stop of stops) kindSize.set(kindOf(stop), (kindSize.get(kindOf(stop)) ?? 0) + 1);
 const RARE = [...kindSize].filter(([, size]) => size < RARE_BELOW).map(([kind]) => kind);
@@ -251,9 +262,12 @@ function viewWidthKm(body) {
 
 // --- Drawing a day ---
 
-/** A panorama of `kind`, apart from the ones played: a named colour 360 on
- *  most days, and on along the traverse from the probe's last one. */
-function pickPanorama(kind, day) {
+/** Panoramas found to show less than the full turn their entry claims. */
+const partial = new Set();
+
+/** A full-turn panorama of `kind`, apart from the ones played: a named colour
+ *  360 on most days, and on along the traverse from the probe's last one. */
+async function pickPanorama(kind, day) {
 	const before = played.filter((where) => where.mode === 'ground');
 	const usedIds = new Set(before.map((where) => where.panorama));
 	const recent = before
@@ -272,7 +286,12 @@ function pickPanorama(kind, day) {
 	const last = stopOf(
 		before.findLast((where) => stopOf(where) && kindOf(stopOf(where)) === kind) ?? {}
 	);
-	return pick(pool, (stop) => (last ? 0.2 + Math.min(1, distanceKm(last, stop) / ALONG_KM) : 1));
+	const stop = pick(pool, (stop) =>
+		last ? 0.2 + Math.min(1, distanceKm(last, stop) / ALONG_KM) : 1
+	);
+	if (!stop || (await fullTurn(stop))) return stop;
+	partial.add(stop.entry.id);
+	return pickPanorama(kind, day);
 }
 
 /** A place on `body` lit at `noon`, apart from where it was flown over: a
@@ -332,7 +351,7 @@ async function drawDay(name) {
 				if (since < RARE_GAP) return 0;
 				return Math.sqrt(sites.get(kind)) * Math.min(1, (since - RARE_GAP + 1) / RARE_GAP);
 			});
-		const stop = kind && pickPanorama(kind, day);
+		const stop = kind && (await pickPanorama(kind, day));
 		if (stop) ground.push(stop);
 	}
 	const onMars = () => ground.filter((stop) => stop.body === MARS);
@@ -347,7 +366,7 @@ async function drawDay(name) {
 			(kind) => Math.min(8, sinceKind(day, kind)) ** 1.5
 		);
 		if (!kind) break;
-		const stop = pickPanorama(kind, day);
+		const stop = await pickPanorama(kind, day);
 		if (stop) ground.push(stop);
 		else spent.add(kind);
 	}

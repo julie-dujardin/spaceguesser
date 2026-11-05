@@ -13,6 +13,7 @@ import { spawnSync } from 'node:child_process';
 import { existsSync, readFileSync, readdirSync, writeFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { runnerImport } from 'vite';
+import { showsFullTurn } from './full-turn.mjs';
 
 const FRONTEND = fileURLToPath(new URL('..', import.meta.url));
 const ROOT = fileURLToPath(new URL('../..', import.meta.url));
@@ -49,6 +50,7 @@ const load = async (path) =>
 	(await runnerImport(`${FRONTEND}${path}`, { configFile: false, logLevel: 'error' })).module;
 const { checkDaily, formatDaily, utcDay } = await load('src/game/daily.ts');
 const { fetchStops } = await load('src/game/rounds.ts');
+const { ANY_SWEEP } = await load('src/game/rules.ts');
 // The game takes the non-commercial imagery, Huygens with it.
 (await load('src/game/host.ts')).setHost();
 
@@ -67,6 +69,11 @@ for (const name of ahead) {
 		continue;
 	}
 	const { filled, problems } = await checkDaily(name, value, stops);
+	for (const where of value.rounds ?? []) {
+		const stop = stops.find((stop) => stop.entry.id === where.panorama);
+		if (stop && !(await showsFullTurn(stop, ANY_SWEEP)))
+			problems.push(`${where.panorama} does not show the full horizon`);
+	}
 	if (filled) writeFileSync(path, formatDaily(value));
 	for (const problem of problems) console.error(`${name}: ${problem}`);
 	if (problems.length) failed++;

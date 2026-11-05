@@ -56,7 +56,7 @@ const MIN_HFOV_DEG = 359.5;
 
 /** Played whatever their sweep, which the export does not measure: they are
  *  the only views there are of the Moon, Venus and Titan. */
-const ANY_SWEEP = new Set([
+export const ANY_SWEEP = new Set([
 	'apollo11',
 	'apollo12',
 	'apollo14',
