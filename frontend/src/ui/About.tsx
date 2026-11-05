@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { ABOUT, CONTACT, HOSTS, UPDATED, aboutPath, type AboutPage } from '../game/about';
-import { REPO } from '../game/links';
+import { REPO, SITE } from '../game/links';
 import * as m from '../paraglide/messages.js';
 import { getLocale } from '../paraglide/runtime.js';
 import { TURNSTILE } from './useProof';
@@ -8,8 +8,14 @@ import { TURNSTILE } from './useProof';
 const CREDITS = 'https://spacemap.co/credits';
 const TURNSTILE_TERMS = 'https://www.cloudflare.com/turnstile-privacy-policy/';
 
+const LABELS: Record<AboutPage, () => string> = {
+	about: m.about_about,
+	privacy: m.about_privacy,
+	terms: m.about_terms
+};
+
 export function aboutLabel(page: AboutPage): string {
-	return page === 'privacy' ? m.about_privacy() : m.about_terms();
+	return LABELS[page]();
 }
 
 /** A link out, written as where it goes. */
@@ -23,6 +29,38 @@ function Out({ href }: { href: string }) {
 
 function Contact() {
 	return <a href={`mailto:${CONTACT}`}>{CONTACT}</a>;
+}
+
+/** The README's own words, so it is English in every locale. */
+function Game() {
+	return (
+		<div lang="en" dir="ltr">
+			<p className="lede">
+				You're standing somewhere in the solar system. Look around to figure out where you are, and
+				place your guess on the map. This is like GeoGuessr, but the playing area is the entire
+				solar system.
+			</p>
+			<p>
+				This game is built on top of <a href={`${SITE}/view`}>14k ground panoramas</a>, most
+				provided by NASA: their Mars rovers can generally navigate to a point autonomously, but
+				rarely choose their targets. These panoramas are used by scientists to identify interesting
+				locations, or when manual control is needed.
+			</p>
+			<p>
+				Playing with just Mars would be boring. About half of rounds will be played on orbital views
+				provided by the <a href="https://spacemap.co">SpaceMap SDK</a>, which can render all mapped
+				worlds in the solar system.
+			</p>
+			<p>
+				Game modes: Start with the tutorial, then go for the daily challenge or quick play. Play
+				with your friends by starting a multiplayer lobby and sharing the code.
+			</p>
+			<p>
+				No accounts needed, all data stays local during solo play. In multiplayer, all data is
+				deleted after the end of the game.
+			</p>
+		</div>
+	);
 }
 
 function Privacy() {
@@ -125,11 +163,14 @@ export function About({ page }: { page: AboutPage }) {
 								{aboutLabel(other)}
 							</a>
 						))}
+						<a href={REPO} target="_blank" rel="noopener noreferrer">
+							{m.about_github()}
+						</a>
 					</nav>
 				</header>
 				<h1>{title}</h1>
-				{page === 'privacy' ? <Privacy /> : <Terms />}
-				<footer className="note">{m.about_updated({ date: updated })}</footer>
+				{page === 'about' ? <Game /> : page === 'privacy' ? <Privacy /> : <Terms />}
+				{page !== 'about' && <footer className="note">{m.about_updated({ date: updated })}</footer>}
 			</article>
 		</div>
 	);

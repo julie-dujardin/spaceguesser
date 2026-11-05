@@ -2080,8 +2080,9 @@ button.rk {
 
 .about header {
 	display: flex;
+	flex-wrap: wrap;
 	align-items: baseline;
-	gap: 16px;
+	gap: 8px 16px;
 	margin-bottom: 56px;
 	font-family: var(--font-mono);
 	font-size: 13.5px;
@@ -2096,7 +2097,8 @@ button.rk {
 
 .about nav {
 	display: flex;
-	gap: 16px;
+	flex-wrap: wrap;
+	gap: 8px 16px;
 }
 
 .about nav a {

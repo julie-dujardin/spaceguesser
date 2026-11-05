@@ -4,7 +4,7 @@ You're standing somewhere in the solar system. Look around to figure out where y
 
 **Play now at [spaceguesser.com](https://spaceguesser.com)**
 
-This game is built on top of 14k ground panoramas, most provided by NASA: their Mars rovers can generally navigate to a point autonomously, but rarely choose their targets. These panoramas are used by scientists to identify interesting locations, or when manual control is needed.
+This game is built on top of [14k ground panoramas](https://spacemap.co/view), most provided by NASA: their Mars rovers can generally navigate to a point autonomously, but rarely choose their targets. These panoramas are used by scientists to identify interesting locations, or when manual control is needed.
 
 Playing with just Mars would be boring. About half of rounds will be played on orbital views provided by the [SpaceMap SDK](https://spacemap.co), which can render all mapped worlds in the solar system. 
 

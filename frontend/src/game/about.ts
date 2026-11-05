@@ -1,20 +1,20 @@
-/** The pages beside the game: what it does with data, and the terms it comes with. */
+/** The pages beside the game: what it is, what it does with data, and the terms it comes with. */
 
-export const ABOUT = ['privacy', 'terms'] as const;
+export const ABOUT = ['about', 'privacy', 'terms'] as const;
 
 export type AboutPage = (typeof ABOUT)[number];
 
 export function aboutPath(page: AboutPage): string {
-	return `/about/${page}`;
+	return page === 'about' ? '/about' : `/about/${page}`;
 }
 
 /** The page `path` names, if it is one of them. */
 export function aboutPage(path: string): AboutPage | null {
-	const named = /^\/about\/([a-z]+)\/?$/.exec(path)?.[1];
-	return ABOUT.find((page) => page === named) ?? null;
+	const bare = path.replace(/(.)\/$/, '$1');
+	return ABOUT.find((page) => aboutPath(page) === bare) ?? null;
 }
 
-/** When the wording last changed. */
+/** When the privacy and terms wording last changed. */
 export const UPDATED = '2026-10-08';
 
 /** Where a question about either page goes. */
