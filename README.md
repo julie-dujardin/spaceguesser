@@ -1,6 +1,6 @@
 # Spaceguesser
 
-You're standing somewhere in the solar system. Look around to figure out where you are, and place your guess on the map. This is like GeoGuessr, but the playing area is the entire solar system.
+You're standing somewhere in the solar system. Look around to figure out where you are, and place your guess on the map. This is like GeoGuessr, but the playing area is 50+ worlds across the entire solar system.
 
 **Play now at [spaceguesser.com](https://spaceguesser.com)**
 

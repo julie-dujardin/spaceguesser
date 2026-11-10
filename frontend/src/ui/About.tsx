@@ -37,8 +37,8 @@ function Game() {
 		<div lang="en" dir="ltr">
 			<p className="lede">
 				You're standing somewhere in the solar system. Look around to figure out where you are, and
-				place your guess on the map. This is like GeoGuessr, but the playing area is the entire
-				solar system.
+				place your guess on the map. This is like GeoGuessr, but the playing area is 50+ worlds
+				across the entire solar system.
 			</p>
 			<p>
 				This game is built on top of <a href={`${SITE}/view`}>14k ground panoramas</a>, most
