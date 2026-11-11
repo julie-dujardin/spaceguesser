@@ -8,9 +8,10 @@ import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap }
 import { bodyOf, setTiled, systemOf, viewDistance } from './bodies';
 import { HOST } from './host';
 import { RAD, spot, type OrbitRound, type Place } from './rounds';
+import { formatWhen } from './rules';
 
-/** Small bodies stream in behind the map; one that has not shown by now is
- *  not going to. */
+/** Small bodies and a date's data stream in behind the map; what has not
+ *  come by now is not going to. */
 const LOAD_TIMEOUT_MS = 20_000;
 /** Frames a jump is given to land before it is made again: a jump into
  *  another system is dropped while that system loads. */
@@ -206,12 +207,17 @@ export class Space {
 			if (turn !== this.turn) throw new Error(`the map was sent elsewhere than ${body}`);
 		};
 		this.cover(false);
-		this.map.clock.setDate(new Date(time));
+		// Until a frame shows the date, the map measures at the one before it.
+		let dated = false;
+		void this.map.clock.setDate(new Date(time)).then(() => (dated = true));
 		// The standoff depends on it.
 		const tiled = this.map.hasTiles(body);
 		const deadline = Date.now() + LOAD_TIMEOUT_MS;
-		while (!this.map.getBody(body)) {
-			if (Date.now() > deadline) throw new Error(`${body} never loaded`);
+		while (!dated || !this.map.getBody(body)) {
+			if (Date.now() > deadline)
+				throw new Error(
+					dated ? `${body} never loaded` : `the map never got to ${formatWhen(time)}`
+				);
 			await new Promise((resolve) => setTimeout(resolve, 100));
 			mine();
 		}
