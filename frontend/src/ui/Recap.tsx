@@ -10,7 +10,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Anchor, LonLat } from 'spacemap';
 import { bodyOf, systemOf } from '../game/bodies';
 import type { Profile } from '../game/players';
-import { RAD, type Place, type Round } from '../game/rounds';
+import { RAD, measuredAt, type Place, type Round } from '../game/rounds';
 import { AU_KM } from '../game/rules';
 import type { Guess } from '../game/scoring';
 import type { Space } from '../game/space';
@@ -215,9 +215,10 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 		const run = async () => {
 			const all = shown.current;
 			const one = focus === null ? null : all[focus];
-			// One map shows the whole run at the run's date. A panorama's miss was
-			// measured at its own date, so its line here is not to that scale.
-			const time = (one ?? all[all.length - 1]).round.time;
+			// A round alone is shown when its miss was measured, so its line is to
+			// that scale. The whole run shares one map at the run's date, where a
+			// panorama's line is not.
+			const time = one ? measuredAt(one.round) : all[all.length - 1].round.time;
 			await space.travel(time, one ? one.truth.body : SUN);
 			if (dropped) return;
 			const involved = bodiesIn(one ? [one] : all);
