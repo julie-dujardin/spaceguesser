@@ -61,10 +61,6 @@ const BACK_OFF = 2.6;
  *  the pixels, and at one of them it reads as dots. */
 const MISS_WIDTH_PX = 1.5;
 
-/** The last of the slider is the body's own map, up over the globe. A nudge
- *  wide, so a nudge back from the end is back on the globe. */
-const FLAT_FROM = 0.9;
-
 /** The flight takes this long for every tenfold of distance it covers. */
 const MS_PER_DECADE = 1100;
 const MIN_FLIGHT_MS = 1800;
@@ -78,9 +74,41 @@ const NUDGE_MS = 280;
 interface Flight {
 	body: string;
 	farKm: number;
-	nearKm: number;
+	/** As near as the slider goes; as near as the map goes when left out. */
+	nearKm?: number;
+	/** Where the slider's way in ends up over. */
+	toward?: LonLat;
 	/** Where on the slider the flight stops by itself. */
 	rest: number;
+}
+
+/** The slider's ends as distances from the centre, and the ground under them. */
+interface Reach {
+	farKm: number;
+	nearKm: number;
+	groundKm: number;
+}
+
+/** The slider steps in height over the ground, so that its last stretch is
+ *  as much of a zoom as its first. */
+const distanceAt = (zoom: number, { farKm, nearKm, groundKm }: Reach) =>
+	groundKm + (farKm - groundKm) * ((nearKm - groundKm) / (farKm - groundKm)) ** zoom;
+
+/** Read afresh on each move: the ground under the camera changes as it goes,
+ *  and the map comes nearer as finer imagery loads. */
+function reachOf(space: Space, { body, farKm, nearKm }: Flight): Reach {
+	if (nearKm !== undefined) return { farKm, nearKm, groundKm: 0 };
+	const closest = space.closest(body);
+	if (!closest) return { farKm, nearKm: space.standoffKm(body), groundKm: 0 };
+	return { farKm, nearKm: closest.groundKm + closest.clearanceKm, groundKm: closest.groundKm };
+}
+
+function zoomAt(distanceKm: number, { farKm, nearKm, groundKm }: Reach): number {
+	const height = distanceKm - groundKm;
+	if (height <= 0) return 1;
+	const way =
+		Math.log((farKm - groundKm) / height) / Math.log((farKm - groundKm) / (nearKm - groundKm));
+	return Math.min(1, Math.max(0, way));
 }
 
 const ease = (t: number) => (t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2);
@@ -125,10 +153,14 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 	/** The map is drawn where the recap put it, and shown. */
 	const [up, setUp] = useState(false);
 	const flying = useRef<number | null>(null);
+	/** The slider's place the camera was last framed at, and the one it took
+	 *  from the camera: that one came from the wheel and goes nowhere. */
+	const framedAt = useRef(0);
+	const followed = useRef<number | null>(null);
 	/** Where a nudge is headed, so that clicks in quick succession add up. */
 	const heading = useRef<number | null>(null);
-	/** Where the slider last was on the globe, to go back to from the flat map. */
-	const globe = useRef(0);
+	/** The reader has the body's own map up over the globe. */
+	const [flatPicked, setFlatPicked] = useState(false);
 	/** Over the map: the boxes the whole run's crowded pins go into. */
 	const crowded = useRef<HTMLDivElement>(null);
 	// A lobby hands the same rounds over as new objects on every snapshot.
@@ -146,6 +178,7 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 		setUp(false);
 		setError(null);
 		setZoom(0);
+		setFlatPicked(false);
 	}
 
 	const land = () => {
@@ -268,11 +301,11 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 				}
 				for (const [body, row] of away) mark(body, null, row.length > 1 ? pins(row) : row[0]);
 				mark(truth.body, mapped ? truth : null, pin('pin truth'));
-				const nearKm = space.standoffKm(truth.body);
+				const standoffKm = space.standoffKm(truth.body);
 				next = {
 					body: truth.body,
-					nearKm,
-					farKm: space.across(Math.max(widest * HOLD, nearKm * BACK_OFF)),
+					farKm: space.across(Math.max(widest * HOLD, standoffKm * BACK_OFF)),
+					toward: mapped ? truth : undefined,
 					rest: 0
 				};
 				const radius = space.radiusKm(truth.body);
@@ -319,13 +352,15 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 				space.frame(SUN, RUN_FAR_KM, { lat: 70, lon: 0 });
 			}
 			const settled = space.drawn();
+			framedAt.current = 0;
 			setFlight(next);
 			// Shown at rest, not on its way there.
 			await settled;
 			if (dropped) return;
 			setUp(true);
 
-			const decades = Math.log10(next.farKm / next.nearKm) * next.rest;
+			const { farKm, nearKm, groundKm } = reachOf(space, next);
+			const decades = Math.log10((farKm - groundKm) / (nearKm - groundKm)) * next.rest;
 			const duration = Math.min(MAX_FLIGHT_MS, Math.max(MIN_FLIGHT_MS, decades * MS_PER_DECADE));
 			const start = performance.now() + HOLD_MS;
 			const step = (now: number) => {
@@ -348,35 +383,41 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 
 	const one = focus === null ? null : rounds[focus];
 	const mapped = !!one && !!bodyOf(one.truth.body)?.surface;
-	// The camera has finished its way in by the time the map is up.
-	const approach = mapped ? Math.min(1, zoom / FLAT_FROM) : zoom;
 	// With no map to fly in, or a flight that failed, the flat map is the recap.
 	const flown = !!space && !error;
-	// Up or not, never half: the two maps at once are only the way between them.
-	const flat = mapped && (!flown || zoom > FLAT_FROM);
-	if (zoom <= FLAT_FROM) globe.current = zoom;
+	const flat = mapped && (!flown || flatPicked);
 
 	useEffect(() => {
 		// The globe holds still under the flat map, to be found as it was left.
 		if (!space || !flight || flat) return;
-		const distanceKm = flight.farKm * (flight.nearKm / flight.farKm) ** approach;
-		space.frame(flight.body, distanceKm);
-	}, [space, flight, approach, flat]);
+		const from = framedAt.current;
+		framedAt.current = zoom;
+		const distanceKm = () => distanceAt(zoom, reachOf(space, flight));
+		if (flight.toward && zoom > from && zoom !== followed.current) {
+			// The way left to the place shrinks with the square of the height, faster
+			// than the view does: the place comes into the view and to its middle,
+			// and the end of the slider is over it.
+			const { farKm, nearKm, groundKm } = reachOf(space, flight);
+			const shrink = ((nearKm - groundKm) / (farKm - groundKm)) ** (2 * (zoom - from));
+			space.pull(flight.body, flight.toward, zoom >= 1 ? 1 : 1 - shrink, distanceKm);
+		} else space.frame(flight.body, distanceKm());
+	}, [space, flight, zoom, flat]);
 
 	// The view is the reader's to turn and to zoom with the wheel as well, and
 	// the slider follows where the wheel leaves it.
 	useEffect(() => {
 		if (!space || !flight) return;
 		space.hands(flight);
-		const span = mapped ? FLAT_FROM : 1;
 		return space.map.on('camera', ({ distanceKm }) => {
 			if (flying.current !== null) return;
-			const way = Math.log(flight.farKm / distanceKm) / Math.log(flight.farKm / flight.nearKm);
-			const there = Math.min(1, Math.max(0, way)) * span;
-			// Past the end of the way in, the slider is the flat map's.
-			setZoom((now) => (now > span || Math.abs(now - there) < 0.004 ? now : there));
+			const there = zoomAt(distanceKm, reachOf(space, flight));
+			setZoom((now) => {
+				if (Math.abs(now - there) < 0.004) return now;
+				followed.current = there;
+				return there;
+			});
 		});
-	}, [space, flight, mapped]);
+	}, [space, flight]);
 
 	// Stable, so the flat map is framed once rather than on every frame of the
 	// flight.
@@ -397,6 +438,32 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 		];
 	}, [focus, key]);
 
+	// Not on the slider: the flat map is a view of its own, and the globe keeps
+	// its whole zoom. A recap with no way out of the run gives it the corner.
+	const dims = mapped && flown && up && (
+		<div className="dims" role="group" aria-label={m.recap_view()}>
+			<button
+				type="button"
+				aria-pressed={!flat}
+				title={m.recap_globe_title()}
+				onClick={() => setFlatPicked(false)}
+			>
+				{m.recap_globe()}
+			</button>
+			<button
+				type="button"
+				aria-pressed={flat}
+				title={m.recap_flat_title()}
+				onClick={() => {
+					land();
+					setFlatPicked(true);
+				}}
+			>
+				{m.recap_flat()}
+			</button>
+		</div>
+	);
+
 	return (
 		<>
 			<div className="crowds" ref={crowded} />
@@ -409,38 +476,13 @@ export function Recap({ space, rounds, focus, onQuit }: Props) {
 					<Legal />
 				</div>
 			)}
-			{onQuit && (
-				<Quit onQuit={onQuit}>
-					{mapped && flown && up && (
-						<div className="dims" role="group" aria-label={m.recap_view()}>
-							<button
-								type="button"
-								aria-pressed={!flat}
-								title={m.recap_globe_title()}
-								onClick={() => {
-									land();
-									setZoom(globe.current);
-								}}
-							>
-								{m.recap_globe()}
-							</button>
-							<button
-								type="button"
-								aria-pressed={flat}
-								title={m.recap_flat_title()}
-								onClick={() => {
-									land();
-									setZoom(1);
-								}}
-							>
-								{m.recap_flat()}
-							</button>
-						</div>
-					)}
-				</Quit>
+			{onQuit ? (
+				<Quit onQuit={onQuit}>{dims}</Quit>
+			) : (
+				dims && <div className="hud-topr">{dims}</div>
 			)}
 			{error && !mapped && <div className="stage-note">{error}</div>}
-			{up && (
+			{up && !flat && (
 				<div className="zoomer glass">
 					<button
 						type="button"

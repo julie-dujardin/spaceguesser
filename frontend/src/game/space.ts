@@ -4,7 +4,14 @@
  * an orbit round looks at.
  */
 
-import { createMap, type CameraHold, type LonLat, type OffsetKm, type SpaceMap } from 'spacemap';
+import {
+	createMap,
+	type CameraHold,
+	type ClosestApproach,
+	type LonLat,
+	type OffsetKm,
+	type SpaceMap
+} from 'spacemap';
 import { bodyOf, setTiled, systemOf, viewDistance } from './bodies';
 import { HOST } from './host';
 import { RAD, spot, type OrbitRound, type Place } from './rounds';
@@ -61,6 +68,22 @@ const mix = (a: Vec, ka: number, b: Vec, kb: number, c: Vec, kc: number): Vec =>
 	a[1] * ka + b[1] * kb + c[1] * kc,
 	a[2] * ka + b[2] * kb + c[2] * kc
 ];
+
+const unit = ({ lat, lon }: LonLat): Vec => [
+	Math.cos(lat * RAD) * Math.cos(lon * RAD),
+	Math.cos(lat * RAD) * Math.sin(lon * RAD),
+	Math.sin(lat * RAD)
+];
+
+/** The place `share` of the way from `from` to `to` along the great circle. */
+export function between(from: LonLat, to: LonLat, share: number): LonLat {
+	const [a, b] = [unit(from), unit(to)];
+	const angle = Math.acos(Math.min(1, Math.max(-1, a[0] * b[0] + a[1] * b[1] + a[2] * b[2])));
+	if (share >= 1 || angle < 1e-9) return to;
+	const [ka, kb] = [Math.sin((1 - share) * angle), Math.sin(share * angle)];
+	const [x, y, z] = [0, 1, 2].map((i) => (a[i] * ka + b[i] * kb) / Math.sin(angle));
+	return { lat: Math.asin(Math.max(-1, Math.min(1, z))) / RAD, lon: Math.atan2(y, x) / RAD };
+}
 
 /** A body-fixed point as the place under it and its height over the datum. */
 function toSurface(point: Vec, radiusKm: number) {
@@ -131,20 +154,55 @@ export class Space {
 		}
 	}
 
-	/** Let the reader turn the view and zoom it between two distances, or, with
-	 *  null, take their hands off it again. */
-	hands(reach: { nearKm: number; farKm: number } | null): void {
+	/** Let the reader turn the view and zoom it out to `farKm` and in to
+	 *  `nearKm`, or as near as the map goes without it. Null takes their hands
+	 *  off it again. */
+	hands(reach: { nearKm?: number; farKm: number } | null): void {
 		for (const gesture of [this.map.dragRotate, this.map.scrollZoom])
 			if (reach) gesture.enable();
 			else gesture.disable();
 		this.map.setLimits(reach ? { minDistanceKm: reach.nearKm, maxDistanceKm: reach.farKm } : {});
 	}
 
-	/** Look at `body` from `distanceKm`, down on `at` when there is one; the
-	 *  side already in view otherwise. */
+	/** How near the map goes to `body`, once the camera is on it: its ground
+	 *  under the camera from its centre, and the clearance kept over it, in km. */
+	closest(body: string): ClosestApproach | null {
+		return this.map.getCamera()?.body === body ? this.map.getClosestApproach() : null;
+	}
+
+	/** Look at `body` from `distanceKm`, straight down on `at` when there is
+	 *  one. Otherwise keep the side already in view, and the reader's tilt and
+	 *  turn of it: a zoom must not level the view they tilted. */
 	frame(body: string, distanceKm: number, at?: LonLat): void {
 		this.release();
-		this.map.jumpTo({ body, distanceKm, lat: at?.lat, lon: at?.lon });
+		const camera = this.map.getCamera();
+		const kept = !at && camera?.body === body ? camera : undefined;
+		this.map.jumpTo({
+			body,
+			distanceKm,
+			lat: at?.lat,
+			lon: at?.lon,
+			pitch: kept?.pitch,
+			bearing: kept?.bearing
+		});
+	}
+
+	/** Come `share` of the way round from the place under the camera to
+	 *  `toward`, keeping the reader's tilt and turn, and zoom to `distanceKm`.
+	 *  That is asked once there: the ground there sets how near is near. */
+	pull(body: string, toward: LonLat, share: number, distanceKm: () => number): void {
+		const camera = this.map.getCamera();
+		if (camera?.body === body) {
+			this.release();
+			this.map.jumpTo({
+				body,
+				distanceKm: camera.distanceKm,
+				...between(camera, toward, share),
+				pitch: camera.pitch,
+				bearing: camera.bearing
+			});
+		}
+		this.frame(body, distanceKm());
 	}
 
 	/** How far back to look from to hold across the view what `distanceKm`
