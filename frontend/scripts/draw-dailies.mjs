@@ -33,7 +33,7 @@ const load = async (path) =>
 const { DAILY, checkDaily, formatDaily, utcDay } = await load('src/game/daily.ts');
 const { aim, fetchStops, spot } = await load('src/game/rounds.ts');
 const { POOLS, setTiled, viewDistance } = await load('src/game/bodies.ts');
-const { ANY_SWEEP } = await load('src/game/rules.ts');
+const { sweepWaived } = await load('src/game/rules.ts');
 const { LESSONS } = await load('src/game/tutorial.ts');
 // The game takes the non-commercial imagery, Huygens with it.
 (await load('src/game/host.ts')).setHost();
@@ -159,7 +159,7 @@ const NO_LANDFORM = new Set(['SF', 'LF']);
 
 // --- What there is, and what was played ---
 
-const fullTurn = (stop) => showsFullTurn(stop, ANY_SWEEP);
+const fullTurn = (stop) => showsFullTurn(stop, sweepWaived);
 const listed = (await fetchStops()).filter((stop) => BODY.has(stop.body));
 const listedSize = new Map();
 for (const stop of listed) listedSize.set(kindOf(stop), (listedSize.get(kindOf(stop)) ?? 0) + 1);

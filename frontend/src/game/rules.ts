@@ -67,10 +67,24 @@ export const ANY_SWEEP = new Set([
 	'huygens'
 ]);
 
+/** Played though their sweep is partial: picked by eye, as no InSight view
+ *  turns all the way round and these show the site well enough to place. */
+const PICKED_PARTIAL = new Set([
+	'insight-pia23140',
+	'insight-d_lrgb_0014_mpg030100cyl_r__scipanqm1',
+	'insight-d_lrgb_1211_rad020080cyl_r__autogenm5',
+	'insight-d_lrgb_0584_rad010050cyl_r__autogenm1'
+]);
+
+/** Whether `entry` plays whatever its sweep. */
+export function sweepWaived(entry: PanoramaEntry): boolean {
+	return ANY_SWEEP.has(entry.mission ?? '') || PICKED_PARTIAL.has(entry.id);
+}
+
 /** Whether a stop goes in the pool: the view can open it, all the way round. */
 export function playable(entry: PanoramaEntry): boolean {
 	if (!isViewable(entry)) return false;
-	return ANY_SWEEP.has(entry.mission ?? '') || (entry.hfov_deg ?? 0) >= MIN_HFOV_DEG;
+	return sweepWaived(entry) || (entry.hfov_deg ?? 0) >= MIN_HFOV_DEG;
 }
 
 /** Two panoramas from the same stop are the same round twice over. */

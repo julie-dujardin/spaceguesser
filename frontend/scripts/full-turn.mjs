@@ -60,9 +60,10 @@ export async function readTurn(image) {
 
 const known = new Map();
 
-/** Whether `stop` can be played as a full turn. */
-export function showsFullTurn({ entry }, anySweep) {
-	if (anySweep.has(entry.mission ?? '')) return Promise.resolve(true);
+/** Whether `stop` can be played as a full turn, or is played anyway when
+ *  `waived` says so. */
+export function showsFullTurn({ entry }, waived) {
+	if (waived(entry)) return Promise.resolve(true);
 	if (!known.has(entry.id))
 		known.set(
 			entry.id,

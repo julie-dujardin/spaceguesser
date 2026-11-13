@@ -50,7 +50,7 @@ const load = async (path) =>
 	(await runnerImport(`${FRONTEND}${path}`, { configFile: false, logLevel: 'error' })).module;
 const { checkDaily, formatDaily, utcDay } = await load('src/game/daily.ts');
 const { fetchStops } = await load('src/game/rounds.ts');
-const { ANY_SWEEP } = await load('src/game/rules.ts');
+const { sweepWaived } = await load('src/game/rules.ts');
 // The game takes the non-commercial imagery, Huygens with it.
 (await load('src/game/host.ts')).setHost();
 
@@ -71,7 +71,7 @@ for (const name of ahead) {
 	const { filled, problems } = await checkDaily(name, value, stops);
 	for (const where of value.rounds ?? []) {
 		const stop = stops.find((stop) => stop.entry.id === where.panorama);
-		if (stop && !(await showsFullTurn(stop, ANY_SWEEP)))
+		if (stop && !(await showsFullTurn(stop, sweepWaived)))
 			problems.push(`${where.panorama} does not show the full horizon`);
 	}
 	if (filled) writeFileSync(path, formatDaily(value));

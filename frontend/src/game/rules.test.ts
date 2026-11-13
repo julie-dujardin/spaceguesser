@@ -1,6 +1,14 @@
 import { afterEach, describe, expect, it } from 'vitest';
 import { baseLocale, overwriteGetLocale } from '../paraglide/runtime.js';
-import { QUICK_PLAY, describeRun, formatAltitude, formatDistance, formatNumber } from './rules';
+import type { PanoramaEntry } from 'spacemap';
+import {
+	QUICK_PLAY,
+	describeRun,
+	formatAltitude,
+	formatDistance,
+	formatNumber,
+	sweepWaived
+} from './rules';
 
 afterEach(() => overwriteGetLocale(() => baseLocale));
 
@@ -39,5 +47,21 @@ describe('describeRun', () => {
 			'déplacement libre',
 			'sans chrono'
 		]);
+	});
+});
+
+describe('sweepWaived', () => {
+	const entry = (id: string, mission: string) => ({ id, mission }) as PanoramaEntry;
+
+	it('plays the picked partial views and the probes with no full turn', () => {
+		expect(sweepWaived(entry('insight-pia23140', 'insight'))).toBe(true);
+		expect(sweepWaived(entry('venera13-lpi', 'venera13'))).toBe(true);
+	});
+
+	it('leaves the rest to their sweep', () => {
+		expect(sweepWaived(entry('insight-d_lrgbs0016_ilts0s080cylas__1mmseism1', 'insight'))).toBe(
+			false
+		);
+		expect(sweepWaived(entry('curiosity-pia20765', 'curiosity'))).toBe(false);
 	});
 });
