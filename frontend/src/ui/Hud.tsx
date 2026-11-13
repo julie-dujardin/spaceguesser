@@ -3,6 +3,7 @@ import { useEffect, useState, type ReactNode } from 'react';
 import { createPortal } from 'react-dom';
 import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
 import * as m from '../paraglide/messages.js';
+import { Compass } from './Compass';
 
 interface Props {
 	settings: RunSettings;
@@ -14,6 +15,8 @@ interface Props {
 	when: string | null;
 	/** Kilometres over the ground; null when standing on it. */
 	altitude: number | null;
+	/** Which way the view faces; null when nothing says where north is. */
+	heading: number | null;
 	/** Seconds left, or null when the run has no timer. */
 	left: number | null;
 	onQuit: () => void;
@@ -34,6 +37,7 @@ export function Hud({
 	rounds,
 	when,
 	altitude,
+	heading,
 	left,
 	onQuit,
 	tutorial,
@@ -80,6 +84,7 @@ export function Hud({
 					</span>
 				)}
 				{children}
+				{heading !== null && <Compass heading={heading} />}
 				{tip && (
 					<div className="tip-row" onPointerDown={onTip}>
 						{tip}

@@ -17,7 +17,8 @@ interface Props {
 	/** Where the reader ends up, which in free movement is not where they
 	 *  started: the guess is scored against this. */
 	onPlace: (entry: PanoramaEntry) => void;
-	onHeading: (deg: number) => void;
+	/** Null where the panorama does not know where north is. */
+	onHeading: (deg: number | null) => void;
 	/** The panorama asked for is on screen, or will not be: the round can begin. */
 	onReady: () => void;
 	/** The reader has turned back to the panorama. */
@@ -66,6 +67,8 @@ export function Panorama({
 		if (!element) return;
 		let made: PanoramaView | null = null;
 		let dropped = false;
+		// Whether the panorama on screen knows where north is.
+		let north = false;
 		setError(null);
 		createPanorama({
 			...HOST,
@@ -76,21 +79,25 @@ export function Panorama({
 			arrows: movement === 'free',
 			events: {
 				load: (entry) => {
-					// A view taken down while it loaded still says so, about a round
-					// no longer on screen.
+					// A view taken down still talks, about a round no longer on
+					// screen.
 					if (dropped) return;
 					setHere({ round: opening.current, id: entry.id });
 					place.current(entry);
+					north = entry.orientation !== 'unknown';
+					// The first one loads before there is a view to ask.
+					heading.current(north && made ? made.getView().heading : null);
 					// Not a panorama walked to.
 					if (entry.id === opening.current) ready.current();
 				},
-				viewchange: (state) => heading.current(state.heading)
+				viewchange: (state) => !dropped && heading.current(north ? state.heading : null)
 			}
 		})
 			.then((created) => {
 				if (dropped) return created.remove();
 				made = created;
 				live.current = created;
+				if (north) heading.current(created.getView().heading);
 				setView(created);
 			})
 			.catch((cause: unknown) => {

@@ -46,7 +46,7 @@ interface Props {
 	guess: Guess | null;
 	/** Taking up the corner, rather than tucked out of the view's way. */
 	open: boolean;
-	headingDeg: number;
+	headingDeg: number | null;
 	/** The round's place is known, so a guess can be scored. */
 	placed: boolean;
 	onOpen: () => void;
@@ -351,7 +351,7 @@ export function GuessPanel({
 		? ''
 		: !info?.surface
 			? m.guess_whole_body()
-			: at
+			: at && headingDeg !== null
 				? m.guess_heading({ degrees: String(Math.round(headingDeg) % 360).padStart(3, '0') })
 				: '';
 

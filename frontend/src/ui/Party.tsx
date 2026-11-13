@@ -61,7 +61,7 @@ interface Props {
 	/** The round's view is up here, or will not come up. */
 	up: boolean;
 	space: Space | null;
-	heading: number;
+	heading: number | null;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
 }
@@ -276,7 +276,7 @@ interface RoundProps {
 	observing: boolean;
 	truth: Place | null;
 	up: boolean;
-	heading: number;
+	heading: number | null;
 	mapOpen: boolean;
 	onMapOpen: (open: boolean) => void;
 	/** The host's way of closing a round someone is sitting on. */
@@ -361,6 +361,7 @@ function Round({
 				// Nothing of the round is shown before everyone's clock starts.
 				when={waiting ? null : shownDate(round.entry)}
 				altitude={waiting ? null : altitudeKm(round.entry)}
+				heading={waiting ? null : heading}
 				left={left}
 				onQuit={session.leave}
 			>
