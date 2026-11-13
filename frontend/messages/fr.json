@@ -405,6 +405,8 @@
 	"attribution_constellations": "Constellations",
 	"attribution_orbits": "Orbites",
 	"attribution_imagery": "Images",
+	"attribution_galaxy": "Voie lactée",
+	"attribution_galaxy_model": "modèle",
 	"credits_see_all": "Voir tous les crédits",
 	"layer_surface": "Surface",
 	"layer_clouds": "Nuages",

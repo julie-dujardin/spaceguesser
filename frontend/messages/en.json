@@ -398,6 +398,8 @@
 	"attribution_constellations": "Constellations",
 	"attribution_orbits": "Orbits",
 	"attribution_imagery": "Imagery",
+	"attribution_galaxy": "Milky Way",
+	"attribution_galaxy_model": "model",
 	"credits_see_all": "See full credits",
 	"layer_surface": "Surface",
 	"layer_clouds": "Clouds",
