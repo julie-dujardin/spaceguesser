@@ -350,6 +350,10 @@ button {
 /* Only something to read: a drag that starts on it still turns the view.
    Fixed so it centres on the screen rather than on the row of pills it sits
    in. */
+.hud {
+	--compass: 400px;
+}
+
 .compass-row {
 	position: fixed;
 	top: 16px;
@@ -362,7 +366,7 @@ button {
 
 .compass {
 	position: relative;
-	flex: 0 1 400px;
+	flex: 0 1 var(--compass);
 	height: 34px;
 	border-radius: 9999px;
 	background: var(--glass);
@@ -371,15 +375,27 @@ button {
 	overflow: hidden;
 }
 
-/* The pills keep to the left of it, wrapping sooner. */
-.hud-top:has(> .compass-row) {
-	max-width: calc(50% - 200px - 28px);
+.compass.off {
+	visibility: hidden;
 }
 
-.compass .strip {
+/* The pills keep to the left of it, wrapping sooner. */
+.hud-top:has(> .compass-row) {
+	max-width: calc(50% - var(--compass) / 2 - 28px);
+}
+
+.compass .window {
 	position: absolute;
 	inset: 0;
 	mask-image: linear-gradient(90deg, transparent, #000 22%, #000 78%, transparent);
+}
+
+/* Its zero is the needle; ticks sit at their degree from north. */
+.compass .strip {
+	position: absolute;
+	left: 50%;
+	top: 0;
+	bottom: 0;
 }
 
 .compass .t {
@@ -419,7 +435,7 @@ button {
 	color: var(--fg);
 }
 
-.compass .mark {
+.compass .needle {
 	position: absolute;
 	left: 50%;
 	bottom: 0;
@@ -430,10 +446,11 @@ button {
 	border-bottom-color: var(--warm);
 }
 
-/* No room beside the pills: it takes a line of its own under them, still
-   centred on the screen. The row runs gutter to gutter, past the room the
-   pills leave for the way out. */
-@media (max-width: 1260px) {
+/* No room beside the pills, the widest being the French status line at about
+   415px: the compass takes a line of its own under them, still centred on the
+   screen. The row runs gutter to gutter, 44px past the room the pills leave
+   for the way out. */
+@media (max-width: 1300px) {
 	.hud-top:has(> .compass-row) {
 		width: calc(100% - 76px);
 		max-width: none;
@@ -443,6 +460,11 @@ button {
 		position: static;
 		flex: none;
 		width: calc(100% + 44px);
+	}
+
+	/* Losing the line says so where the compass would be. */
+	#root:has(> .conn) .compass {
+		visibility: hidden;
 	}
 }
 
@@ -1462,7 +1484,7 @@ input.code {
 }
 
 /* Over the boards as well as the cards: the line can drop on any screen.
-   Under the quit button, the one corner none of them puts anything in. */
+   Under the quit button, which a narrow screen's compass gives up meanwhile. */
 .conn {
 	position: absolute;
 	right: 16px;

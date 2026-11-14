@@ -54,6 +54,9 @@ export function Panorama({
 	// should come up in the place the reader is playing rather than the one they
 	// mounted on.
 	const opening = useRef(at);
+	// The panorama asked for would not open, so the one still drawn is not the
+	// round's to give a heading for.
+	const broken = useRef(false);
 	const place = useRef(onPlace);
 	const heading = useRef(onHeading);
 	const ready = useRef(onReady);
@@ -62,13 +65,29 @@ export function Panorama({
 	heading.current = onHeading;
 	ready.current = onReady;
 
+	const lose = (cause: unknown) => {
+		broken.current = true;
+		heading.current(null);
+		setError(String(cause));
+	};
+
 	useEffect(() => {
 		const element = container.current;
 		if (!element) return;
 		let made: PanoramaView | null = null;
 		let dropped = false;
-		// Whether the panorama on screen knows where north is.
-		let north = false;
+		let loaded: PanoramaEntry | null = null;
+		// Which way the view faces, until there is a view to ask.
+		let facing: number | null = null;
+		// A heading is only worth showing for the panorama on screen, once it has
+		// loaded and if it knows where north is.
+		const report = () => {
+			const on = made ? made.getCurrent() : loaded;
+			const known =
+				!!loaded && on?.id === loaded.id && loaded.orientation !== 'unknown' && !broken.current;
+			heading.current(known ? (made ? made.getView().heading : facing) : null);
+		};
+		broken.current = false;
 		setError(null);
 		createPanorama({
 			...HOST,
@@ -84,20 +103,24 @@ export function Panorama({
 					if (dropped) return;
 					setHere({ round: opening.current, id: entry.id });
 					place.current(entry);
-					north = entry.orientation !== 'unknown';
-					// The first one loads before there is a view to ask.
-					heading.current(north && made ? made.getView().heading : null);
+					broken.current = false;
+					loaded = entry;
+					report();
 					// Not a panorama walked to.
 					if (entry.id === opening.current) ready.current();
 				},
-				viewchange: (state) => !dropped && heading.current(north ? state.heading : null)
+				viewchange: (state) => {
+					if (dropped) return;
+					facing = state.heading;
+					report();
+				}
 			}
 		})
 			.then((created) => {
 				if (dropped) return created.remove();
 				made = created;
 				live.current = created;
-				if (north) heading.current(created.getView().heading);
+				report();
 				setView(created);
 			})
 			.catch((cause: unknown) => {
@@ -107,6 +130,7 @@ export function Panorama({
 			});
 		return () => {
 			dropped = true;
+			heading.current(null);
 			made?.remove();
 			live.current = null;
 			setView(null);
@@ -115,9 +139,10 @@ export function Panorama({
 
 	useEffect(() => {
 		if (!view || view !== live.current || view.getCurrent()?.id === at) return;
+		heading.current(null);
 		void view.open(at).catch((cause: unknown) => {
 			if (view !== live.current) return;
-			setError(String(cause));
+			lose(cause);
 			ready.current();
 		});
 	}, [view, at]);
@@ -126,7 +151,7 @@ export function Panorama({
 	const back = () => {
 		const shown = live.current;
 		void shown?.open(at).catch((cause: unknown) => {
-			if (shown === live.current) setError(String(cause));
+			if (shown === live.current) lose(cause);
 		});
 	};
 

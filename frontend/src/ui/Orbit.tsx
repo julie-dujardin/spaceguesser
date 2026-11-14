@@ -5,7 +5,7 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { bearingDeg, type LonLat } from 'spacemap';
 import { RAD, step, type OrbitRound, type Place } from '../game/rounds';
-import type { Movement } from '../game/rules';
+import { wrapDeg, type Movement } from '../game/rules';
 import { DOWN, type Gaze, type Space } from '../game/space';
 import * as m from '../paraglide/messages.js';
 import { ToolSlot } from './tools';
@@ -19,7 +19,8 @@ interface Props {
 	movement: Movement;
 	/** The place the round turned out to be over, once the sky has said. */
 	onPlace: (place: Place) => void;
-	onHeading: (deg: number) => void;
+	/** Null while there is no view to face. */
+	onHeading: (deg: number | null) => void;
 	/** The map could not get there: the round cannot be played. */
 	onLost: () => void;
 	/** The view of the place is drawn, or will not be: the round can begin. */
@@ -52,8 +53,6 @@ const KEYS: Record<string, readonly [number, number]> = {
 
 /** What a drag does in free movement. */
 type Hands = 'look' | 'move';
-
-const wrap = (deg: number) => ((deg % 360) + 360) % 360;
 
 export function Orbit({
 	space,
@@ -107,12 +106,13 @@ export function Orbit({
 				gaze.current = DOWN;
 				here.current = found;
 				space.look(found, DOWN);
-				heading.current(0);
 				setPlace(found);
 				placed.current(found);
 				return space.drawn().then(() => {
 					if (dropped) return;
 					setDrawn(true);
+					// Nothing to face before the view is there.
+					heading.current(gaze.current.heading);
 					ready.current();
 				});
 			})
@@ -124,6 +124,7 @@ export function Orbit({
 			});
 		return () => {
 			dropped = true;
+			heading.current(null);
 			space.release();
 		};
 	}, [space, key]);
@@ -152,7 +153,7 @@ export function Orbit({
 		// The gaze keeps its angle to the path, so it does not spin round on
 		// crossing a pole.
 		const turn = bearingDeg(to, from) + 180 - bearing / RAD;
-		gaze.current = { ...gaze.current, heading: wrap(gaze.current.heading + turn) };
+		gaze.current = { ...gaze.current, heading: wrapDeg(gaze.current.heading + turn) };
 		here.current = to;
 		space.look({ ...place, ...to }, gaze.current);
 		heading.current(gaze.current.heading);
@@ -239,7 +240,7 @@ export function Orbit({
 					}
 					// Dragged like a picture: the view goes the other way.
 					gaze.current = {
-						heading: wrap(gaze.current.heading - dx * TURN),
+						heading: wrapDeg(gaze.current.heading - dx * TURN),
 						pitch: Math.min(80, Math.max(-90, gaze.current.pitch + dy * TURN))
 					};
 					space.look({ ...place, ...here.current }, gaze.current);

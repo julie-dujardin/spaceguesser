@@ -84,7 +84,7 @@ export function Hud({
 					</span>
 				)}
 				{children}
-				{heading !== null && <Compass heading={heading} />}
+				<Compass heading={heading} />
 				{tip && (
 					<div className="tip-row" onPointerDown={onTip}>
 						{tip}

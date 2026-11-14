@@ -23,6 +23,7 @@ import {
 } from 'spacemap';
 import { bodyName, bodyOf, type Difficulty } from '../game/bodies';
 import { HOST } from '../game/host';
+import { formatHeading } from '../game/rules';
 import {
 	PICKERS,
 	ROOT,
@@ -352,7 +353,7 @@ export function GuessPanel({
 		: !info?.surface
 			? m.guess_whole_body()
 			: at && headingDeg !== null
-				? m.guess_heading({ degrees: String(Math.round(headingDeg) % 360).padStart(3, '0') })
+				? formatHeading(headingDeg)
 				: '';
 
 	return (

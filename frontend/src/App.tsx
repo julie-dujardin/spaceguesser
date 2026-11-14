@@ -149,7 +149,9 @@ export default function App() {
 	/** The guess panel takes the corner while the reader is working on it, and
 	 *  gives it back when they turn to the view again. */
 	const [mapOpen, setMapOpen] = useState(false);
-	const [heading, setHeading] = useState<number | null>(null);
+	/** Which way the view faces, and the view it was said about: a reading
+	 *  left over from the last one is never shown on the next. */
+	const [facing, setFacing] = useState<{ key: string; deg: number } | null>(null);
 	/** The tutorial as it was drawn: its rounds, and a lesson for each. */
 	const [taught, setTaught] = useState<{ rounds: Round[]; lessons: Lesson[] } | null>(null);
 	/** What the reader has done in the round, which moves the tips on. */
@@ -390,10 +392,10 @@ export default function App() {
 		(shown.mode === 'ground'
 			? `ground:${shown.entry.id}`
 			: `orbit:${shown.body}:${shown.time}:${shown.u}:${shown.v}`);
-	useEffect(() => {
-		setOver(null);
-		setHeading(null);
-	}, [shownKey]);
+	useEffect(() => setOver(null), [shownKey]);
+	const heading = facing && facing.key === shownKey ? facing.deg : null;
+	const face = (deg: number | null) =>
+		setFacing(deg === null || !shownKey ? null : { key: shownKey, deg });
 	const viewUp = !!shownKey && up === shownKey;
 
 	// Where the round is. On the ground that is the panorama, or the one the
@@ -609,7 +611,7 @@ export default function App() {
 						// A multiplayer round is scored where it opened, for everyone.
 						if (!lobby) dispatch({ kind: 'stand', entry: placed });
 					}}
-					onHeading={setHeading}
+					onHeading={face}
 					onReady={() => setUp(shownKey)}
 					onEngage={engage}
 					dimmed={dimmed}
@@ -625,7 +627,7 @@ export default function App() {
 					movement={movement}
 					onPlace={setOver}
 					onLost={redraw}
-					onHeading={setHeading}
+					onHeading={face}
 					onReady={() => setUp(shownKey)}
 					onEngage={engage}
 					dimmed={dimmed}

@@ -187,6 +187,13 @@ export function formatAltitude(km: number): string {
 	return m.distance_kilometres({ value: formatNumber(Number(km.toPrecision(2))) });
 }
 
+/** Degrees clockwise from north, into [0, 360). */
+export const wrapDeg = (deg: number) => ((deg % 360) + 360) % 360;
+
+export function formatHeading(deg: number): string {
+	return m.guess_heading({ degrees: String(wrapDeg(Math.round(deg))).padStart(3, '0') });
+}
+
 export function formatClock(seconds: number): string {
 	const s = Math.max(0, Math.ceil(seconds));
 	return `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}`;
