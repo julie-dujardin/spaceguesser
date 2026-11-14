@@ -1,5 +1,12 @@
 import { X } from 'lucide-react';
-import { useEffect, useState, type ReactNode } from 'react';
+import {
+	useEffect,
+	useLayoutEffect,
+	useRef,
+	useState,
+	type ReactNode,
+	type RefObject
+} from 'react';
 import { createPortal } from 'react-dom';
 import { formatAltitude, formatClock, movementName, type RunSettings } from '../game/rules';
 import * as m from '../paraglide/messages.js';
@@ -46,9 +53,12 @@ export function Hud({
 	children
 }: Props) {
 	const fraction = left === null ? 1 : left / settings.timer;
+	const viewed = altitude !== null || when !== null;
+	const top = useRef<HTMLDivElement>(null);
+	const crowded = useCrowded(top, [viewed, left !== null]);
 	return (
 		<>
-			<div className="hud-top">
+			<div className="hud-top" ref={top}>
 				<span className="pill status">
 					<span className="mark">spaceguesser</span>
 					<span className="sep" />
@@ -60,8 +70,8 @@ export function Hud({
 						<span className="mono mut move">{movementName(settings.movement)}</span>
 					)}
 				</span>
-				{(altitude !== null || when !== null) && (
-					<span className="pill status view">
+				{viewed && (
+					<span className={`pill status view${crowded ? ' dropped' : ''}`}>
 						{altitude !== null && (
 							<span className="mono mut">
 								{m.hud_altitude({ altitude: formatAltitude(altitude) })}
@@ -94,6 +104,42 @@ export function Hud({
 			<Quit onQuit={onQuit} />
 		</>
 	);
+}
+
+/** Whether the pills would take more than one line: then the altitude and
+ *  date make room, rather than pushing the compass down a line. The line ends
+ *  at the compass where it shares it, and at the way out where it does not. A
+ *  pill set aside is still laid out, so it still has a width to count. */
+function useCrowded(top: RefObject<HTMLDivElement | null>, pills: unknown[]) {
+	const [crowded, setCrowded] = useState(false);
+	useLayoutEffect(() => {
+		const row = top.current;
+		if (!row) return;
+		const measure = () => {
+			const all = [...row.querySelectorAll<HTMLElement>(':scope > .pill')];
+			const first = all[0]?.getBoundingClientRect();
+			if (!first) return;
+			const gap = parseFloat(getComputedStyle(row).columnGap) || 0;
+			const width = all.reduce((sum, pill) => sum + pill.getBoundingClientRect().width + gap, -gap);
+			const compass = row.querySelector('.compass')?.getBoundingClientRect();
+			// Where .hud-top's max-width stops the pills short of the compass.
+			const end =
+				compass && compass.top < first.bottom
+					? compass.left - 12
+					: row.getBoundingClientRect().right;
+			setCrowded(first.left + width > end + 0.5);
+		};
+		const observer = new ResizeObserver(measure);
+		observer.observe(row);
+		for (const pill of row.children) observer.observe(pill);
+		window.addEventListener('resize', measure);
+		measure();
+		return () => {
+			observer.disconnect();
+			window.removeEventListener('resize', measure);
+		};
+	}, pills);
+	return crowded;
 }
 
 /** The way out of a run, on a round and on its result alike. It asks first: the

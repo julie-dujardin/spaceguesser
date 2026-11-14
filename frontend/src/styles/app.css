@@ -384,6 +384,12 @@ button {
 	max-width: calc(50% - var(--compass) / 2 - 28px);
 }
 
+/* Set aside for want of room, and still laid out to tell when there is some. */
+.hud-top > .dropped {
+	position: absolute;
+	visibility: hidden;
+}
+
 .compass .window {
 	position: absolute;
 	inset: 0;
@@ -2588,23 +2594,6 @@ button.rk {
 	.or::after {
 		width: auto;
 		height: 1px;
-	}
-
-	/* Altitude and date on one line run under the quit button: the date goes
-	   under. */
-	.status.view {
-		flex-direction: column;
-		align-items: flex-start;
-		justify-content: center;
-		gap: 2px;
-		height: auto;
-		min-height: 34px;
-		padding: 6px 12px;
-		border-radius: 17px;
-	}
-
-	.status.view .sep {
-		display: none;
 	}
 
 	/* The history says more about the face than there is room for beside the
