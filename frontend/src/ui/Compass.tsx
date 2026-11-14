@@ -6,7 +6,7 @@ import * as m from '../paraglide/messages.js';
  *  shows. */
 const SPAN = 90;
 /** Pixels per degree. */
-const SCALE = 2;
+const SCALE = 2.4;
 const TICK = 5;
 
 function label(deg: number): { text: string; kind: 'cardinal' | 'inter' | 'deg' } | null {
@@ -38,15 +38,17 @@ export function Compass({ heading }: { heading: number }) {
 		);
 	}
 	return (
-		<div
-			className="compass"
-			role="img"
-			aria-label={m.guess_heading({
-				degrees: String(Math.round(heading) % 360).padStart(3, '0')
-			})}
-		>
-			<div className="strip">{ticks}</div>
-			<i className="mark" />
+		<div className="compass-row">
+			<div
+				className="compass"
+				role="img"
+				aria-label={m.guess_heading({
+					degrees: String(Math.round(heading) % 360).padStart(3, '0')
+				})}
+			>
+				<div className="strip">{ticks}</div>
+				<i className="mark" />
+			</div>
 		</div>
 	);
 }

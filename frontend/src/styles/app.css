@@ -329,6 +329,14 @@ button {
 	flex-wrap: wrap;
 	gap: 8px;
 	align-items: flex-start;
+	pointer-events: none;
+}
+
+/* Only the pills and the tip take the pointer: the rest of the rows is the
+   view's to drag. */
+.hud-top > :not(.tip-row, .compass-row),
+.tip-row > .tip {
+	pointer-events: auto;
 }
 
 .hud-topr {
@@ -340,26 +348,32 @@ button {
 }
 
 /* Only something to read: a drag that starts on it still turns the view.
-   Fixed rather than absolute so it centres on the screen, not on the row of
-   pills it joins when there is no room beside them. */
-.hud-top > .compass {
+   Fixed so it centres on the screen rather than on the row of pills it sits
+   in. */
+.compass-row {
 	position: fixed;
 	top: 16px;
-	left: 50%;
-	transform: translateX(-50%);
-	width: 280px;
+	left: 16px;
+	right: 16px;
+	display: flex;
+	justify-content: center;
+	pointer-events: none;
+}
+
+.compass {
+	position: relative;
+	flex: 0 1 400px;
 	height: 34px;
 	border-radius: 9999px;
 	background: var(--glass);
 	backdrop-filter: blur(12px);
 	border: 1px solid var(--gborder);
 	overflow: hidden;
-	pointer-events: none;
 }
 
 /* The pills keep to the left of it, wrapping sooner. */
-.hud-top:has(> .compass) {
-	max-width: calc(50% - 140px - 28px);
+.hud-top:has(> .compass-row) {
+	max-width: calc(50% - 200px - 28px);
 }
 
 .compass .strip {
@@ -416,17 +430,19 @@ button {
 	border-bottom-color: var(--warm);
 }
 
-/* No room beside the pills: it joins their row instead. */
-@media (max-width: 1180px) {
-	.hud-top > .compass {
-		position: relative;
-		top: auto;
-		left: auto;
-		transform: none;
+/* No room beside the pills: it takes a line of its own under them, still
+   centred on the screen. The row runs gutter to gutter, past the room the
+   pills leave for the way out. */
+@media (max-width: 1260px) {
+	.hud-top:has(> .compass-row) {
+		width: calc(100% - 76px);
+		max-width: none;
 	}
 
-	.hud-top:has(> .compass) {
-		max-width: calc(100% - 76px);
+	.compass-row {
+		position: static;
+		flex: none;
+		width: calc(100% + 44px);
 	}
 }
 
@@ -2337,23 +2353,9 @@ button.rk {
 	color: var(--dim);
 }
 
-/* Under the pills, on a line of its own however they wrap. Only the tip takes
-   the pointer: the rest of the line is the view's to drag. */
+/* Under the pills, on a line of its own however they wrap. */
 .tip-row {
 	flex-basis: 100%;
-	pointer-events: none;
-}
-
-.tip-row > .tip {
-	pointer-events: auto;
-}
-
-.hud-top:has(> .tip-row) {
-	pointer-events: none;
-}
-
-.hud-top:has(> .tip-row) > :not(.tip-row) {
-	pointer-events: auto;
 }
 
 /* Beside the guess panel, level with its foot, and pointing at it. */
